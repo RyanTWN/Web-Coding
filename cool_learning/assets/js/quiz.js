@@ -6,13 +6,26 @@ let quizScore = 0;
 let currentQuizMode = 'choice';
 
 function initQuizModule() {
-  document.getElementById('btn-quiz-mode-choice').onclick = () => startQuiz('choice');
-  document.getElementById('btn-quiz-mode-spelling').onclick = () => startQuiz('spelling');
-  document.getElementById('btn-quiz-mode-starred').onclick = () => startQuiz('starred');
-  document.getElementById('btn-quiz-mode-starred-spelling').onclick = () => startQuiz('starred_spelling');
-  document.getElementById('btn-reset-quiz-menu').onclick = resetQuizMenu;
-  document.getElementById('quiz-next-btn').onclick = nextQuizQuestion;
-  document.getElementById('quiz-submit-spelling-btn').onclick = submitSpellingAnswer;
+  let btnChoice = document.getElementById('btn-quiz-mode-choice');
+  if (btnChoice) btnChoice.onclick = () => startQuiz('choice');
+
+  let btnSpelling = document.getElementById('btn-quiz-mode-spelling');
+  if (btnSpelling) btnSpelling.onclick = () => startQuiz('spelling');
+
+  let btnStarred = document.getElementById('btn-quiz-mode-starred');
+  if (btnStarred) btnStarred.onclick = () => startQuiz('starred');
+
+  let btnStarredSpelling = document.getElementById('btn-quiz-mode-starred-spelling');
+  if (btnStarredSpelling) btnStarredSpelling.onclick = () => startQuiz('starred_spelling');
+
+  let btnReset = document.getElementById('btn-reset-quiz-menu');
+  if (btnReset) btnReset.onclick = resetQuizMenu;
+
+  let btnNext = document.getElementById('quiz-next-btn');
+  if (btnNext) btnNext.onclick = nextQuizQuestion;
+
+  let btnSubmitSpelling = document.getElementById('quiz-submit-spelling-btn');
+  if (btnSubmitSpelling) btnSubmitSpelling.onclick = submitSpellingAnswer;
 }
 
 function resetQuizMenu() {
