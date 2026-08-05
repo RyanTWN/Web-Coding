@@ -168,17 +168,17 @@ function renderCard() {
 
   const imgEl = document.getElementById('card-image');
   if (imgEl) {
-    // 【AI 動態生成圖片】
-    // 如果資料庫有自訂圖片，就用資料庫的。
-    // 如果沒有，就使用 Pollinations AI 免費服務即時生成具有「單字關聯性」與「可愛漫畫風」的圖片！
+    // 【AI 動態生成圖片 - 2026 最新版 gen.pollinations.ai API】
     if (item.img) {
       imgEl.src = item.img;
     } else {
-      // 組合提示詞 (Prompt)：包含單字、釋義，並指定卡通漫畫風格，確保沒有文字在圖中
-      const prompt = encodeURIComponent(`${item.vocabulary} (${item.chinese}), cute comic book illustration style, solid light blue background, no text, colorful, highly detailed`);
-      // 加上亂數種子(seed)，確保同一個單字每次生成的圖片都是固定的
+      // 組合提示詞 (Prompt)：單字、釋義、漫畫風格，加上 nologo 隱藏浮水印
+      const promptText = `${item.vocabulary} (${item.chinese}), cute comic book illustration style, isolated on solid light blue background, no text, no letters, highly detailed`;
+      const prompt = encodeURIComponent(promptText);
       const seed = item.id || item.vocabulary.length; 
-      imgEl.src = `https://pollinations.ai/p/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
+      
+      // 改用最新官方推薦的 /image/ 端點
+      imgEl.src = `https://gen.pollinations.ai/image/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
     }
   }
   
