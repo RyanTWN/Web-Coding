@@ -171,13 +171,13 @@ function renderCard() {
     if (item.img) {
       imgEl.src = item.img;
     } else {
-      // 【2026/08 最新 Pollinations AI 免費生成格式】
-      const promptText = `${item.vocabulary} (${item.chinese}), cute comic book illustration style, solid light blue background, highly detailed, no text`;
+      // 【2026/08 最穩定 Pollinations AI 圖片端點】
+      const promptText = `A cute comic book illustration of the concept: ${item.vocabulary}. Solid light blue background. Highly detailed.`;
       const prompt = encodeURIComponent(promptText);
       const seed = item.id || item.vocabulary.length; 
       
-      // 正確的格式：https://pollinations.ai/prompt/{提示詞}
-      imgEl.src = `https://pollinations.ai/prompt/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
+      // 正確的子網域是 image.pollinations.ai
+      imgEl.src = `https://image.pollinations.ai/prompt/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
     }
   }
   
