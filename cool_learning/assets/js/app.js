@@ -161,6 +161,29 @@ function switchAppTab(tabId) {
   if (tabId === 'calendar') renderCalendar();
 }
 
+/**
+ * 取得可愛漫畫風的單字圖象記憶圖片網址 (Pollinations.ai 最新版 API)
+ * @param {string} word - 英文單字
+ * @param {string} meaning - 中文翻譯或含義
+ * @returns {string} 完整的圖片 URL
+ */
+function getVocabularyImageUrl(word, meaning) {
+    // 通用版提示詞：固定為可愛長髮小女孩視角，並動態插入單字與含義
+    const prompt = `A cute anime chibi style illustration of a little girl with long hair exploring the concept of the English word "${word}". The scene visually and creatively represents its meaning: "${meaning}". Soft pastel colors, warm lighting, highly detailed, masterpiece, educational children book style. The little girl is interacting with the object or concept.`;
+    
+    const encodedPrompt = encodeURIComponent(prompt);
+
+    // 記憶卡防呆機制：使用單字的字元碼來產生一個固定的「種子碼 (seed)」
+    let fixedSeed = 0;
+    for (let i = 0; i < word.length; i++) {
+        fixedSeed += word.charCodeAt(i);
+    }
+    fixedSeed = fixedSeed * 1024 + 42; 
+
+    // 使用官方最新 GET 端點，並指定 model=flux 與 seed
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&model=flux&seed=${fixedSeed}`;
+}
+
 // 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
 function renderCard() {
   if (today30Words.length === 0) return;
@@ -169,17 +192,20 @@ function renderCard() {
   const imgEl = document.getElementById('card-image');
   if (imgEl) {
     if (item.img) {
+      // 如果資料庫中已經有指定好的真實圖片，優先顯示
       imgEl.src = item.img;
     } else {
-      // 【2026/08 最穩定 Pollinations AI 圖片端點】
-      const promptText = `A cute comic book illustration of the concept: ${item.vocabulary}. Solid light blue background. Highly detailed.`;
-      const prompt = encodeURIComponent(promptText);
-      const seed = item.id || item.vocabulary.length; 
-      
-      // 正確的子網域是 image.pollinations.ai
-      imgEl.src = `https://image.pollinations.ai/prompt/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
+      // 【動態生成】：呼叫函數，傳入英文單字與對應的中文，產生可愛專屬插圖！
+      // 若資料表中文欄位叫 translation，請改為 item.translation
+      imgEl.src = getVocabularyImageUrl(item.vocabulary, item.chinese);
     }
   }
+
+  // 👇 下方請保留您原本將單字、音標、例句塞入 HTML 的程式碼 👇
+  // const wordEl = document.getElementById('card-vocabulary');
+  // if (wordEl) wordEl.textContent = item.vocabulary;
+  // ... (保留原本的其他程式碼)
+}
   
   const wordEl = document.getElementById('card-word');
   if (wordEl) wordEl.textContent = item.vocabulary;
