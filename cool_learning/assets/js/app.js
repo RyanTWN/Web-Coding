@@ -168,7 +168,6 @@ function switchAppTab(tabId) {
  * @returns {string} 完整的圖片 URL
  */
 function getVocabularyImageUrl(word, meaning) {
-    // 通用版提示詞：固定為可愛長髮小女孩視角，並動態插入單字與含義
     const prompt = `A cute anime chibi style illustration of a little girl with long hair exploring the concept of the English word "${word}". The scene visually and creatively represents its meaning: "${meaning}". Soft pastel colors, warm lighting, highly detailed, masterpiece, educational children book style. The little girl is interacting with the object or concept.`;
     
     const encodedPrompt = encodeURIComponent(prompt);
@@ -178,6 +177,44 @@ function getVocabularyImageUrl(word, meaning) {
     for (let i = 0; i < word.length; i++) {
         fixedSeed += word.charCodeAt(i);
     }
+    fixedSeed = fixedSeed * 1024 + 42; 
+
+    // 使用官方最新 GET 端點，並指定 model=flux 與 seed
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&model=flux&seed=${fixedSeed}`;
+}
+
+// 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
+function renderCard() {
+    if (today30Words.length === 0) return;
+    const item = today30Words[currentIndex];
+
+    // 1. 渲染圖片
+    const imgEl = document.getElementById('card-image');
+    if (imgEl) {
+        if (item.img) {
+            imgEl.src = item.img;
+        } else {
+            imgEl.src = getVocabularyImageUrl(item.vocabulary, item.chinese);
+        }
+    }
+
+    // 2. 渲染單字與音標
+    const wordEl = document.getElementById('card-vocabulary');
+    if (wordEl) wordEl.textContent = item.vocabulary;
+
+    const phoneticEl = document.getElementById('card-phonetic');
+    if (phoneticEl) phoneticEl.textContent = item.phonetic;
+
+    // 3. 渲染中文翻譯與例句
+    const chineseEl = document.getElementById('card-chinese');
+    if (chineseEl) chineseEl.textContent = item.chinese;
+
+    const sentenceEl = document.getElementById('card-sentence');
+    if (sentenceEl) sentenceEl.textContent = item.sentence;
+
+    const translateEl = document.getElementById('card-translate');
+    if (translateEl) translateEl.textContent = item.translate;
+
     fixedSeed = fixedSeed * 1024 + 42; 
 
     // 使用官方最新 GET 端點，並指定 model=flux 與 seed
@@ -200,12 +237,6 @@ function renderCard() {
       imgEl.src = getVocabularyImageUrl(item.vocabulary, item.chinese);
     }
   }
-
-  // 👇 下方請保留您原本將單字、音標、例句塞入 HTML 的程式碼 👇
-  // const wordEl = document.getElementById('card-vocabulary');
-  // if (wordEl) wordEl.textContent = item.vocabulary;
-  // ... (保留原本的其他程式碼)
-}
   
   const wordEl = document.getElementById('card-word');
   if (wordEl) wordEl.textContent = item.vocabulary;
