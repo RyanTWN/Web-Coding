@@ -22,10 +22,10 @@
           },
           fontFamily: { sans: ['Fredoka', 'Noto Sans TC', 'sans-serif'] },
           boxShadow: {
-            // 加入漫畫風的專屬粗陰影
-            'comic': '4px 4px 0px 0px rgba(30, 41, 59, 1)',
-            'comic-lg': '6px 6px 0px 0px rgba(30, 41, 59, 1)',
-            'comic-active': '2px 2px 0px 0px rgba(30, 41, 59, 1)'
+            // 強化漫畫風的專屬粗黑陰影 (更深、更粗，立體感倍增)
+            'comic': '5px 5px 0px 0px rgba(15, 23, 42, 1)',
+            'comic-lg': '8px 8px 0px 0px rgba(15, 23, 42, 1)',
+            'comic-active': '2px 2px 0px 0px rgba(15, 23, 42, 1)'
           }
         }
       }
@@ -33,6 +33,13 @@
   </script>
 
   <style>
+    /* 漫畫風格背景網點 (Halftone Pattern) */
+    .comic-bg {
+      background-color: #f8fafc;
+      background-image: radial-gradient(#cbd5e1 2.5px, transparent 2.5px);
+      background-size: 24px 24px;
+    }
+    
     /* 3D 翻轉卡片的核心 CSS 設定 */
     .perspective-1000 { perspective: 1000px; }
     .transform-style-3d { transform-style: preserve-3d; }
@@ -47,7 +54,7 @@
     }
   </style>
 </head>
-<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen bg-slate-50">
+<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg">
 
   <!-- Toast 訊息通知 -->
   <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">

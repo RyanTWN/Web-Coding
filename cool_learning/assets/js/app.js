@@ -137,14 +137,25 @@ function showView(viewId) {
 }
 
 function switchAppTab(tabId) {
+  // 1. 隱藏所有內容區塊
   document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-white', 'text-brand-600', 'shadow-sm'));
+  
+  // 2. 將所有按鈕重置為「未選取」的平坦狀態
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('bg-brand-500', 'text-white', 'shadow-comic', 'transform', '-translate-y-1');
+    btn.classList.add('text-slate-500', 'hover:text-slate-800');
+  });
 
+  // 3. 顯示目標內容區塊
   const view = document.getElementById(`app-view-${tabId}`);
   if(view) view.classList.remove('hidden');
   
+  // 4. 為目前選中的按鈕加上「彩色浮起」的漫畫風格
   const navBtn = document.getElementById(`nav-${tabId}`);
-  if(navBtn) navBtn.classList.add('bg-white', 'text-brand-600', 'shadow-sm');
+  if(navBtn) {
+    navBtn.classList.remove('text-slate-500', 'hover:text-slate-800');
+    navBtn.classList.add('bg-brand-500', 'text-white', 'shadow-comic', 'transform', '-translate-y-1');
+  }
 
   if (tabId === 'starred') renderStarredList();
   if (tabId === 'calendar') renderCalendar();
