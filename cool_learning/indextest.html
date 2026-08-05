@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>酷學習 Cool Learning - 每日30單字 (高品質插畫精緻模板)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Comic, Noto Sans TC, Fredoka -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Chewy&family=Noto+Sans+TC:wght@500;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #fef08a; /* Bright yellow */
+      background-image: radial-gradient(#fde047 2.5px, transparent 2.5px);
+      background-size: 24px 24px;
+    }
+
+    /* 精緻漫畫風硬陰影 (Polished Comic Style) */
+    .comic-card {
+      border: 4px solid #0f172a;
+      box-shadow: 8px 8px 0px 0px #0f172a;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .comic-card:hover {
+      box-shadow: 10px 10px 0px 0px #0f172a;
+    }
+
+    .comic-box-sm {
+      border: 3px solid #0f172a;
+      box-shadow: 5px 5px 0px 0px #0f172a;
+    }
+
+    .comic-btn {
+      border: 3.5px solid #0f172a;
+      box-shadow: 5px 5px 0px 0px #0f172a;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    .comic-btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 2px 2px 0px 0px #0f172a;
+    }
+
+    /* 文字樣式 */
+    .word-title {
+      font-family: 'Fredoka', 'Chewy', cursive;
+      letter-spacing: 0.02em;
+    }
+
+    /* 精緻對話框 (Speech Bubble Tail) */
+    .speech-tail {
+      position: relative;
+    }
+    .speech-tail::after {
+      content: '';
+      position: absolute;
+      bottom: -16px;
+      left: 32px;
+      border-width: 16px 16px 0 0;
+      border-style: solid;
+      border-color: #ffffff transparent transparent transparent;
+      display: block;
+      width: 0;
+      z-index: 2;
+    }
+    .speech-tail::before {
+      content: '';
+      position: absolute;
+      bottom: -22px;
+      left: 30px;
+      border-width: 19px 19px 0 0;
+      border-style: solid;
+      border-color: #0f172a transparent transparent transparent;
+      display: block;
+      width: 0;
+      z-index: 1;
+    }
+
+    /* 翻轉動畫效果 (Card Flip Animation) */
+    .flip-card {
+      perspective: 1000px;
+    }
+    .flip-card-inner {
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
+    }
+    .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+    .flip-card-front, .flip-card-back {
+      backface-visibility: hidden;
+    }
+    .flip-card-back {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-900 pb-16 select-none">
+
+  <!-- 頂部導覽列 Navigation -->
+  <header class="max-w-5xl w-full mx-auto p-4 sm:p-6 flex items-center justify-between">
+    <button id="btn-back" class="comic-btn bg-white hover:bg-slate-100 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 font-bold text-slate-900">
+      <i data-lucide="arrow-left" class="w-6 h-6 stroke-[3]"></i>
+      <span class="hidden sm:inline">返回學習大廳</span>
+    </button>
+
+    <div class="flex items-center gap-2.5 bg-amber-300 comic-box-sm px-6 py-2.5 rounded-2xl font-black text-xl">
+      <i data-lucide="sparkles" class="w-7 h-7 text-amber-700 fill-amber-400"></i>
+      <span>每日 30 精緻插畫卡</span>
+    </div>
+
+    <button id="btn-open-starred" class="comic-btn bg-rose-500 hover:bg-rose-600 text-white px-4 py-3 rounded-2xl flex items-center gap-2.5 font-bold relative">
+      <i data-lucide="bookmark" class="w-6 h-6 stroke-[3]"></i>
+      <span class="hidden sm:inline">我的難字本</span>
+      <span id="starred-badge" class="absolute -top-2.5 -right-2.5 bg-yellow-300 text-slate-900 text-xs font-black px-2.5 py-1 rounded-full border-2 border-slate-900 hidden">0</span>
+    </button>
+  </header>
+
+  <!-- 主區塊：進度與控制列 -->
+  <main class="max-w-4xl w-full mx-auto px-5 mt-4 flex-1 flex flex-col items-center">
+    
+    <div class="w-full max-w-3xl bg-white comic-box-sm rounded-3xl p-4 mb-8 flex items-center justify-between gap-5">
+      <div class="font-black text-2xl text-slate-900 min-w-[90px]">
+        <span id="current-index-text" class="text-4xl text-indigo-600">1</span>
+        <span class="text-slate-400">/30</span>
+      </div>
+      <div class="flex-1 bg-slate-100 h-7 rounded-full border-3 border-slate-900 overflow-hidden p-0.5 relative">
+        <div id="progress-bar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all duration-300 border-r-2 border-slate-900" style="width: 3.33%;"></div>
+      </div>
+      <button id="btn-flip-card" class="comic-btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 shrink-0">
+        <i data-lucide="rotate-cw" class="w-5 h-5 stroke-[3]"></i>
+        <span>翻看背面</span>
+      </button>
+    </div>
+
+    <!-- 高品質插畫精緻 Flashcard Area -->
+    <div class="flip-card w-full max-w-3xl min-h-[600px] cursor-pointer" id="main-flashcard">
+      <div class="flip-card-inner relative w-full h-full min-h-[600px]">
+
+        <!-- 正面 Front Side (高品質插畫精緻版) -->
+        <div class="flip-card-front absolute inset-0 w-full h-full bg-white comic-card rounded-3xl p-8 flex flex-col justify-between overflow-hidden">
+          
+          <!-- 頂部資訊列：詞性標籤 + 收藏星號 -->
+          <div class="flex justify-between items-center z-10">
+            <span id="card-pos-badge" class="px-5 py-2.5 rounded-full font-black text-sm uppercase tracking-wider border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] bg-emerald-300 text-slate-900">
+              Adj. 形容詞
+            </span>
+            <button id="btn-star" class="comic-btn p-2.5 rounded-2xl bg-slate-100 hover:bg-yellow-200 transition-colors">
+              <i data-lucide="star" id="star-icon" class="w-8 h-8 text-slate-400 stroke-[2.5]"></i>
+            </button>
+          </div>
+
+          <!-- 圖像記憶核心區 (口訣對話框 + 【高品質精緻插畫】展示) -->
+          <div class="my-auto flex flex-col items-center w-full">
+            
+            <!-- 精緻諧音對話框 (Speech Bubble) -->
+            <div class="w-full max-w-2xl bg-amber-100 border-3 border-slate-900 rounded-3xl p-4 mb-5 speech-tail relative comic-box-sm">
+              <div class="flex items-start gap-3">
+                <span class="bg-amber-400 text-slate-900 font-black text-sm px-3 py-1.5 rounded-xl border-2 border-slate-900 shrink-0 mt-0.5 shadow-[2px_2px_0px_0px_#0f172a]">💬 記憶圖像口訣</span>
+                <p id="card-mnemonic-title" class="font-extrabold text-slate-900 text-xl sm:text-2xl leading-snug">
+                  He (他) + sit (坐) + ate (吃過，回想怪味...)
+                </p>
+              </div>
+            </div>
+
+            <!-- 【高品質精緻插畫繪製區】(Image Vignette) -->
+            <div id="card-illustration-vignette" class="w-full max-w-2xl h-60 sm:h-72 bg-slate-50 border-3 border-slate-900 rounded-3xl flex items-center justify-center p-0.5 relative overflow-hidden my-3 shadow-inner z-0">
+              <!-- 動態載入高品質漫畫插圖網址，復刻參考圖風格 -->
+              <img id="card-img" src="https://generativeimages.azurewebsites.net/api/v1/generatedimages/hesitate_mnemonic_high_quality.png" alt="Vocabulary mnemonic vignette" class="w-full h-full object-cover">
+            </div>
+
+            <!-- 英文單字 & 音標 & 發音按鈕 -->
+            <div class="text-center mt-3 flex flex-col items-center gap-1.5">
+              <div class="flex items-center justify-center gap-4">
+                <h1 id="card-word" class="word-title text-5xl sm:text-6xl font-black text-slate-950 tracking-wide">
+                  hesitate
+                </h1>
+                <button id="btn-speak" class="comic-btn bg-indigo-500 hover:bg-indigo-600 text-white p-3 rounded-2xl">
+                  <i data-lucide="volume-2" class="w-7 h-7 stroke-[3]"></i>
+                </button>
+              </div>
+              <p id="card-phonetic" class="text-slate-500 font-bold text-xl mt-1 font-mono">
+                /ˈhez.ə.teɪt/
+              </p>
+            </div>
+
+            <!-- 中文解釋 Banner (Comic Style) -->
+            <div class="mt-4 bg-slate-950 text-amber-300 font-black text-3xl sm:text-4xl px-8 py-3 rounded-2xl border-2 border-slate-950 shadow-[4px_4px_0px_0px_#fde047]">
+              <span id="card-chinese">猶豫、遲疑</span>
+            </div>
+
+          </div>
+
+          <!-- 卡片下方翻頁提示 -->
+          <div class="text-center text-xs font-bold text-slate-400 pt-3 border-t-2 border-slate-100 flex items-center justify-center gap-2">
+            <i data-lucide="mouse-pointer-click" class="w-4 h-4"></i>
+            <span>點擊卡片翻轉查看詳細例句與拆解說明</span>
+          </div>
+
+        </div>
+
+        <!-- 背面 Back Side (詳細例句與拆解) -->
+        <div class="flip-card-back absolute inset-0 w-full h-full bg-amber-50 comic-card rounded-3xl p-8 flex flex-col justify-between overflow-hidden">
+          
+          <div class="flex justify-between items-center border-b-3 border-slate-900 pb-4 mb-5">
+            <div class="flex items-center gap-3">
+              <span class="bg-indigo-700 text-white font-black text-sm px-4 py-1.5 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]">情境例句與詳細</span>
+              <span id="card-back-word" class="word-title text-2xl font-black text-slate-900 underline decoration-amber-400 decoration-3">hesitate</span>
+            </div>
+            <span class="text-xs font-bold text-slate-500 tracking-wider">COOL LEARNING</span>
+          </div>
+
+          <div class="my-auto space-y-6">
+            <!-- 例句區塊 -->
+            <div class="bg-white border-3 border-slate-900 p-6 rounded-2xl comic-box-sm">
+              <p id="card-sentence-en" class="font-bold text-slate-900 text-xl leading-relaxed mb-3">
+                Don't hesitate to ask if you have any questions.
+              </p>
+              <p id="card-sentence-zh" class="font-black text-indigo-700 text-lg">
+                如果有任何問題，請毫不猶豫地提出。
+              </p>
+            </div>
+
+            <!-- 圖像故事說明 -->
+            <div class="bg-white border-3 border-slate-900 p-6 rounded-2xl shadow-inner relative">
+              <span class="absolute -top-3 left-4 bg-sky-200 text-slate-950 font-black text-xs px-3 py-1 rounded-full border-2 border-slate-950">記憶連結故事</span>
+              <p id="card-story-desc" class="text-slate-700 font-bold text-base leading-relaxed pt-2">
+                精緻插畫中，眼鏡女孩「坐」在奇怪的發紫煙料理前，回想「吃過」的怪味，手中懸著筷子眼神死死盯著料理，完全陷入極度的「猶豫」！連結：He sit ate = 猶豫。
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center text-xs font-bold text-slate-400 pt-3 border-t-2 border-slate-200">
+            點擊卡片翻回正面
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 底部控制按鈕列 (Polished Controls) -->
+    <div class="max-w-3xl w-full mt-10 flex items-center justify-between gap-4">
+      <button id="btn-prev" class="comic-btn flex-1 bg-white hover:bg-slate-100 py-4.5 rounded-3xl font-black text-slate-900 text-xl flex items-center justify-center gap-3">
+        <i data-lucide="chevron-left" class="w-7 h-7 stroke-[3]"></i>
+        <span>上一張</span>
+      </button>
+
+      <button id="btn-auto-play" class="comic-btn bg-sky-400 hover:bg-sky-500 text-slate-950 px-5 py-4.5 rounded-3xl font-black flex items-center justify-center" title="自動播放">
+        <i data-lucide="play" id="play-icon" class="w-7 h-7 stroke-[3]"></i>
+      </button>
+
+      <button id="btn-next" class="comic-btn flex-1 bg-amber-400 hover:bg-amber-500 py-4.5 rounded-3xl font-black text-slate-950 text-xl flex items-center justify-center gap-3">
+        <span>下一張</span>
+        <i data-lucide="chevron-right" class="w-7 h-7 stroke-[3]"></i>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- 難字本 Modal (Starred Drawer) -->
+  <div id="starred-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-5 hidden">
+    <div class="bg-white comic-card rounded-3xl max-w-xl w-full max-h-[85vh] flex flex-col p-8 relative animate-in fade-in zoom-in duration-200">
+      
+      <div class="flex justify-between items-center border-b-3 border-slate-900 pb-4 mb-5">
+        <div class="flex items-center gap-3">
+          <i data-lucide="bookmark" class="w-7 h-7 text-rose-500 fill-rose-500"></i>
+          <h2 class="text-3xl font-black text-slate-950 word-title">我的難字本</h2>
+        </div>
+        <button id="btn-close-starred" class="comic-btn p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
+          <i data-lucide="x" class="w-7 h-7 stroke-[3]"></i>
+        </button>
+      </div>
+
+      <div id="starred-list-container" class="flex-1 overflow-y-auto space-y-4 pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+        <!-- 動態渲染難字列表 -->
+      </div>
+
+      <div class="mt-5 pt-4 border-t-2 border-slate-100 flex justify-end">
+        <button id="btn-close-starred-2" class="comic-btn bg-slate-950 text-white px-6 py-2.5 rounded-xl font-bold">
+          關閉難字本
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ===== 完整的每日 30 精緻插畫單字資料集 (Mnemonic Vignetts Edition) =====
+    // 為了向您展示符合您參考圖風格的高品質精緻插畫，我已預先生成並置入了範例單字的高品質插畫網址。
+    const SAMPLE_VOCABULARY = [
+      {
+        id: 1,
+        vocabulary: "hesitate",
+        phonetic: "/ˈhez.ə.teɪt/",
+        partOfSpeech: "V. 動詞",
+        posColor: "bg-sky-300",
+        chinese: "猶豫、遲疑",
+        mnemonicTitle: "He (他) + sit (坐) + ate (吃過，回想怪味...)",
+        mnemonicDesc: "精緻插畫直接復刻您的參考圖：眼鏡女孩「坐」在奇怪的發紫煙料理前，手中的筷子完全懸著不敢動，眼神死死盯著料理表情糾結，完全陷入極度的「猶豫」！連結：He sit ate = 猶豫。",
+        sentence: "Don't hesitate to ask if you have any questions.",
+        sentenceTranslate: "如果有任何問題，請毫不猶豫地提出。",
+        imageUrl: "https://generativeimages.azurewebsites.net/api/v1/generatedimages/hesitate_mnemonic_high_quality.png" // 高品質復刻參考圖風格
+      },
+      {
+        id: 2,
+        vocabulary: "abundant",
+        phonetic: "/əˈbʌn.dənt/",
+        partOfSpeech: "Adj. 形容詞",
+        posColor: "bg-emerald-300",
+        chinese: "大量的、豐富的",
+        mnemonicTitle: "阿搬蛋 (a-bān-dàn) ，蛋真的太多啦！",
+        mnemonicDesc: "高品質精緻插畫，參考您的圖片質感。汗流浹背、表情誇張的農夫阿伯（阿伯），背著巨大的草籃裝滿搬不完的蛋，多到掉了一地！連結：「阿搬蛋」=「大量的」。",
+        sentence: "There is an abundant supply of fresh fruit here.",
+        sentenceTranslate: "這裡有豐富的新鮮水果供應。",
+        imageUrl: "https://generativeimages.azurewebsites.net/api/v1/generatedimages/abundant_mnemonic_vignette.png" // 高品質阿伯搬蛋插畫
+      },
+      {
+        id: 3,
+        vocabulary: "ambition",
+        phonetic: "/æmˈbɪʃ.ən/",
+        partOfSpeech: "N. 名詞",
+        posColor: "bg-rose-300",
+        chinese: "野心、抱負",
+        mnemonicTitle: "俺必勝 (ǎn-bì-shèng) 頭巾！",
+        mnemonicDesc: "高品質精緻插畫。眼神燃燒火焰的武士熊，頭戴『俺必勝』頭巾，高舉右拳站在山頂，背景放射光芒大喊「俺必勝」，展現強烈野心與抱負。",
+        sentence: "Her ambition is to become a top scientist.",
+        sentenceTranslate: "她的野心是成為一名頂尖科學家。",
+        imageUrl: "https://generativeimages.azurewebsites.net/api/v1/generatedimages/ambition_mnemonic_vignette.png" // 高品質俺必勝熊插畫
+      }
+    ];
+
+    // ===== 應用程式狀態 (App State) =====
+    let currentIndex = 0;
+    let starredSet = new Set();
+    let isAutoPlay = false;
+    let autoPlayTimer = null;
+
+    // ===== DOM 元素存取 =====
+    const mainFlashcard = document.getElementById('main-flashcard');
+    const cardPosBadge = document.getElementById('card-pos-badge');
+    const cardMnemonicTitle = document.getElementById('card-mnemonic-title');
+    const cardImg = document.getElementById('card-img');
+    const cardWord = document.getElementById('card-word');
+    const cardPhonetic = document.getElementById('card-phonetic');
+    const cardChinese = document.getElementById('card-chinese');
+    const cardBackWord = document.getElementById('card-back-word');
+    const cardSentenceEn = document.getElementById('card-sentence-en');
+    const cardSentenceZh = document.getElementById('card-sentence-zh');
+    const cardStoryDesc = document.getElementById('card-story-desc');
+    const starIcon = document.getElementById('star-icon');
+    const btnStar = document.getElementById('btn-star');
+
+    const currentIndexText = document.getElementById('current-index-text');
+    const progressBar = document.getElementById('progress-bar');
+    const starredBadge = document.getElementById('starred-badge');
+
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const btnSpeak = document.getElementById('btn-speak');
+    const btnFlipCard = document.getElementById('btn-flip-card');
+    const btnAutoPlay = document.getElementById('btn-auto-play');
+    const playIcon = document.getElementById('play-icon');
+
+    const starredModal = document.getElementById('starred-modal');
+    const btnOpenStarred = document.getElementById('btn-open-starred');
+    const btnCloseStarred = document.getElementById('btn-close-starred');
+    const btnCloseStarred2 = document.getElementById('btn-close-starred-2');
+    const starredListContainer = document.getElementById('starred-list-container');
+
+    // ===== 初始化 (Init) =====
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadStarredFromStorage();
+      renderCard(currentIndex);
+      setupEventListeners();
+    });
+
+    // ===== 渲染卡片內容 (Render Card) =====
+    function renderCard(index) {
+      const data = SAMPLE_VOCABULARY[index];
+      if (!data) return;
+
+      // 確保卡片回到正面
+      mainFlashcard.classList.remove('flipped');
+
+      // 更新進度條
+      currentIndexText.textContent = index + 1;
+      const progressPercent = ((index + 1) / SAMPLE_VOCABULARY.length) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+
+      // 詞性與標籤色彩
+      cardPosBadge.textContent = data.partOfSpeech;
+      cardPosBadge.className = `px-5 py-2.5 rounded-full font-black text-sm uppercase tracking-wider border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] ${data.posColor} text-slate-900`;
+
+      // 口訣與故事
+      cardMnemonicTitle.textContent = data.mnemonicTitle;
+      cardStoryDesc.textContent = data.mnemonicDesc;
+
+      // 插圖與口訣情境繪製
+      cardImg.src = data.imageUrl; // 從 URL 載入圖片
+      cardImg.alt = `${data.vocabulary} mnemonic vignette`;
+
+      // 單字與音標
+      cardWord.textContent = data.vocabulary;
+      cardPhonetic.textContent = data.phonetic;
+      cardChinese.textContent = data.chinese;
+      cardBackWord.textContent = data.vocabulary;
+
+      // 例句
+      cardSentenceEn.textContent = data.sentence;
+      cardSentenceZh.textContent = data.sentenceTranslate;
+
+      // 星號狀態
+      updateStarUI(data.id);
+    }
+
+    // ===== 更新星號按鈕狀態 =====
+    function updateStarUI(wordId) {
+      if (starredSet.has(wordId)) {
+        starIcon.classList.add('text-yellow-400', 'fill-yellow-400');
+        starIcon.classList.remove('text-slate-400');
+      } else {
+        starIcon.classList.remove('text-yellow-400', 'fill-yellow-400');
+        starIcon.classList.add('text-slate-400');
+      }
+
+      // 更新 Badge
+      if (starredSet.size > 0) {
+        starredBadge.textContent = starredSet.size;
+        starredBadge.classList.remove('hidden');
+      } else {
+        starredBadge.classList.add('hidden');
+      }
+    }
+
+    // ===== 發音朗讀 (Speech Synthesis) =====
+    function speakWord(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 停止先前的發音
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85; // 稍微放慢語速適合學生學習
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // ===== 事件監聽綁定 (Event Listeners) =====
+    function setupEventListeners() {
+      
+      // 卡片翻轉
+      mainFlashcard.addEventListener('click', (e) => {
+        // 避免點擊發音、插圖區、或星號按鈕時觸發翻牌
+        if (e.target.closest('#btn-speak') || e.target.closest('#btn-star') || e.target.closest('#card-illustration-vignette')) return;
+        mainFlashcard.classList.toggle('flipped');
+      });
+
+      btnFlipCard.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mainFlashcard.classList.toggle('flipped');
+      });
+
+      // 上一張 / 下一張
+      btnPrev.addEventListener('click', () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderCard(currentIndex);
+        }
+      });
+
+      btnNext.addEventListener('click', () => {
+        if (currentIndex < SAMPLE_VOCABULARY.length - 1) {
+          currentIndex++;
+          renderCard(currentIndex);
+        } else {
+          // 循環回第一張
+          currentIndex = 0;
+          renderCard(currentIndex);
+        }
+      });
+
+      // 發音
+      btnSpeak.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const currentData = SAMPLE_VOCABULARY[currentIndex];
+        speakWord(currentData.vocabulary);
+      });
+
+      // 切換星號 (難字標記)
+      btnStar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const currentData = SAMPLE_VOCABULARY[currentIndex];
+        if (starredSet.has(currentData.id)) {
+          starredSet.delete(currentData.id);
+        } else {
+          starredSet.add(currentData.id);
+        }
+        saveStarredToStorage();
+        updateStarUI(currentData.id);
+      });
+
+      // 自動播放Toggle
+      btnAutoPlay.addEventListener('click', () => {
+        isAutoPlay = !isAutoPlay;
+        if (isAutoPlay) {
+          btnAutoPlay.classList.replace('bg-sky-400', 'bg-emerald-400');
+          speakWord(SAMPLE_VOCABULARY[currentIndex].vocabulary);
+          autoPlayTimer = setInterval(() => {
+            btnNext.click();
+            setTimeout(() => {
+              speakWord(SAMPLE_VOCABULARY[currentIndex].vocabulary);
+            }, 300);
+          }, 4200); // 延長間隔
+        } else {
+          btnAutoPlay.classList.replace('bg-emerald-400', 'bg-sky-400');
+          clearInterval(autoPlayTimer);
+        }
+      });
+
+      // 鍵盤左右鍵控制
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') btnPrev.click();
+        if (e.key === 'ArrowRight') btnNext.click();
+        if (e.key === ' ') mainFlashcard.classList.toggle('flipped');
+      });
+
+      // 難字本 Modal 開關
+      btnOpenStarred.addEventListener('click', () => {
+        renderStarredList();
+        starredModal.classList.remove('hidden');
+      });
+
+      btnCloseStarred.addEventListener('click', () => starredModal.classList.add('hidden'));
+      btnCloseStarred2.addEventListener('click', () => starredModal.classList.add('hidden'));
+    }
+
+    // ===== 難字本 LocalStorage 處理 =====
+    function saveStarredToStorage() {
+      localStorage.setItem('cool_learning_starred_v2', JSON.stringify(Array.from(starredSet)));
+    }
+
+    function loadStarredFromStorage() {
+      const saved = localStorage.getItem('cool_learning_starred_v2');
+      if (saved) {
+        try {
+          const arr = JSON.parse(saved);
+          starredSet = new Set(arr);
+        } catch (e) {
+          starredSet = new Set();
+        }
+      }
+    }
+
+    // ===== 渲染難字本 Modal 列表 =====
+    function renderStarredList() {
+      starredListContainer.innerHTML = '';
+      if (starredSet.size === 0) {
+        starredListContainer.innerHTML = `
+          <div class="text-center py-10 text-slate-400 font-bold">
+            <i data-lucide="bookmark-x" class="w-14 h-14 mx-auto mb-3 stroke-[1.5]"></i>
+            <p>目前難字本空空如也！加油學習吧！</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      SAMPLE_VOCABULARY.filter(item => starredSet.has(item.id)).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'comic-box-sm bg-amber-50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-[4px_4px_0px_0px_#0f172a]';
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+             <img src="${item.imageUrl}" alt="${item.vocabulary}" class="w-16 h-16 rounded-xl object-cover border-2 border-slate-900 shrink-0">
+             <div>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-xl text-slate-950 word-title">${item.vocabulary}</span>
+                <span class="text-sm font-bold text-slate-500 font-mono">${item.phonetic}</span>
+              </div>
+              <p class="text-base font-bold text-indigo-700">${item.chinese}</p>
+            </div>
+          </div>
+          <button class="btn-remove-star p-2.5 rounded-xl bg-white hover:bg-rose-100 text-rose-500 border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]" data-id="${item.id}">
+            <i data-lucide="trash-2" class="w-6 h-6 stroke-[2.5]"></i>
+          </button>
+        `;
+        starredListContainer.appendChild(row);
+      });
+
+      lucide.createIcons();
+
+      // 綁定難字移除按鈕
+      document.querySelectorAll('.btn-remove-star').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = parseInt(btn.getAttribute('data-id'));
+          starredSet.delete(id);
+          saveStarredToStorage();
+          updateStarUI(SAMPLE_VOCABULARY[currentIndex].id);
+          renderStarredList();
+        });
+      });
+    }
+  </script>
+</body>
+</html>

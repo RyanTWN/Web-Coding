@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  cool-learning-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cool-learning-api
+    ports:
+      - "4060:4060"     # 將 NAS 的 Port 4060 對映到容器的 Port 4060
+    restart: always      # NAS 開機或重啟時自動重新啟動容器
+    environment:
+      - NODE_ENV=production
+      - DB_PASSWORD=kakcsv3@Dmin0609
+      - UNSPLASH_ACCESS_KEY=t3umsrs_YLibVAEHKxZj_4e1GsQnInY0RWCTQP65XME

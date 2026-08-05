@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>數學天地 - 酷學習</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #fef3c7 100%);
+      min-height: 100vh;
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+    }
+    .card-flip-enter { animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .shake { animation: shakeError 0.4s ease-in-out; }
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+  </style>
+</head>
+<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen">
+
+  <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
+    <div id="toast-bg" class="bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-sm">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-white text-lg"></i>
+      <span id="toast-text">答對了！進入下一題</span>
+    </div>
+  </div>
+
+  <header id="global-header" class="w-full max-w-2xl mx-auto flex items-center justify-between bg-white/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/60 shadow-sm mb-4">
+    <div onclick="goToIndex()" class="flex items-center gap-3 cursor-pointer group">
+      <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 group-hover:bg-slate-200 flex items-center justify-center font-extrabold text-xl transition-colors">
+        <i class="fa-solid fa-chevron-left"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-black text-emerald-600 leading-tight tracking-wide">數學天地</h1>
+        <p class="text-[11px] text-slate-500 font-medium">國小六年級 每日動態演練</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 text-right">
+      <div>
+        <span id="header-user-name" class="block font-bold text-sm text-slate-800 leading-tight">載入中...</span>
+        <span id="header-user-seat" class="block text-[11px] text-emerald-600 font-semibold">座號: -</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 視圖 1: 設定範圍 -->
+  <section id="view-setup" class="w-full max-w-2xl mx-auto my-auto card-flip-enter">
+    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-3 shadow-md">
+          <i class="fa-solid fa-book-journal-whills"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 tracking-wide">選擇今日練習範圍</h2>
+        <p class="text-xs text-slate-500 mt-1 font-medium">依照小六各版本課綱，每天挑戰 10 題</p>
+      </div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-2 ml-1"><i class="fa-solid fa-building text-emerald-500 mr-1"></i> 出版社版本</label>
+          <div class="grid grid-cols-3 gap-2" id="publisher-grid">
+            <button class="pub-btn py-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-bold" data-pub="康軒">康軒</button>
+            <button class="pub-btn py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100" data-pub="翰林">翰林</button>
+            <button class="pub-btn py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100" data-pub="南一">南一</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-2 ml-1"><i class="fa-solid fa-list-ol text-emerald-500 mr-1"></i> 練習單元 (包含六上、六下)</label>
+          <select id="unit-select" class="w-full py-3.5 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:border-emerald-500 focus:outline-none font-bold text-slate-700 appearance-none">
+            <!-- 動態生成選項 -->
+          </select>
+        </div>
+
+        <button id="btn-start-math" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-4">
+          產生今日題目並開始 <i class="fa-solid fa-rocket"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 視圖 2: 測驗畫面 -->
+  <section id="view-quiz" class="w-full max-w-xl mx-auto my-auto hidden card-flip-enter">
+    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80">
+      <div class="flex justify-between items-center mb-4">
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold" id="quiz-unit-badge">單元名稱</span>
+        <span class="text-slate-400 font-bold text-sm" id="quiz-progress-text">第 1 / 10 題</span>
+      </div>
+      
+      <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mb-6">
+        <div id="quiz-progress-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 10%;"></div>
+      </div>
+
+      <div class="min-h-[120px] flex items-center justify-center bg-slate-50 rounded-2xl border-2 border-slate-100 p-6 mb-6">
+        <h3 id="question-text" class="text-2xl sm:text-3xl font-black text-slate-800 text-center leading-relaxed">題目載入中...</h3>
+      </div>
+
+      <div class="space-y-4">
+        <input type="text" id="answer-input" inputmode="text" placeholder="請輸入答案..." autocomplete="off" class="w-full py-4 px-6 rounded-2xl border-2 border-slate-200 bg-white focus:border-emerald-500 focus:outline-none font-bold text-2xl text-center shadow-inner text-slate-800">
+        <p class="text-center text-[11px] text-slate-400">💡 若答案為分數請用斜線表示 (例如: 1/2)。</p>
+        
+        <button id="btn-submit-answer" class="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-2xl shadow-lg transition-all active:scale-95 text-lg">
+          送出答案
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 視圖 3: 完成畫面 -->
+  <section id="view-result" class="w-full max-w-md mx-auto my-auto hidden card-flip-enter">
+    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white/80 text-center">
+      <div class="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center text-5xl mx-auto mb-4">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 class="text-2xl font-black text-slate-800 mb-2">太棒了！挑戰完成</h2>
+      <p class="text-sm text-slate-500 font-medium mb-6">今日的 10 題數學訓練已順利通關，歷程已同步至系統。</p>
+      
+      <button onclick="goToIndex()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl shadow-md transition-all">
+        回科目大廳
+      </button>
+    </div>
+  </section>
+
+  <script>
+    function goToIndex() {
+      try {
+        window.location.href = 'index.html';
+      } catch (error) {
+        showToast("已成功觸發返回，請於實際伺服器環境測試", "bg-emerald-600");
+      }
+    }
+
+    // 課綱資料庫 (完全精確對應您提供的六年級 Excel 內容)
+    const CURRICULUM = {
+      "康軒": [
+        "[六上] 1. 最大公因數與最小公倍數", "[六上] 2. 分數除法", "[六上] 3. 數量關係", "[六上] 4. 小數除法", "[六上] 5. 比與比值", "[六上] 6. 圓周長與扇形周長", "[六上] 7. 圓面積與扇形面積", "[六上] 8. 認識速率", "[六上] 9. 放大圖、縮圖與比例尺",
+        "[六下] 1. 小數與分數的計算", "[六下] 2. 速率的應用", "[六下] 3. 柱體體積與表面積", "[六下] 4. 基準量與比較量", "[六下] 5. 怎樣解題", "[六下] 6. 圓形圖"
+      ],
+      "翰林": [
+        "[六上] 1. 最大公因數與最小公倍數", "[六上] 2. 分數除法", "[六上] 3. 小數除法", "[六上] 4. 比與比值", "[六上] 5. 兩量關係", "[六上] 6. 圓周長與扇形周長", "[六上] 7. 放大、縮小與比例尺", "[六上] 8. 怎樣解題",
+        "[六下] 1. 分數與小數的四則運算", "[六下] 2. 圓面積與扇形面積", "[六下] 3. 速率", "[六下] 4. 統計圖表", "[六下] 5. 怎樣解題", "[六下] 6. 角柱與圓柱"
+      ],
+      "南一": [
+        "[六上] 1. 質因數分解和短除法", "[六上] 2. 分數的除法", "[六上] 3. 小數的除法", "[六上] 4. 圓周長和圓面積", "[六上] 5. 比和比值", "[六上] 6. 扇形的弧長和面積", "[六上] 7. 速率", "[六上] 8. 數量關係",
+        "[六下] 1. 四則混合運算", "[六下] 2. 柱體的體積和表面積", "[六下] 3. 基準量和比較量", "[六下] 4. 放大圖、縮圖和比例尺", "[六下] 5. 怎樣解題", "[六下] 6. 圓形圖"
+      ]
+    };
+
+    let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user'));
+    let selectedPub = "康軒"; // 預設改為康軒
+    let dailyQuestions = [];
+    let currentIndex = 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // 六年級專屬動態題型產生器
+    function generateQuestion(unit) {
+      let q = "", a = "";
+      const gcd = (x, y) => y === 0 ? x : gcd(y, x % y);
+
+      if (unit.includes("因數") || unit.includes("倍數") || unit.includes("短除法")) {
+         let base = Math.floor(Math.random() * 8) + 2;
+         let m1 = Math.floor(Math.random() * 4) + 1;
+         let m2 = Math.floor(Math.random() * 4) + 2;
+         let num1 = base * m1;
+         let num2 = base * m2;
+         if (Math.random() > 0.5) {
+             q = `求 ${num1} 和 ${num2} 的最大公因數？`;
+             a = gcd(num1, num2).toString();
+         } else {
+             q = `求 ${num1} 和 ${num2} 的最小公倍數？`;
+             a = ((num1 * num2) / gcd(num1, num2)).toString();
+         }
+      } 
+      else if (unit.includes("分數") || unit.includes("混合運算") || unit.includes("四則")) {
+         let den = Math.floor(Math.random() * 5) + 3;
+         let num1 = Math.floor(Math.random() * 5) + 1;
+         let num2 = Math.floor(Math.random() * 5) + 1;
+         
+         if (Math.random() > 0.5) {
+            q = `計算 (${num1}/${den}) ÷ (${num2}/${den}) = ? (請化為最簡分數)`;
+            let top = num1; let bottom = num2;
+            let div = gcd(top, bottom);
+            top /= div; bottom /= div;
+            a = bottom === 1 ? top.toString() : `${top}/${bottom}`;
+         } else {
+            q = `計算 (${num1}/${den}) × (${num2}/${num1}) = ? (請化為最簡分數)`;
+            let top = num2; let bottom = den;
+            let div = gcd(top, bottom);
+            top /= div; bottom /= div;
+            a = bottom === 1 ? top.toString() : `${top}/${bottom}`;
+         }
+      } 
+      else if (unit.includes("小數")) {
+         let n1 = Math.floor(Math.random() * 90) + 10;
+         let n2 = Math.floor(Math.random() * 9) + 1;
+         let m = n1 * n2;
+         q = `計算 ${m/10} ÷ ${n2/10} = ?`;
+         a = n1.toString();
+      } 
+      else if (unit.includes("比") && !unit.includes("比例尺")) {
+         let n1 = Math.floor(Math.random() * 5) + 1;
+         let n2 = Math.floor(Math.random() * 5) + 2;
+         let mult = Math.floor(Math.random() * 4) + 2;
+         q = `求 ${n1 * mult} : ${n2 * mult} 的比值？(請化為最簡分數，例如 1/2)`;
+         let div = gcd(n1, n2);
+         let top = n1 / div; let bottom = n2 / div;
+         a = bottom === 1 ? top.toString() : `${top}/${bottom}`;
+      } 
+      else if (unit.includes("圓") || unit.includes("扇形")) {
+         let r = Math.floor(Math.random() * 5) + 2;
+         if (Math.random() > 0.5) {
+            q = `半徑 ${r} 公分的圓，面積約是多少平方公分？(圓周率用 3.14計算)`;
+            a = (r * r * 3.14).toString();
+         } else {
+            q = `直徑 ${r * 2} 公分的圓，圓周長約是多少公分？(圓周率用 3.14計算)`;
+            a = (r * 2 * 3.14).toString();
+         }
+      } 
+      else if (unit.includes("速率")) {
+         let speed = Math.floor(Math.random() * 40) + 20;
+         let time = Math.floor(Math.random() * 4) + 2;
+         if (Math.random() > 0.5) {
+             q = `汽車時速 ${speed} 公里，行駛了 ${time} 小時，共行駛了幾公里？`;
+             a = (speed * time).toString();
+         } else {
+             q = `汽車行駛了 ${speed * time} 公里，花了 ${time} 小時，平均時速是幾公里？`;
+             a = speed.toString();
+         }
+      } 
+      else if (unit.includes("體積") || unit.includes("柱") || unit.includes("表面積")) {
+         let baseArea = Math.floor(Math.random() * 20) + 10;
+         let height = Math.floor(Math.random() * 10) + 5;
+         q = `某個柱體的底面積是 ${baseArea} 平方公分，高是 ${height} 公分，此柱體的體積是幾立方公分？`;
+         a = (baseArea * height).toString();
+      } 
+      else if (unit.includes("解題") || unit.includes("關係") || unit.includes("基準量") || unit.includes("比較量")) {
+         let heads = Math.floor(Math.random() * 10) + 5;
+         let rabbits = Math.floor(Math.random() * (heads - 2)) + 1;
+         let chickens = heads - rabbits;
+         let legs = rabbits * 4 + chickens * 2;
+         q = `【雞兔問題】農場裡有雞和兔子共 ${heads} 隻，牠們共有 ${legs} 隻腳。請問兔子有幾隻？`;
+         a = rabbits.toString();
+      } 
+      else if (unit.includes("比例尺") || unit.includes("縮圖") || unit.includes("放大")) {
+         let scale = Math.floor(Math.random() * 5) * 100 + 500;
+         let mapDist = Math.floor(Math.random() * 8) + 2;
+         q = `在一張比例尺為 1 : ${scale} 的地圖上，一段道路長 ${mapDist} 公分。這段道路實際長度是幾公分？`;
+         a = (scale * mapDist).toString();
+      } 
+      else if (unit.includes("圖") || unit.includes("統計")) {
+         let total = 200;
+         let part = Math.floor(Math.random() * 4) * 10 + 20;
+         q = `班上進行投票，總票數 ${total} 票。若甲候選人得票數占了 ${part}%，請問甲得了幾票？`;
+         a = (total * part / 100).toString();
+      } 
+      else {
+         // 預防萬一的基本運算
+         let n1 = Math.floor(Math.random() * 20) + 10;
+         let n2 = Math.floor(Math.random() * 20) + 10;
+         q = `計算 ${n1} + ${n2} = ?`;
+         a = (n1 + n2).toString();
+      }
+      return { q, a };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 檢查是否登入防呆處理
+      if (!currentUser) {
+        try {
+          if (window.top !== window.self) currentUser = { name: "測試學生(預覽)", seatNo: "99999" };
+          else { window.location.href = 'index.html'; return; }
+        } catch (e) {
+          currentUser = { name: "測試學生(預覽)", seatNo: "99999" };
+        }
+      }
+
+      document.getElementById('header-user-name').textContent = currentUser.name;
+      document.getElementById('header-user-seat').textContent = `座號: ${currentUser.seatNo}`;
+      
+      updateUnitDropdown();
+      checkDailyState();
+
+      // 出版社按鈕切換
+      document.querySelectorAll('.pub-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.pub-btn').forEach(b => {
+            b.className = "pub-btn py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100";
+          });
+          e.target.className = "pub-btn py-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-bold";
+          selectedPub = e.target.getAttribute('data-pub');
+          updateUnitDropdown();
+        });
+      });
+
+      document.getElementById('btn-start-math').onclick = startMathQuiz;
+      
+      document.getElementById('btn-submit-answer').onclick = submitAnswer;
+      document.getElementById('answer-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') submitAnswer();
+      });
+    });
+
+    function updateUnitDropdown() {
+      const select = document.getElementById('unit-select');
+      select.innerHTML = '';
+      CURRICULUM[selectedPub].forEach(unit => {
+        let opt = document.createElement('option');
+        opt.value = unit;
+        opt.textContent = unit;
+        select.appendChild(opt);
+      });
+    }
+
+    function checkDailyState() {
+      const savedState = localStorage.getItem(`g6_math_daily_${currentUser.seatNo}_${todayStr}`);
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        if (state.completed) {
+          showView('view-result');
+        } else {
+          dailyQuestions = state.questions;
+          currentIndex = state.currentIndex;
+          document.getElementById('quiz-unit-badge').textContent = state.unit;
+          showView('view-quiz');
+          renderQuestion();
+        }
+      }
+    }
+
+    function startMathQuiz() {
+      const unit = document.getElementById('unit-select').value;
+      dailyQuestions = [];
+      for (let i = 0; i < 10; i++) {
+        dailyQuestions.push(generateQuestion(unit));
+      }
+      currentIndex = 0;
+      saveState(unit, false);
+      document.getElementById('quiz-unit-badge').textContent = unit;
+      showView('view-quiz');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      document.getElementById('quiz-progress-text').textContent = `第 ${currentIndex + 1} / 10 題`;
+      document.getElementById('quiz-progress-bar').style.width = `${((currentIndex + 1) / 10) * 100}%`;
+      document.getElementById('question-text').textContent = dailyQuestions[currentIndex].q;
+      const input = document.getElementById('answer-input');
+      input.value = '';
+      input.focus();
+    }
+
+    function submitAnswer() {
+      const input = document.getElementById('answer-input');
+      const userAnswer = input.value.trim().toLowerCase();
+      const correctAnswer = dailyQuestions[currentIndex].a.toLowerCase();
+
+      if (userAnswer === correctAnswer) {
+        showToast("✅ 答對了！直接進入下一題", "bg-emerald-600");
+        currentIndex++;
+        
+        if (currentIndex >= 10) {
+          saveState(document.getElementById('quiz-unit-badge').textContent, true);
+          saveHistoryRecord();
+          setTimeout(() => showView('view-result'), 600);
+        } else {
+          saveState(document.getElementById('quiz-unit-badge').textContent, false);
+          renderQuestion();
+        }
+      } else {
+        const inputEl = document.getElementById('answer-input');
+        inputEl.classList.add('shake', 'border-rose-500', 'text-rose-600');
+        showToast("❌ 答案錯誤，請重新計算！", "bg-rose-600");
+        
+        setTimeout(() => {
+          inputEl.classList.remove('shake', 'border-rose-500', 'text-rose-600');
+          inputEl.value = '';
+          inputEl.focus();
+        }, 500);
+      }
+    }
+
+    function saveState(unit, isCompleted) {
+      const state = { unit: unit, questions: dailyQuestions, currentIndex: currentIndex, completed: isCompleted };
+      localStorage.setItem(`g6_math_daily_${currentUser.seatNo}_${todayStr}`, JSON.stringify(state));
+    }
+
+    function saveHistoryRecord() {
+      const completedDates = new Set(JSON.parse(localStorage.getItem(`g6_math_completed_${currentUser.seatNo}`)) || []);
+      completedDates.add(todayStr);
+      localStorage.setItem(`g6_math_completed_${currentUser.seatNo}`, JSON.stringify([...completedDates]));
+
+      const history = JSON.parse(localStorage.getItem(`g6_math_history_${currentUser.seatNo}`)) || [];
+      history.unshift({
+        date: new Date().toLocaleString(),
+        unit: document.getElementById('quiz-unit-badge').textContent,
+        score: 100
+      });
+      localStorage.setItem(`g6_math_history_${currentUser.seatNo}`, JSON.stringify(history));
+    }
+
+    function showToast(text, bgClass) {
+      const container = document.getElementById('toast-container');
+      const bg = document.getElementById('toast-bg');
+      document.getElementById('toast-text').textContent = text;
+      bg.className = `${bgClass} text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-sm`;
+      
+      container.classList.remove('-translate-y-12', 'opacity-0', 'pointer-events-none');
+      container.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        container.classList.remove('translate-y-0', 'opacity-100');
+        container.classList.add('-translate-y-12', 'opacity-0', 'pointer-events-none');
+      }, 2000);
+    }
+
+    function showView(viewId) {
+      document.getElementById('view-setup').classList.add('hidden');
+      document.getElementById('view-quiz').classList.add('hidden');
+      document.getElementById('view-result').classList.add('hidden');
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
