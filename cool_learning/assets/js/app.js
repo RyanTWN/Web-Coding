@@ -168,17 +168,16 @@ function renderCard() {
 
   const imgEl = document.getElementById('card-image');
   if (imgEl) {
-    // 【AI 動態生成圖片 - 2026 最新版 gen.pollinations.ai API】
     if (item.img) {
       imgEl.src = item.img;
     } else {
-      // 組合提示詞 (Prompt)：單字、釋義、漫畫風格，加上 nologo 隱藏浮水印
-      const promptText = `${item.vocabulary} (${item.chinese}), cute comic book illustration style, isolated on solid light blue background, no text, no letters, highly detailed`;
+      // 【2026/08 最新 Pollinations AI 免費生成格式】
+      const promptText = `${item.vocabulary} (${item.chinese}), cute comic book illustration style, solid light blue background, highly detailed, no text`;
       const prompt = encodeURIComponent(promptText);
       const seed = item.id || item.vocabulary.length; 
       
-      // 改用最新官方推薦的 /image/ 端點
-      imgEl.src = `https://gen.pollinations.ai/image/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
+      // 正確的格式：https://pollinations.ai/prompt/{提示詞}
+      imgEl.src = `https://pollinations.ai/prompt/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
     }
   }
   
