@@ -317,9 +317,33 @@
     </div>
   </section>
 
-  <script src="assets/js/app.js"></script>
+<script src="assets/js/app.js"></script>
   <script src="assets/js/quiz.js"></script> 
   
+  <!-- 新增：網頁載入完成後的初始化邏輯 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. 檢查是否有登入的使用者
+      if (!currentUser) {
+        // 如果沒有登入，將使用者導回首頁
+        window.location.assign('index.html');
+        return;
+      }
+
+      // 2. 更新右上角的使用者資訊
+      const hName = document.getElementById('header-user-name');
+      const hSeat = document.getElementById('header-user-seat');
+      if (hName) hName.textContent = currentUser.name;
+      if (hSeat) hSeat.textContent = `座號: ${currentUser.seatNo}`;
+      
+      // 3. 確保單字卡區塊有顯示
+      switchAppTab('learn');
+
+      // 4. 主動觸發：向資料庫抓取單字資料，並將其渲染到畫面上
+      loadStudentAppData(currentUser.seatNo);
+    });
+  </script>
+
   <script>
     window.showToast = window.showToast || function(text, iconClass = "fa-circle-info") {
       const container = document.getElementById('toast-container');
