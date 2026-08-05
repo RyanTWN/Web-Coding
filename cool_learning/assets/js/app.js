@@ -431,16 +431,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 初始化畫面狀態
-  if (currentUser) {
-    if (currentUser.isAdmin) {
-        showView('view-admin');
+// 初始化畫面狀態：先判斷是否在首頁 (是否有登入區塊)
+  const loginView = document.getElementById('view-login');
+  if (loginView) {
+    if (currentUser) {
+      if (currentUser.isAdmin) {
+          showView('view-admin');
+      } else {
+        const subjectUserEl = document.getElementById('subject-user-name');
+        if (subjectUserEl) subjectUserEl.textContent = currentUser.name;
+        showView('view-subjects');
+      }
     } else {
-      const subjectUserEl = document.getElementById('subject-user-name');
-      if (subjectUserEl) subjectUserEl.textContent = currentUser.name;
-      showView('view-subjects');
+      showView('view-login');
     }
   } else {
-    showView('view-login');
+    // 如果不在首頁 (例如在 english.html)，確保顯示專屬的區塊
+    const englishApp = document.getElementById('view-english-app');
+    if (englishApp) {
+      englishApp.classList.remove('hidden');
+    }
   }
 });
