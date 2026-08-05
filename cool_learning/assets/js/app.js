@@ -168,19 +168,23 @@ function switchAppTab(tabId) {
  * @returns {string} 完整的圖片 URL
  */
 function getVocabularyImageUrl(word, meaning) {
-    const prompt = `A cute anime chibi style illustration of a little girl with long hair exploring the concept of the English word "${word}". The scene visually and creatively represents its meaning: "${meaning}". Soft pastel colors, warm lighting, highly detailed, masterpiece, educational children book style. The little girl is interacting with the object or concept.`;
+    // 優化提示詞：明確描述小女孩特徵，並強調與含義的視覺化互動
+    // 我們將女孩描述為「擁有流動棕色長髮、 cheerful 的年輕學徒」，
+    // 並穿著「火焰圖案連身裙」以呼應記憶法。
+    const prompt = `A cute anime chibi style illustration of a long-haired little girl, like a cheerful young apprentice with flowing brown hair, wearing a stylized, flame-patterned dress. The girl is actively exploring the concept of the English word "${word}", visually and creatively representing its meaning: "${meaning}". The girl is interacting with objects or concepts related to the meaning. Warm lighting, highly detailed, educational children's book style.`;
     
     const encodedPrompt = encodeURIComponent(prompt);
 
     // 記憶卡防呆機制：使用單字的字元碼來產生一個固定的「種子碼 (seed)」
+    // 這能讓同一個單字在 Pollinations 的不同请求中，內容維持一定的穩定度。
     let fixedSeed = 0;
     for (let i = 0; i < word.length; i++) {
         fixedSeed += word.charCodeAt(i);
     }
     fixedSeed = fixedSeed * 1024 + 42; 
 
-    // 使用官方最新 GET 端點，並指定 model=flux 與 seed
-    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&model=flux&seed=${fixedSeed}`;
+    // 💡 重要優化：加上 _cb 參數強制瀏覽器繞過快取，確保每次單字切換都能載入新圖。
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&model=flux&seed=${fixedSeed}&_cb=${Date.now()}`;
 }
 
 // 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
@@ -191,9 +195,13 @@ function renderCard() {
     // 1. 渲染圖片
     const imgEl = document.getElementById('card-image');
     if (imgEl) {
+        // 💡 優化：在載入新圖片前先清空 src，有助於瀏覽器流暢切換。
+        imgEl.src = '';
         if (item.img) {
+            // 如果資料庫中已經有指定好的真實圖片，優先顯示
             imgEl.src = item.img;
         } else {
+            // 呼叫函數產生網址。函數內部會處理強制快取清除、seed 計算與提示詞優化
             imgEl.src = getVocabularyImageUrl(item.vocabulary, item.chinese);
         }
     }
