@@ -167,7 +167,20 @@ function renderCard() {
   const item = today30Words[currentIndex];
 
   const imgEl = document.getElementById('card-image');
-  if (imgEl) imgEl.src = item.img || `https://placehold.co/300x300/e0f2fe/0284c7?text=${encodeURIComponent(item.vocabulary)}`;
+  if (imgEl) {
+    // 【AI 動態生成圖片】
+    // 如果資料庫有自訂圖片，就用資料庫的。
+    // 如果沒有，就使用 Pollinations AI 免費服務即時生成具有「單字關聯性」與「可愛漫畫風」的圖片！
+    if (item.img) {
+      imgEl.src = item.img;
+    } else {
+      // 組合提示詞 (Prompt)：包含單字、釋義，並指定卡通漫畫風格，確保沒有文字在圖中
+      const prompt = encodeURIComponent(`${item.vocabulary} (${item.chinese}), cute comic book illustration style, solid light blue background, no text, colorful, highly detailed`);
+      // 加上亂數種子(seed)，確保同一個單字每次生成的圖片都是固定的
+      const seed = item.id || item.vocabulary.length; 
+      imgEl.src = `https://pollinations.ai/p/${prompt}?width=400&height=400&seed=${seed}&nologo=true`;
+    }
+  }
   
   const wordEl = document.getElementById('card-word');
   if (wordEl) wordEl.textContent = item.vocabulary;
