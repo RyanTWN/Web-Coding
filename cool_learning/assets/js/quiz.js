@@ -185,6 +185,20 @@ function nextQuizQuestion() {
       const history = JSON.parse(localStorage.getItem(historyKey)) || [];
       history.unshift({ modeName: currentQuizMode, score: finalScore, timestamp: new Date().toLocaleString() });
       localStorage.setItem(historyKey, JSON.stringify(history));
+      saveQuizResultToCloud(currentQuizMode, finalScore);
     }
+  }
+}
+
+async function saveQuizResultToCloud(mode, score) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/quiz-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seatNo: currentUser.seatNo, mode, score })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    console.error('測驗紀錄同步失敗，紀錄仍保留於本機', error);
   }
 }

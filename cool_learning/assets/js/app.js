@@ -15,6 +15,8 @@ let completedDates = new Set();
 let learnedWordIds = new Set();
 let calendarViewDate = new Date();
 let modalCallback = null;
+const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
+let progressSyncTimer = null;
 
 // UI 通知系統 (加入防呆)
 function showToast(text, iconClass = "fa-circle-info") {
@@ -55,7 +57,7 @@ function speakText(text) {
 // 核心功能 1: 從後端獲取單字
 async function fetchDailyWordsFromCloud(studentId) {
     try {
-        const response = await fetch(`https://learning.ifit.myds.me:4061/api/get-daily-words?studentId=${studentId}`);
+        const response = await fetch(`${API_BASE_URL}/get-daily-words?studentId=${encodeURIComponent(studentId)}`);
         const result = await response.json();
         
         if (result.success) {
@@ -83,6 +85,53 @@ function saveStudentAppData() {
   const todayStr = new Date().toISOString().split('T')[0];
   localStorage.setItem(`g6_daily_words_${seatNo}_${todayStr}`, JSON.stringify(today30Words));
   localStorage.setItem(`g6_daily_index_${seatNo}_${todayStr}`, currentIndex);
+  scheduleProgressSync();
+}
+
+function scheduleProgressSync() {
+  clearTimeout(progressSyncTimer);
+  progressSyncTimer = setTimeout(() => syncStudentProgressToCloud(), 500);
+}
+
+async function syncStudentProgressToCloud() {
+  if (!currentUser || currentUser.isAdmin) return;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  try {
+    const response = await fetch(`${API_BASE_URL}/student-progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seatNo: currentUser.seatNo,
+        learningDate: todayStr,
+        currentWordIndex: currentIndex,
+        completed: completedDates.has(todayStr),
+        completedDates: [...completedDates],
+        learnedWordIds: [...learnedWordIds],
+        starredIds: [...starredIds],
+        starredWords: [...starredWordsMap.values()],
+        starredSpellingCounts
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    // localStorage 保留離線資料；下一次操作時會再次同步。
+    console.error('學習進度同步失敗，已保留於本機等待重試', error);
+  }
+}
+
+async function loadStudentProgressFromCloud(seatNo) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/student-progress?seatNo=${encodeURIComponent(seatNo)}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    if (!result.success || !result.data) return null;
+    return result.data;
+  } catch (error) {
+    console.error('雲端進度載入失敗，改用本機快取', error);
+    return null;
+  }
 }
 
 async function loadStudentAppData(seatNo) {
@@ -92,18 +141,32 @@ async function loadStudentAppData(seatNo) {
   
   starredSpellingCounts = JSON.parse(localStorage.getItem(`g6_vocab_starred_spelling_${seatNo}`)) || {};
   completedDates = new Set(JSON.parse(localStorage.getItem(`g6_vocab_completed_${seatNo}`)) || []);
+  learnedWordIds = new Set(JSON.parse(localStorage.getItem(`g6_learned_ids_${seatNo}`)) || []);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const cachedWords = JSON.parse(localStorage.getItem(`g6_daily_words_${seatNo}_${todayStr}`));
   const cachedIndex = localStorage.getItem(`g6_daily_index_${seatNo}_${todayStr}`);
+  const cloudProgress = await loadStudentProgressFromCloud(seatNo);
+
+  if (cloudProgress) {
+    completedDates = new Set([...completedDates, ...(cloudProgress.completedDates || [])]);
+    learnedWordIds = new Set([...learnedWordIds, ...(cloudProgress.learnedWordIds || [])]);
+    starredIds = new Set([...starredIds, ...(cloudProgress.starredIds || [])]);
+    (cloudProgress.starredWords || []).forEach(word => starredWordsMap.set(word.id, word));
+    starredSpellingCounts = { ...starredSpellingCounts, ...(cloudProgress.starredSpellingCounts || {}) };
+  }
 
   if (cachedWords && cachedWords.length > 0) {
     today30Words = cachedWords;
-    currentIndex = cachedIndex ? parseInt(cachedIndex, 10) : 0;
+    const localIndex = cachedIndex ? parseInt(cachedIndex, 10) : 0;
+    const cloudIndex = cloudProgress?.learningDate === todayStr ? Number(cloudProgress.currentWordIndex || 0) : 0;
+    currentIndex = Math.max(localIndex, cloudIndex);
   } else {
     const dailyWords = await fetchDailyWordsFromCloud(seatNo);
     today30Words = dailyWords || [];
-    currentIndex = 0;
+    currentIndex = cloudProgress?.learningDate === todayStr
+      ? Number(cloudProgress.currentWordIndex || 0)
+      : 0;
     saveStudentAppData(); 
   }
 
@@ -111,6 +174,7 @@ async function loadStudentAppData(seatNo) {
     showToast("今日單字載入失敗，請確認伺服器連線", "fa-triangle-exclamation");
     return;
   }
+  saveStudentAppData();
   renderCard();
 }
 

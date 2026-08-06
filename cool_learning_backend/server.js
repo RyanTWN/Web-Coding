@@ -21,6 +21,23 @@ const pool = mysql.createPool({
   connectionLimit: 10
 });
 
+async function initializeDatabaseSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS student_learning_state (
+      seat_no VARCHAR(32) PRIMARY KEY,
+      learning_date DATE NULL,
+      current_word_index INT NOT NULL DEFAULT 0,
+      completed TINYINT(1) NOT NULL DEFAULT 0,
+      completed_dates LONGTEXT NOT NULL,
+      learned_word_ids LONGTEXT NOT NULL,
+      starred_ids LONGTEXT NOT NULL,
+      starred_words LONGTEXT NOT NULL,
+      starred_spelling_counts LONGTEXT NOT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 // [API] 學生登入
 app.post('/api/login', async (req, res) => {
   const { name, seatNo } = req.body;
@@ -120,6 +137,103 @@ app.get('/api/get-daily-words', async (req, res) => {
     }
 });
 
+// [API] 讀取學生完整學習狀態，供跨裝置與重新載入時同步。
+app.get('/api/student-progress', async (req, res) => {
+  const { seatNo } = req.query;
+  if (!seatNo) return res.status(400).json({ success: false, error: '缺少座號' });
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT seat_no, DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date,
+              current_word_index, completed,
+              completed_dates, learned_word_ids, starred_ids, starred_words,
+              starred_spelling_counts, updated_at
+       FROM student_learning_state WHERE seat_no = ?`,
+      [seatNo]
+    );
+
+    if (rows.length === 0) return res.json({ success: true, data: null });
+    const row = rows[0];
+    const parseJson = (value, fallback) => {
+      try { return JSON.parse(value); } catch (_) { return fallback; }
+    };
+
+    res.json({
+      success: true,
+      data: {
+        seatNo: row.seat_no,
+        learningDate: row.learning_date || null,
+        currentWordIndex: row.current_word_index,
+        completed: Boolean(row.completed),
+        completedDates: parseJson(row.completed_dates, []),
+        learnedWordIds: parseJson(row.learned_word_ids, []),
+        starredIds: parseJson(row.starred_ids, []),
+        starredWords: parseJson(row.starred_words, []),
+        starredSpellingCounts: parseJson(row.starred_spelling_counts, {}),
+        updatedAt: row.updated_at
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// [API] 儲存學生完整學習狀態；完成當日學習時同步寫入 learning_progress。
+app.post('/api/student-progress', async (req, res) => {
+  const {
+    seatNo, learningDate, currentWordIndex = 0, completed = false,
+    completedDates = [], learnedWordIds = [], starredIds = [],
+    starredWords = [], starredSpellingCounts = {}
+  } = req.body;
+
+  if (!seatNo || !learningDate) {
+    return res.status(400).json({ success: false, error: '缺少座號或學習日期' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    await connection.query(
+      `INSERT INTO student_learning_state
+        (seat_no, learning_date, current_word_index, completed, completed_dates,
+         learned_word_ids, starred_ids, starred_words, starred_spelling_counts)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         learning_date = VALUES(learning_date),
+         current_word_index = VALUES(current_word_index),
+         completed = VALUES(completed),
+         completed_dates = VALUES(completed_dates),
+         learned_word_ids = VALUES(learned_word_ids),
+         starred_ids = VALUES(starred_ids),
+         starred_words = VALUES(starred_words),
+         starred_spelling_counts = VALUES(starred_spelling_counts)`,
+      [
+        seatNo, learningDate, Number(currentWordIndex) || 0, completed ? 1 : 0,
+        JSON.stringify(completedDates), JSON.stringify(learnedWordIds),
+        JSON.stringify(starredIds), JSON.stringify(starredWords),
+        JSON.stringify(starredSpellingCounts)
+      ]
+    );
+
+    if (completed) {
+      await connection.query(
+        `INSERT INTO learning_progress (seat_no, completed_date, learned_word_ids)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE learned_word_ids = VALUES(learned_word_ids)`,
+        [seatNo, learningDate, JSON.stringify(learnedWordIds)]
+      );
+    }
+
+    await connection.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    connection.release();
+  }
+});
+
 // [API] 學習打卡
 app.post('/api/complete-learning', async (req, res) => {
   const { seatNo, completedDate, learnedWordIds } = req.body;
@@ -163,4 +277,9 @@ app.get('/api/admin/analytics', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.listen(4060, () => console.log('酷學習 API 服務已在 Port 4060 啟動'));
+initializeDatabaseSchema()
+  .then(() => app.listen(4060, () => console.log('酷學習 API 服務已在 Port 4060 啟動')))
+  .catch(err => {
+    console.error('資料庫結構初始化失敗:', err);
+    process.exit(1);
+  });
