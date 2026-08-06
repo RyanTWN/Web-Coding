@@ -1,15 +1,29 @@
-version: '3.8'
-
 services:
+  cool-learning-web:
+    image: ghcr.io/ryantwn/web-coding-frontend:${IMAGE_TAG:-latest}
+    container_name: cool-learning-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/english.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   cool-learning-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/ryantwn/web-coding-backend:${IMAGE_TAG:-latest}
     container_name: cool-learning-api
     ports:
-      - "4060:4060"     # 將 NAS 的 Port 4060 對映到容器的 Port 4060
-    restart: always      # NAS 開機或重啟時自動重新啟動容器
+      - "${API_PORT:-4060}:4060"
+    restart: always
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
-      - DB_PASSWORD=kakcsv3@Dmin0609
-      - UNSPLASH_ACCESS_KEY=t3umsrs_YLibVAEHKxZj_4e1GsQnInY0RWCTQP65XME
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4060/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

@@ -1,0 +1,6 @@
+.env
+compose.yaml
+deploy-nas.sh
+DEPLOYMENT.md
+node_modules
+npm-debug.log*

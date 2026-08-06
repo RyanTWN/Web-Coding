@@ -5,6 +5,7 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const API_BASE_URL = "https://learning.ifit.myds.me:4061/api/login";
+const APP_VERSION = process.env.APP_VERSION || 'development';
 
 const app = express();
 app.use(cors());
@@ -13,12 +14,21 @@ app.use(express.json());
 // 設定 MariaDB 連線池
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '192.168.173.200', // ⚠️ 請改成您的 Synology NAS 局域網 IP
-  port: 3306,
-  user: 'root',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD, // 改由環境變數讀取密碼
-  database: 'cool_learning',
+  database: process.env.DB_NAME || 'cool_learning',
   waitForConnections: true,
   connectionLimit: 10
+});
+
+app.get('/api/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', version: APP_VERSION, database: 'connected' });
+  } catch (err) {
+    res.status(503).json({ status: 'error', version: APP_VERSION, database: 'unavailable' });
+  }
 });
 
 async function initializeDatabaseSchema() {
