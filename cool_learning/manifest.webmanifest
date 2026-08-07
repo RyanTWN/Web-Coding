@@ -1,0 +1,21 @@
+{
+  "name": "酷學習 Cool Learning",
+  "short_name": "酷學習",
+  "description": "國小六年級自主學習平台",
+  "lang": "zh-TW",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#e9ece8",
+  "theme_color": "#71899d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

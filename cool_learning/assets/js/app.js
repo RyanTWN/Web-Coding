@@ -307,11 +307,41 @@ function getPartOfSpeechLabel(item) {
 
 function getResponsiveWordSize(word) {
   const length = Array.from(word).length;
-  if (length <= 8) return '3.6rem';
-  if (length <= 12) return '3rem';
-  if (length <= 16) return '2.45rem';
-  if (length <= 20) return '1.95rem';
-  return '1.55rem';
+  if (length <= 8) return '4.6rem';
+  if (length <= 12) return '3.6rem';
+  if (length <= 16) return '2.85rem';
+  if (length <= 20) return '2.2rem';
+  return '1.7rem';
+}
+
+function setupColorThemeSwitcher() {
+  const allowedThemes = new Set(['blue', 'green', 'pink']);
+  const storedTheme = localStorage.getItem('cool_learning_color_theme');
+  const initialTheme = allowedThemes.has(storedTheme) ? storedTheme : 'blue';
+  const themeColors = { blue: '#71899d', green: '#788e80', pink: '#a98283' };
+
+  const applyTheme = (theme) => {
+    if (!allowedThemes.has(theme)) return;
+    document.body.dataset.colorTheme = theme;
+    localStorage.setItem('cool_learning_color_theme', theme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColors[theme]);
+    document.querySelectorAll('.theme-swatch').forEach((button) => {
+      const isActive = button.dataset.theme === theme;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    });
+  };
+
+  document.querySelectorAll('.theme-swatch').forEach((button) => {
+    button.addEventListener('click', () => applyTheme(button.dataset.theme));
+  });
+  applyTheme(initialTheme);
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
 }
 
 // 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
@@ -503,6 +533,7 @@ function renderCalendar() {
 // 💡 事件接管綁定區 (使用 ?. 徹底解決 null 報錯問題)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+  setupColorThemeSwitcher();
   if (currentUser && !currentUser.token) {
     currentUser = null;
     sessionStorage.removeItem('g6_portal_user');

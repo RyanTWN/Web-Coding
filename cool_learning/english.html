@@ -2,7 +2,14 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#71899d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="酷學習">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
   <title>酷學習 Cool Learning - 英文學習區</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -788,6 +795,104 @@
       #flashcard .flip-card-front > div:last-child,
       #flashcard .flip-card-back > div:last-child { display: none; }
     }
+
+    /* Theme switcher and enhanced study-card scale. */
+    body[data-color-theme="blue"] {
+      --theme-primary: #71899d;
+      --theme-soft: #dce5e9;
+      --theme-accent: #8fa6b7;
+      --morandi-blue: #8fa6b7;
+      --morandi-blue-deep: #71899d;
+    }
+    body[data-color-theme="green"] {
+      --theme-primary: #788e80;
+      --theme-soft: #dfe7df;
+      --theme-accent: #9eafa2;
+      --morandi-blue: #9eafa2;
+      --morandi-blue-deep: #788e80;
+    }
+    body[data-color-theme="pink"] {
+      --theme-primary: #a98283;
+      --theme-soft: #eadedc;
+      --theme-accent: #c3a09e;
+      --morandi-blue: #c3a09e;
+      --morandi-blue-deep: #a98283;
+    }
+    #global-header {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      column-gap: 12px;
+    }
+    #btn-go-home { justify-self: start; min-width: 0; }
+    #user-profile-badge { justify-self: end; }
+    .brand-lockup { min-width: 0; text-align: left; }
+    .brand-zh,
+    .brand-en { display: block; margin: 0; white-space: nowrap; }
+    .brand-zh { color: #46545e; font-size: 17px; font-weight: 900; line-height: 1.05; letter-spacing: .06em; }
+    .brand-en { margin-top: 3px; color: #74818a; font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: .035em; }
+    .theme-switcher {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 6px 8px;
+      border: 1px solid rgba(113,137,157,.16);
+      border-radius: 999px;
+      background: rgba(245,241,234,.78);
+    }
+    .theme-swatch {
+      position: relative;
+      width: 25px;
+      height: 25px;
+      border: 3px solid rgba(255,255,255,.88);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(77,89,98,.14);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .theme-swatch:hover { transform: translateY(-1px) scale(1.05); }
+    .theme-swatch.is-active {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 2px #fbfaf7, 0 0 0 4px var(--theme-primary, #71899d);
+    }
+    .theme-swatch-blue { background: #8199aa; }
+    .theme-swatch-green { background: #899d8e; }
+    .theme-swatch-pink { background: #b89090; }
+    #global-header #btn-go-home > div:first-child,
+    .tab-btn.is-active,
+    .tab-btn.bg-brand-500,
+    #btn-next-word { background: linear-gradient(135deg, var(--theme-primary, #71899d), var(--theme-accent, #8fa6b7)) !important; }
+    #btn-speak-word { color: var(--theme-primary, #71899d); background: var(--theme-soft, #dce5e9); }
+    #btn-speak-word:hover { color: white; background: var(--theme-primary, #71899d); }
+    #progress-container > div:last-child { height: 14px !important; }
+    #card-word {
+      font-size: min(var(--word-size), 13vw);
+      font-weight: 650;
+      line-height: 1;
+    }
+    .word-part-of-speech { font-size: 14px; }
+    #card-phonetic { padding: 9px 15px; font-size: 15px; }
+    #btn-speak-word { width: 43px; height: 43px; flex-basis: 43px; font-size: 17px; }
+    #card-chinese { padding: 10px 24px; font-size: 1.35rem; }
+
+    @media (max-width: 639px) {
+      #global-header { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 6px; }
+      #btn-go-home { gap: 7px; }
+      #global-header .brand-zh { display: block; font-size: clamp(12px, 3.5vw, 15px); }
+      #global-header .brand-en { display: block; margin-top: 2px; font-size: clamp(8px, 2.35vw, 10px); }
+      .theme-switcher { gap: 5px; padding: 4px 6px; }
+      .theme-swatch { width: clamp(19px, 5.5vw, 23px); height: clamp(19px, 5.5vw, 23px); border-width: 2px; }
+      #user-profile-badge { gap: 5px; }
+      #card-word { font-size: min(var(--word-size), 15vw); }
+      .word-part-of-speech { font-size: clamp(12px, 2dvh, 14px); }
+      #card-phonetic { padding: 8px 13px; font-size: clamp(13px, 2.1dvh, 15px); }
+      #btn-speak-word { width: clamp(38px, 5.5dvh, 43px); height: clamp(38px, 5.5dvh, 43px); flex-basis: clamp(38px, 5.5dvh, 43px); }
+      #card-chinese { padding: 9px 21px; font-size: clamp(1.12rem, 3dvh, 1.35rem); }
+      #progress-container > div:last-child { height: clamp(10px, 1.7dvh, 14px) !important; }
+    }
+
+    @media (display-mode: standalone) {
+      body.english-page { padding-top: max(7px, env(safe-area-inset-top)); }
+    }
   </style>
 </head>
 <body class="english-page text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg" data-english-tab="learn">
@@ -821,10 +926,16 @@
       <div class="w-10 h-10 rounded-xl bg-brand-500 border-2 border-slate-800 text-white flex items-center justify-center font-extrabold text-xl shadow-comic transform hover:-translate-y-1 transition-transform">
         <i class="fa-solid fa-rocket"></i>
       </div>
-      <div>
-        <h1 class="text-lg font-black text-slate-800 leading-tight tracking-wide">酷學習 Cool Learning</h1>
-        <p class="text-[11px] text-slate-500 font-bold">國小六年級自主學習平台</p>
+      <div class="brand-lockup">
+        <h1 class="brand-zh">酷學習</h1>
+        <p class="brand-en">Cool Learning</p>
       </div>
+    </div>
+
+    <div id="theme-switcher" class="theme-switcher" role="group" aria-label="切換莫蘭迪配色">
+      <button type="button" class="theme-swatch theme-swatch-blue is-active" data-theme="blue" aria-label="莫蘭迪藍" aria-pressed="true" title="莫蘭迪藍"></button>
+      <button type="button" class="theme-swatch theme-swatch-green" data-theme="green" aria-label="莫蘭迪綠" aria-pressed="false" title="莫蘭迪綠"></button>
+      <button type="button" class="theme-swatch theme-swatch-pink" data-theme="pink" aria-label="莫蘭迪粉" aria-pressed="false" title="莫蘭迪粉"></button>
     </div>
 
     <div id="user-profile-badge" class="flex items-center gap-3">
