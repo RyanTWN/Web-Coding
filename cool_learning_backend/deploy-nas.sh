@@ -29,6 +29,31 @@ compose pull cool-learning-web cool-learning-api
 echo "[2/4] 重新建立網站與 API 容器"
 compose up -d cool-learning-web cool-learning-api
 
+# 正式網址由 Synology Web Station 的 /cool_learning/ 目錄提供，
+# 所以容器更新後也要發布同一版前端檔案到該目錄。
+WEB_STATION_PATH=$(sed -n 's/^WEB_STATION_PATH=//p' .env | tail -n 1 | tr -d '\r')
+if [ -n "$WEB_STATION_PATH" ]; then
+    case "$WEB_STATION_PATH" in
+        /volume*/web/cool_learning) ;;
+        *)
+            echo "WEB_STATION_PATH 必須指向 /volume*/web/cool_learning，已停止發布。" >&2
+            exit 1
+            ;;
+    esac
+
+    mkdir -p "$WEB_STATION_PATH"
+    STAGING_DIR=$(mktemp -d /tmp/cool-learning-web.XXXXXX)
+    trap 'rm -rf "$STAGING_DIR"' EXIT INT TERM
+    docker cp cool-learning-web:/usr/share/nginx/html/. "$STAGING_DIR/"
+
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete "$STAGING_DIR/" "$WEB_STATION_PATH/"
+    else
+        cp -R "$STAGING_DIR/." "$WEB_STATION_PATH/"
+    fi
+    echo "已同步前端至 $WEB_STATION_PATH"
+fi
+
 
 echo "[3/4] 等待健康檢查"
 
