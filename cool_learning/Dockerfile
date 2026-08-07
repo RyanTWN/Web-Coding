@@ -6,7 +6,7 @@ COPY . /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 RUN rm -f /usr/share/nginx/html/nginx.conf && \
-    sed -i "s|assets/js/app.js|assets/js/app.js?v=${APP_VERSION}|g; s|assets/js/quiz.js|assets/js/quiz.js?v=${APP_VERSION}|g; s|assets/js/admin.js|assets/js/admin.js?v=${APP_VERSION}|g" \
+    sed -i -E "s|assets/js/app.js(\?v=[^\"']*)?|assets/js/app.js?v=${APP_VERSION}|g; s|assets/js/quiz.js(\?v=[^\"']*)?|assets/js/quiz.js?v=${APP_VERSION}|g; s|assets/js/admin.js(\?v=[^\"']*)?|assets/js/admin.js?v=${APP_VERSION}|g" \
       /usr/share/nginx/html/index.html /usr/share/nginx/html/english.html
 
 EXPOSE 80
