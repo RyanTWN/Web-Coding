@@ -251,7 +251,9 @@ function switchAppTab(tabId) {
   // 2. 將所有按鈕重置為「未選取」的平坦狀態
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('bg-brand-500', 'text-white', 'shadow-comic', 'transform', '-translate-y-1');
+    btn.classList.remove('is-active');
     btn.classList.add('text-slate-500', 'hover:text-slate-800');
+    btn.setAttribute('aria-selected', 'false');
   });
 
   // 3. 顯示目標內容區塊
@@ -263,6 +265,8 @@ function switchAppTab(tabId) {
   if(navBtn) {
     navBtn.classList.remove('text-slate-500', 'hover:text-slate-800');
     navBtn.classList.add('bg-brand-500', 'text-white', 'shadow-comic', 'transform', '-translate-y-1');
+    navBtn.classList.add('is-active');
+    navBtn.setAttribute('aria-selected', 'true');
   }
 
   if (tabId === 'starred') renderStarredList();
@@ -293,6 +297,20 @@ function getVocabularyImageUrl(word, meaning) {
 
     // 💡 重要優化：加上 _cb 參數強制瀏覽器繞過快取，確保每次單字切換都能載入新圖。
     return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&model=flux&seed=${fixedSeed}&_cb=${Date.now()}`;
+}
+
+function getPartOfSpeechLabel(item) {
+  const value = item.part_of_speech ?? item.partOfSpeech ?? item.pos ?? item.word_class ?? item.wordClass;
+  return String(value || 'word').trim().toLowerCase();
+}
+
+function getResponsiveWordSize(word) {
+  const length = Array.from(word).length;
+  if (length <= 8) return '3.6rem';
+  if (length <= 12) return '3rem';
+  if (length <= 16) return '2.45rem';
+  if (length <= 20) return '1.95rem';
+  return '1.55rem';
 }
 
 // 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
@@ -355,7 +373,14 @@ function renderCard() {
   }
   
   const wordEl = document.getElementById('card-word');
-  if (wordEl) wordEl.textContent = item.vocabulary;
+  if (wordEl) {
+    const normalizedWord = String(item.vocabulary || item.word || '').trim().toLowerCase();
+    wordEl.textContent = normalizedWord;
+    wordEl.style.setProperty('--word-size', getResponsiveWordSize(normalizedWord));
+  }
+
+  const partOfSpeechEl = document.getElementById('card-part-of-speech');
+  if (partOfSpeechEl) partOfSpeechEl.textContent = getPartOfSpeechLabel(item);
   
   const phoneticEl = document.getElementById('card-phonetic');
   if (phoneticEl) phoneticEl.textContent = item.phonetic;
@@ -414,7 +439,7 @@ function renderStarredList() {
     const div = document.createElement('div');
     div.className = "bg-slate-50 border rounded-2xl p-3 flex items-center justify-between";
     div.innerHTML = `
-      <div><span class="font-bold text-slate-800">${item.vocabulary || item.word}</span> <span class="text-xs text-brand-600 ml-2">${item.chinese || item.translation}</span></div>
+      <div><span class="font-bold text-slate-800 lowercase">${String(item.vocabulary || item.word || '').toLowerCase()}</span> <span class="text-xs text-brand-600 ml-2">${item.chinese || item.translation}</span></div>
       <button class="text-amber-400 p-1" data-id="${item.id}"><i class="fa-solid fa-star"></i></button>
     `;
     div.querySelector('button').onclick = () => {

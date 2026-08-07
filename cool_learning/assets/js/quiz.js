@@ -113,7 +113,7 @@ function showQuizQuestion() {
       btn.className = "w-full py-3 px-4 bg-white border-2 rounded-2xl font-bold text-slate-700 text-left flex justify-between";
       
       // 修正 2：相容資料庫的 vocabulary 或舊版的 word
-      const wordText = opt.vocabulary || opt.word;
+      const wordText = String(opt.vocabulary || opt.word || '').toLowerCase();
       
       btn.innerHTML = `<span>${wordText}</span> <span class="text-xs text-slate-300">${opt.phonetic}</span>`;
       btn.onclick = () => {
@@ -145,7 +145,7 @@ function submitSpellingAnswer() {
   const q = quizQuestions[currentQuizIndex];
   
   // 修正 2：相容欄位名稱
-  const correctWord = q.vocabulary || q.word; 
+  const correctWord = String(q.vocabulary || q.word || '').toLowerCase();
 
   if (input.value.trim().toLowerCase() === correctWord.toLowerCase()) {
     quizScore++;

@@ -176,7 +176,7 @@
       #flashcard { height: 390px !important; margin-bottom: 14px; }
       #flashcard .flip-card-front,
       #flashcard .flip-card-back { padding: 16px; border-radius: 24px; }
-      #flashcard .flip-card-front > div:nth-of-type(1) { width: 132px; height: 132px; margin-bottom: 16px; }
+      #flashcard .flip-card-front > div:nth-of-type(1) { width: auto; height: auto; }
       #card-word { font-size: clamp(2.25rem, 12vw, 3.25rem); max-width: 250px; overflow-wrap: anywhere; }
       #card-chinese { font-size: 1.05rem; padding: 8px 20px; border-width: 2px; box-shadow: none; }
       .learn-actions { padding: 7px; }
@@ -433,6 +433,131 @@
       .learning-shell { min-height: 0 !important; }
       #flashcard { height: 300px !important; }
     }
+
+    /* Unified learning panels and vocabulary hierarchy. */
+    .tab-btn {
+      width: 100%;
+      height: 48px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid transparent !important;
+      color: #64748b;
+      background: transparent;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    .tab-btn:hover { color: #4f46e5; background: rgba(255,255,255,.72); }
+    .tab-btn.is-active,
+    .tab-btn.bg-brand-500 {
+      border-color: rgba(99, 102, 241, .18) !important;
+      color: white !important;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+      box-shadow: 0 8px 18px rgba(99, 102, 241, .22) !important;
+    }
+    .tab-view {
+      width: 100%;
+      height: 430px;
+      min-height: 430px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(99,102,241,.25) transparent;
+    }
+    .tab-view:not(#app-view-learn) { padding: 4px 2px; }
+    .tab-view .border-4 {
+      border-width: 1px !important;
+      border-color: rgba(99, 102, 241, .18) !important;
+    }
+    .tab-view .shadow-comic,
+    .tab-view .shadow-comic-lg { box-shadow: none !important; }
+    .tab-view .transform { transform: none !important; }
+    #starred-list-container > div,
+    #quiz-screen-active > div > div,
+    #today-status-card {
+      border-color: rgba(99, 102, 241, .16) !important;
+      background-color: rgba(255, 255, 255, .82) !important;
+    }
+    #app-view-learn { overflow: visible; }
+    #app-view-learn #flashcard { height: 360px; flex: 0 0 360px; }
+    #flashcard .flip-card-front { gap: 0; }
+    #card-word {
+      --word-size: 3.6rem;
+      width: 100%;
+      max-width: 100%;
+      margin: 0 0 10px;
+      color: #172554;
+      font-family: "Fredoka", "Avenir Next Rounded", "Nunito", sans-serif;
+      font-size: min(var(--word-size), 11vw);
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: .015em;
+      text-align: center;
+      text-transform: lowercase;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .word-part-of-speech {
+      margin-bottom: 15px;
+      color: #8b5cf6;
+      font-size: 12px;
+      font-weight: 700;
+      font-style: italic;
+      letter-spacing: .08em;
+      text-transform: lowercase;
+    }
+    .pronunciation-row {
+      width: auto !important;
+      height: auto !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin: 0 0 17px;
+    }
+    #btn-speak-word {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      border: 1px solid rgba(99, 102, 241, .22) !important;
+      color: #4f46e5;
+      background: #eef2ff;
+      box-shadow: none;
+    }
+    #btn-speak-word:hover { color: white; background: #6366f1; }
+    #card-phonetic {
+      margin: 0;
+      padding: 7px 13px;
+      border: 0;
+      border-radius: 999px;
+      color: #64748b;
+      background: #f1f5f9;
+      font-family: "Noto Sans TC", sans-serif;
+      font-size: 13px;
+      line-height: 1;
+    }
+    #card-chinese { margin-bottom: 4px; }
+
+    @media (max-width: 639px) {
+      .tab-view {
+        height: min(43dvh, 340px);
+        min-height: 285px;
+        overflow-y: auto;
+      }
+      #app-view-learn { overflow: visible; }
+      #app-view-learn #flashcard {
+        height: min(43dvh, 340px) !important;
+        min-height: 285px;
+        flex-basis: auto;
+      }
+      #card-word { margin-bottom: 7px; font-size: min(var(--word-size), 12vw); }
+      .word-part-of-speech { margin-bottom: 10px; font-size: 10px; }
+      .pronunciation-row { margin-bottom: 11px; gap: 7px; }
+      #btn-speak-word { width: 34px; height: 34px; flex-basis: 34px; }
+      #card-phonetic { padding: 6px 11px; font-size: 11px; }
+      #card-chinese { font-size: .95rem; }
+    }
   </style>
 </head>
 <body class="english-page text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg">
@@ -519,10 +644,10 @@
         </div>
 
         <nav id="english-tabs" aria-label="英文學習功能" class="grid grid-cols-4 gap-2 p-2 bg-slate-100 border-2 border-slate-800 rounded-2xl mb-5">
-          <button id="nav-learn" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm bg-brand-500 text-white border-2 border-slate-800 shadow-comic transform -translate-y-1 transition-all"><i class="fa-solid fa-book-open mr-1"></i>每日學習</button>
-          <button id="nav-starred" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm text-slate-500 hover:text-slate-800"><i class="fa-solid fa-bookmark mr-1"></i>難字本</button>
-          <button id="nav-quiz" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm text-slate-500 hover:text-slate-800"><i class="fa-solid fa-circle-check mr-1"></i>每日測驗</button>
-          <button id="nav-calendar" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm text-slate-500 hover:text-slate-800"><i class="fa-solid fa-calendar-days mr-1"></i>學習日曆</button>
+          <button id="nav-learn" class="tab-btn is-active py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all" aria-selected="true"><i class="fa-solid fa-book-open mr-1"></i>每日學習</button>
+          <button id="nav-starred" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm" aria-selected="false"><i class="fa-solid fa-bookmark mr-1"></i>難字本</button>
+          <button id="nav-quiz" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm" aria-selected="false"><i class="fa-solid fa-circle-check mr-1"></i>每日測驗</button>
+          <button id="nav-calendar" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm" aria-selected="false"><i class="fa-solid fa-calendar-days mr-1"></i>學習日曆</button>
         </nav>
 
         <div id="progress-container" class="mb-5">
@@ -556,19 +681,15 @@
               
               <!-- 保留圖片資料節點供既有程式更新，但新版聚焦文字學習，不顯示不一致的外部插圖。 -->
               <img id="card-image" src="https://placehold.co/1x1/transparent/transparent" alt="" class="hidden" aria-hidden="true">
-              <div class="word-chapter"><i class="fa-solid fa-sparkles"></i><span>Today’s vocabulary</span></div>
-              
-              <!-- 英文單字與發音鈕 -->
-              <div class="flex items-center gap-3 mb-1">
-                <h2 id="card-word" class="text-4xl sm:text-5xl font-black text-slate-800 tracking-wide uppercase">word</h2>
-                <!-- 點擊發音按鈕也必須阻擋事件冒泡 -->
-                <button id="btn-speak-word" class="w-12 h-12 rounded-full bg-brand-200 border-4 border-slate-800 text-brand-700 hover:bg-brand-500 hover:text-white flex items-center justify-center shadow-comic transition-all transform hover:-translate-y-1 active:translate-y-0" onclick="event.stopPropagation();">
-                  <i class="fa-solid fa-volume-high text-lg"></i>
+              <!-- 單字、詞性、發音與音標 -->
+              <h2 id="card-word" class="font-black text-slate-800">word</h2>
+              <p id="card-part-of-speech" class="word-part-of-speech">word</p>
+              <div class="pronunciation-row">
+                <button id="btn-speak-word" aria-label="播放單字發音" class="rounded-full flex items-center justify-center transition-all" onclick="event.stopPropagation();">
+                  <i class="fa-solid fa-volume-high"></i>
                 </button>
+                <p id="card-phonetic" class="font-bold">[phonetic]</p>
               </div>
-              
-              <!-- 音標 -->
-              <p id="card-phonetic" class="text-sm font-bold text-slate-500 mb-3 bg-slate-100 px-3 py-1 rounded-full border-2 border-slate-200">[phonetic]</p>
               
               <!-- 中文釋義 -->
               <span id="card-chinese" class="inline-block bg-amber-300 text-slate-900 font-black text-xl px-6 py-2.5 rounded-full border-4 border-slate-800 shadow-comic">中文釋義</span>
