@@ -1,4 +1,6 @@
 #!/bin/sh
+exec "$(dirname "$0")/deploy-nas-cicd.sh" "$@"
+
 set -eu
 
 # Synology Container Manager 的 Docker socket 只有 root 可操作。

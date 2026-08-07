@@ -110,6 +110,7 @@ jobs:
           ssh -i ~/.ssh/nas_deploy_key -p "$NAS_PORT" "$NAS_USER@$NAS_HOST" "mkdir -p '$deploy_path'"
           scp -i ~/.ssh/nas_deploy_key -P "$NAS_PORT" \
             cool_learning_backend/compose.yaml cool_learning_backend/deploy-nas.sh \
+            cool_learning_backend/deploy-nas-cicd.sh \
             "$NAS_USER@$NAS_HOST:$deploy_path/"
 
       - name: Deploy immutable image and verify health
@@ -121,4 +122,4 @@ jobs:
         run: |
           deploy_path="${NAS_DEPLOY_PATH:-/volume1/docker/cool_learning_backend}"
           ssh -i ~/.ssh/nas_deploy_key -p "$NAS_PORT" "$NAS_USER@$NAS_HOST" \
-            "chmod 700 '$deploy_path/deploy-nas.sh' && cd '$deploy_path' && ./deploy-nas.sh 'sha-${GITHUB_SHA}'"
+            "chmod 700 '$deploy_path/deploy-nas.sh' '$deploy_path/deploy-nas-cicd.sh' && cd '$deploy_path' && ./deploy-nas.sh 'sha-${GITHUB_SHA}'"
