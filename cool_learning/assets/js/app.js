@@ -245,6 +245,7 @@ function showView(viewId) {
 }
 
 function switchAppTab(tabId) {
+  document.body.dataset.englishTab = tabId;
   // 1. 隱藏所有內容區塊
   document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
   
