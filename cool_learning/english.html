@@ -67,7 +67,58 @@
     .learning-shell {
       border-width: 2px !important;
       box-shadow: 0 22px 55px rgba(30, 64, 175, .13) !important;
+      overflow: hidden;
+      position: relative;
     }
+    .learning-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 9px;
+      background: linear-gradient(90deg, #3b82f6 0 42%, #fbbf24 42% 70%, #34d399 70%);
+    }
+    .learning-intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 10px 2px 18px;
+    }
+    .learning-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 7px;
+      color: #2563eb;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .learning-title { font-size: clamp(1.55rem, 4vw, 2.25rem); line-height: 1.08; }
+    .learning-subtitle { color: #64748b; font-size: 13px; font-weight: 700; margin-top: 7px; }
+    .daily-goal {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 13px;
+      border: 1px solid #fde68a;
+      border-radius: 16px;
+      background: #fffbeb;
+    }
+    .daily-goal-icon {
+      width: 35px;
+      height: 35px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #b45309;
+      background: #fde68a;
+    }
+    .daily-goal strong, .daily-goal span { display: block; }
+    .daily-goal strong { font-size: 12px; color: #92400e; }
+    .daily-goal span { font-size: 10px; color: #b45309; font-weight: 700; }
     .subject-toolbar { border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
     #progress-container {
       padding: 14px 16px;
@@ -85,6 +136,13 @@
     }
     #card-word { line-height: 1; text-wrap: balance; }
     #btn-prev-word, #btn-next-word { min-height: 54px; }
+    .learn-actions {
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #f8fafc;
+    }
+    .keyboard-hint { color: #94a3b8; font-size: 10px; font-weight: 700; text-align: center; margin-top: 10px; }
     .tab-btn { min-height: 48px; }
     .tab-btn:focus-visible,
     button:focus-visible {
@@ -106,6 +164,13 @@
       #user-profile-badge { gap: 8px; }
       .learning-shell { min-height: calc(100vh - 92px) !important; padding: 14px !important; border-radius: 24px !important; }
       .subject-toolbar { margin-bottom: 12px !important; }
+      .learning-intro { align-items: center; padding: 6px 2px 13px; }
+      .learning-title { font-size: 1.45rem; }
+      .learning-subtitle { margin-top: 4px; font-size: 11px; }
+      .learning-eyebrow { margin-bottom: 4px; font-size: 9px; }
+      .daily-goal { padding: 8px; }
+      .daily-goal-icon { width: 34px; height: 34px; }
+      .daily-goal > div:last-child { display: none; }
       .subject-toolbar .home-label { display: none; }
       #progress-container { margin-bottom: 14px !important; }
       #flashcard { height: 390px !important; margin-bottom: 14px; }
@@ -114,6 +179,8 @@
       #flashcard .flip-card-front > div:nth-of-type(1) { width: 132px; height: 132px; margin-bottom: 16px; }
       #card-word { font-size: clamp(2.25rem, 12vw, 3.25rem); max-width: 250px; overflow-wrap: anywhere; }
       #card-chinese { font-size: 1.05rem; padding: 8px 20px; border-width: 2px; box-shadow: none; }
+      .learn-actions { padding: 7px; }
+      .keyboard-hint { display: none; }
       #english-tabs {
         position: fixed;
         left: 10px;
@@ -214,6 +281,21 @@
           </div>
         </div>
 
+        <div class="learning-intro">
+          <div>
+            <div class="learning-eyebrow"><i class="fa-solid fa-sparkles"></i> Vocabulary journey</div>
+            <h2 class="learning-title font-black text-slate-800">今天，再記住一個新單字</h2>
+            <p class="learning-subtitle">看圖、聽發音、翻卡片，用自己的節奏累積實力。</p>
+          </div>
+          <div class="daily-goal" aria-label="今日學習目標">
+            <div class="daily-goal-icon"><i class="fa-solid fa-bolt"></i></div>
+            <div>
+              <strong>今日小目標</strong>
+              <span>完成一輪單字練習</span>
+            </div>
+          </div>
+        </div>
+
         <nav id="english-tabs" aria-label="英文學習功能" class="grid grid-cols-4 gap-2 p-2 bg-slate-100 border-2 border-slate-800 rounded-2xl mb-5">
           <button id="nav-learn" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm bg-brand-500 text-white border-2 border-slate-800 shadow-comic transform -translate-y-1 transition-all"><i class="fa-solid fa-book-open mr-1"></i>每日學習</button>
           <button id="nav-starred" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm text-slate-500 hover:text-slate-800"><i class="fa-solid fa-bookmark mr-1"></i>難字本</button>
@@ -308,10 +390,11 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="learn-actions flex items-center gap-3">
           <button id="btn-prev-word" class="flex-1 py-3.5 px-4 rounded-2xl bg-white border-4 border-slate-800 font-black text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all"><i class="fa-solid fa-arrow-left"></i> 上一個</button>
           <button id="btn-next-word" class="flex-1 py-3.5 px-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-black border-4 border-slate-800 flex items-center justify-center gap-2 shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all">下一個 <i class="fa-solid fa-arrow-right"></i></button>
         </div>
+        <p class="keyboard-hint"><i class="fa-regular fa-keyboard mr-1"></i>可使用鍵盤左右方向鍵切換單字，點擊卡片查看例句</p>
       </main>
 
       <!-- 難字本區塊 -->
