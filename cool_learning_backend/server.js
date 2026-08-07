@@ -14,10 +14,13 @@ function getTaipeiDateKey() {
 }
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGINS || '*').split(',').map(value => value.trim());
+const allowedOrigins = new Set([
+  'https://learning.ifit.myds.me',
+  ...(process.env.CORS_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean)
+]);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin || allowedOrigins.has('*') || allowedOrigins.has(origin)) return callback(null, true);
     callback(new Error('不允許的網站來源'));
   }
 }));
