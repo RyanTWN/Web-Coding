@@ -36,6 +36,9 @@ async function apiFetch(path, options = {}) {
   if (response.status === 401 && !path.endsWith('/login')) {
     currentUser = null;
     sessionStorage.removeItem('g6_portal_user');
+    if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/') {
+      window.location.assign('index.html?session=expired');
+    }
   }
   return response;
 }
@@ -80,18 +83,18 @@ function speakText(text) {
 async function fetchDailyWordsFromCloud(studentId) {
     try {
         const response = await apiFetch(`/get-daily-words?studentId=${encodeURIComponent(studentId)}`);
-        const result = await response.json();
+        const result = await response.json().catch(() => ({}));
         
-        if (result.success) {
+        if (response.ok && result.success) {
             console.log(`成功載入第 ${result.currentDay} 天的學習單字！`);
             return result.dailyWords; 
         } else {
-            console.error("無法取得單字:", result.error);
-            return [];
+            throw new Error(result.error || `伺服器回應 ${response.status}`);
         }
     } catch (error) {
         console.error("伺服器連線失敗", error);
-        return [];
+        showToast(`今日單字載入失敗：${error.message}`, "fa-triangle-exclamation");
+        return null;
     }
 }
 
@@ -203,6 +206,7 @@ async function loadStudentAppData(seatNo) {
     currentIndex = Math.max(localIndex, cloudIndex);
   } else {
     const dailyWords = await fetchDailyWordsFromCloud(seatNo);
+    if (dailyWords === null) return;
     today30Words = dailyWords || [];
     currentIndex = cloudProgress?.learningDate === todayStr
       ? Number(cloudProgress.currentWordIndex || 0)

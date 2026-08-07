@@ -20,7 +20,8 @@ const allowedOrigins = new Set([
 ]);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.has('*') || allowedOrigins.has(origin)) return callback(null, true);
+    const isProductionHost = /^https:\/\/learning\.ifit\.myds\.me(?::\d+)?$/.test(origin || '');
+    if (!origin || isProductionHost || allowedOrigins.has('*') || allowedOrigins.has(origin)) return callback(null, true);
     callback(new Error('不允許的網站來源'));
   }
 }));
