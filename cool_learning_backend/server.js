@@ -260,18 +260,40 @@ app.get('/api/get-daily-words', requireAuth, requireOwnSeat, async (req, res) =>
 
     try {
         // 1. 查詢學生的學習進度
-        let [studentRows] = await pool.query('SELECT current_day_index, last_learn_date FROM students WHERE seat_no = ?', [studentId]);
+        let [studentRows] = await pool.query(
+          `SELECT current_day_index,
+                  DATE_FORMAT(last_learn_date, '%Y-%m-%d') AS last_learn_date
+           FROM students WHERE seat_no = ?`,
+          [studentId]
+        );
         
         // 如果找不到學生，自動幫他建立一筆
         if (studentRows.length === 0) {
             await pool.query('INSERT INTO students (seat_no, name, current_day_index) VALUES (?, ?, 0)', [studentId, '未知學生']);
-            [studentRows] = await pool.query('SELECT current_day_index, last_learn_date FROM students WHERE seat_no = ?', [studentId]);
+            [studentRows] = await pool.query(
+              `SELECT current_day_index,
+                      DATE_FORMAT(last_learn_date, '%Y-%m-%d') AS last_learn_date
+               FROM students WHERE seat_no = ?`,
+              [studentId]
+            );
         }
 
         let { current_day_index, last_learn_date } = studentRows[0];
         
         // 【防呆關鍵】：如果欄位是 NULL，強制給予安全預設值！
-        current_day_index = current_day_index !== null && current_day_index !== undefined ? current_day_index : 0;
+        current_day_index = Number.isFinite(Number(current_day_index)) ? Number(current_day_index) : 0;
+        const storedDayIndex = current_day_index;
+
+        const [[wordCountRow]] = await pool.query('SELECT COUNT(*) AS total FROM words_pool');
+        const totalWords = Number(wordCountRow.total || 0);
+        if (totalWords === 0) {
+            return res.status(503).json({ success: false, error: '單字資料庫目前沒有資料' });
+        }
+        const totalBatches = Math.max(1, Math.ceil(totalWords / 30));
+        current_day_index = ((current_day_index % totalBatches) + totalBatches) % totalBatches;
+        if (current_day_index !== storedDayIndex) {
+            await pool.query('UPDATE students SET current_day_index = ? WHERE seat_no = ?', [current_day_index, studentId]);
+        }
         
         // 取得今天的日期字串 (YYYY-MM-DD)
         const todayStr = getTaipeiDateKey();
@@ -283,10 +305,8 @@ app.get('/api/get-daily-words', requireAuth, requireOwnSeat, async (req, res) =>
                 current_day_index++;
             }
             
-            // 如果超過 40 天 (1200 單字背完一輪)，循環重置
-            if (current_day_index >= 40) {
-                current_day_index = 0;
-            }
+            // 依資料庫實際單字數循環，不再寫死 40 天。
+            current_day_index %= totalBatches;
             
             // 更新資料庫中的進度與今天日期
             await pool.query('UPDATE students SET current_day_index = ?, last_learn_date = ? WHERE seat_no = ?', [current_day_index, todayStr, studentId]);
@@ -294,7 +314,17 @@ app.get('/api/get-daily-words', requireAuth, requireOwnSeat, async (req, res) =>
 
         // 3. 從 words_pool 抽出 30 個單字
         const offset = current_day_index * 30;
-        const [words] = await pool.query('SELECT * FROM words_pool LIMIT 30 OFFSET ?', [offset]);
+        let [words] = await pool.query('SELECT * FROM words_pool ORDER BY id LIMIT 30 OFFSET ?', [offset]);
+
+        // 防止舊資料留下超界索引；自動回到第一批並修正學生狀態。
+        if (words.length === 0) {
+            current_day_index = 0;
+            [words] = await pool.query('SELECT * FROM words_pool ORDER BY id LIMIT 30');
+            await pool.query(
+              'UPDATE students SET current_day_index = ?, last_learn_date = ? WHERE seat_no = ?',
+              [0, todayStr, studentId]
+            );
+        }
 
         // 4. 回傳成功結果
         res.json({ success: true, dailyWords: words, currentDay: current_day_index + 1 });
