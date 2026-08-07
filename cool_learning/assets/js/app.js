@@ -385,7 +385,10 @@ function renderCard() {
   if (progBar) progBar.style.width = `${((currentIndex + 1) / today30Words.length) * 100}%`;
   
   const progText = document.getElementById('progress-text');
-  if (progText) progText.textContent = `${currentIndex + 1} / ${today30Words.length}`;
+  if (progText) {
+    const percent = Math.round(((currentIndex + 1) / today30Words.length) * 100);
+    progText.textContent = `${currentIndex + 1} / ${today30Words.length} · ${percent}%`;
+  }
   
   const starBadge = document.getElementById('starred-count-badge');
   if (starBadge) starBadge.textContent = `${starredIds.size} 難字`;

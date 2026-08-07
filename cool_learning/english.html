@@ -52,9 +52,101 @@
     .is-flipped .flip-card-inner { 
       transform: rotateY(180deg); 
     }
+
+    /* 英文學習頁：保留活潑感，同時降低粗框與陰影造成的視覺負擔。 */
+    body.english-page { padding-bottom: 96px; }
+    #global-header {
+      position: sticky;
+      top: 12px;
+      z-index: 35;
+      border-width: 2px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+      backdrop-filter: blur(14px);
+      background: rgba(255, 255, 255, .94);
+    }
+    .learning-shell {
+      border-width: 2px !important;
+      box-shadow: 0 22px 55px rgba(30, 64, 175, .13) !important;
+    }
+    .subject-toolbar { border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
+    #progress-container {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #eff6ff, #fffbeb);
+      border: 1px solid #dbeafe;
+    }
+    #progress-container > div:last-child { height: 10px; border-width: 0; background: #dbeafe; }
+    #progress-bar { border-width: 0; border-radius: 999px; }
+    #flashcard { isolation: isolate; }
+    #flashcard .flip-card-front,
+    #flashcard .flip-card-back {
+      border-width: 2px;
+      box-shadow: 0 18px 38px rgba(15, 23, 42, .14);
+    }
+    #card-word { line-height: 1; text-wrap: balance; }
+    #btn-prev-word, #btn-next-word { min-height: 54px; }
+    .tab-btn { min-height: 48px; }
+    .tab-btn:focus-visible,
+    button:focus-visible {
+      outline: 4px solid rgba(59, 130, 246, .35);
+      outline-offset: 3px;
+    }
+
+    @media (min-width: 640px) {
+      body.english-page { padding-bottom: 24px; }
+      #english-tabs { position: static; box-shadow: none; }
+    }
+
+    @media (max-width: 639px) {
+      body.english-page { padding: 10px 10px 98px; }
+      #global-header { top: 8px; padding: 10px 12px; margin-bottom: 10px; border-radius: 18px; }
+      #global-header h1 { font-size: 14px; }
+      #global-header p { display: none; }
+      #global-header #btn-go-home > div:first-child { width: 36px; height: 36px; box-shadow: none; }
+      #user-profile-badge { gap: 8px; }
+      .learning-shell { min-height: calc(100vh - 92px) !important; padding: 14px !important; border-radius: 24px !important; }
+      .subject-toolbar { margin-bottom: 12px !important; }
+      .subject-toolbar .home-label { display: none; }
+      #progress-container { margin-bottom: 14px !important; }
+      #flashcard { height: 390px !important; margin-bottom: 14px; }
+      #flashcard .flip-card-front,
+      #flashcard .flip-card-back { padding: 16px; border-radius: 24px; }
+      #flashcard .flip-card-front > div:nth-of-type(1) { width: 132px; height: 132px; margin-bottom: 16px; }
+      #card-word { font-size: clamp(2.25rem, 12vw, 3.25rem); max-width: 250px; overflow-wrap: anywhere; }
+      #card-chinese { font-size: 1.05rem; padding: 8px 20px; border-width: 2px; box-shadow: none; }
+      #english-tabs {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        z-index: 40;
+        margin: 0;
+        padding: 7px;
+        border-width: 1px;
+        border-color: #cbd5e1;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, .96);
+        box-shadow: 0 14px 35px rgba(15, 23, 42, .22);
+        backdrop-filter: blur(16px);
+      }
+      #english-tabs .tab-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-height: 54px;
+        padding: 6px 2px;
+        border: 0;
+        box-shadow: none !important;
+        transform: none !important;
+        font-size: 10px;
+      }
+      #english-tabs .tab-btn i { margin: 0; font-size: 17px; }
+    }
   </style>
 </head>
-<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg">
+<body class="english-page text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg">
 
   <!-- Toast 訊息通知 -->
   <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
@@ -104,13 +196,13 @@
   </header>
 
   <!-- 英文學習區塊 -->
-  <section id="view-english-app" class="w-full max-w-xl mx-auto my-auto card-flip-enter">
-    <div class="w-full bg-white rounded-3xl shadow-comic-lg border-4 border-slate-800 p-4 sm:p-6 flex flex-col justify-between min-h-[640px]">
+  <section id="view-english-app" class="w-full max-w-2xl mx-auto my-auto card-flip-enter">
+    <div class="learning-shell w-full bg-white rounded-3xl shadow-comic-lg border-4 border-slate-800 p-4 sm:p-6 flex flex-col justify-between min-h-[640px]">
       <div>
-        <div class="flex items-center justify-between mb-4">
+        <div class="subject-toolbar flex items-center justify-between mb-4">
           <!-- 返回科目大廳跳轉按鈕 -->
           <button onclick="window.location.assign('index.html')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-800 shadow-comic transform active:translate-y-1 active:shadow-none text-slate-800 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all">
-            <i class="fa-solid fa-house"></i> 科目大廳
+            <i class="fa-solid fa-house"></i><span class="home-label">科目大廳</span>
           </button>
           <div class="flex items-center gap-2 bg-brand-100 px-3 py-1.5 rounded-xl border-2 border-slate-800 shadow-comic">
             <i class="fa-solid fa-graduation-cap text-brand-600"></i>
@@ -122,7 +214,7 @@
           </div>
         </div>
 
-        <nav class="grid grid-cols-4 gap-2 p-2 bg-slate-100 border-2 border-slate-800 rounded-2xl mb-5">
+        <nav id="english-tabs" aria-label="英文學習功能" class="grid grid-cols-4 gap-2 p-2 bg-slate-100 border-2 border-slate-800 rounded-2xl mb-5">
           <button id="nav-learn" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm bg-brand-500 text-white border-2 border-slate-800 shadow-comic transform -translate-y-1 transition-all"><i class="fa-solid fa-book-open mr-1"></i>每日學習</button>
           <button id="nav-starred" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm text-slate-500 hover:text-slate-800"><i class="fa-solid fa-bookmark mr-1"></i>難字本</button>
           <button id="nav-quiz" class="tab-btn py-2.5 rounded-xl font-black text-xs sm:text-sm text-slate-500 hover:text-slate-800"><i class="fa-solid fa-circle-check mr-1"></i>每日測驗</button>
@@ -131,7 +223,7 @@
 
         <div id="progress-container" class="mb-5">
           <div class="flex justify-between text-xs font-black text-slate-600 mb-1">
-            <span>今日漫畫字卡進度</span>
+            <span>今日學習進度</span>
             <span id="progress-text">1 / 30</span>
           </div>
           <div class="w-full h-4 bg-slate-100 rounded-full overflow-hidden border-2 border-slate-800">
