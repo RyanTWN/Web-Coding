@@ -192,10 +192,11 @@ function nextQuizQuestion() {
 
 async function saveQuizResultToCloud(mode, score) {
   try {
-    const response = await fetch(`${API_BASE_URL}/quiz-log`, {
+    const response = await apiFetch('/quiz-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seatNo: currentUser.seatNo, mode, score })
+      body: JSON.stringify({ seatNo: currentUser.seatNo, mode, score }),
+      keepalive: true
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
   } catch (error) {

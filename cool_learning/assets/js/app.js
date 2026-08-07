@@ -18,6 +18,28 @@ let modalCallback = null;
 const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
 let progressSyncTimer = null;
 
+function getTodayKey() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+}
+
+function updateSyncStatus(text, className = 'text-slate-400') {
+  const status = document.getElementById('sync-status');
+  if (!status) return;
+  status.textContent = text;
+  status.className = `block text-[10px] font-bold ${className}`;
+}
+
+async function apiFetch(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  if (currentUser?.token) headers.set('Authorization', `Bearer ${currentUser.token}`);
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  if (response.status === 401 && !path.endsWith('/login')) {
+    currentUser = null;
+    sessionStorage.removeItem('g6_portal_user');
+  }
+  return response;
+}
+
 // UI 通知系統 (加入防呆)
 function showToast(text, iconClass = "fa-circle-info") {
   const container = document.getElementById('toast-container');
@@ -57,7 +79,7 @@ function speakText(text) {
 // 核心功能 1: 從後端獲取單字
 async function fetchDailyWordsFromCloud(studentId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/get-daily-words?studentId=${encodeURIComponent(studentId)}`);
+        const response = await apiFetch(`/get-daily-words?studentId=${encodeURIComponent(studentId)}`);
         const result = await response.json();
         
         if (result.success) {
@@ -82,7 +104,7 @@ function saveStudentAppData() {
   localStorage.setItem(`g6_vocab_completed_${seatNo}`, JSON.stringify([...completedDates]));
   localStorage.setItem(`g6_learned_ids_${seatNo}`, JSON.stringify([...learnedWordIds]));
   
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayKey();
   localStorage.setItem(`g6_daily_words_${seatNo}_${todayStr}`, JSON.stringify(today30Words));
   localStorage.setItem(`g6_daily_index_${seatNo}_${todayStr}`, currentIndex);
   scheduleProgressSync();
@@ -96,9 +118,10 @@ function scheduleProgressSync() {
 async function syncStudentProgressToCloud() {
   if (!currentUser || currentUser.isAdmin) return;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayKey();
   try {
-    const response = await fetch(`${API_BASE_URL}/student-progress`, {
+    updateSyncStatus('同步中…', 'text-amber-600');
+    const response = await apiFetch('/student-progress', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -115,21 +138,26 @@ async function syncStudentProgressToCloud() {
     });
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    updateSyncStatus('已同步', 'text-emerald-600');
   } catch (error) {
     // localStorage 保留離線資料；下一次操作時會再次同步。
     console.error('學習進度同步失敗，已保留於本機等待重試', error);
+    updateSyncStatus('等待網路重試', 'text-rose-600');
   }
 }
 
 async function loadStudentProgressFromCloud(seatNo) {
   try {
-    const response = await fetch(`${API_BASE_URL}/student-progress?seatNo=${encodeURIComponent(seatNo)}`);
+    updateSyncStatus('讀取雲端…', 'text-amber-600');
+    const response = await apiFetch(`/student-progress?seatNo=${encodeURIComponent(seatNo)}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const result = await response.json();
     if (!result.success || !result.data) return null;
+    updateSyncStatus('已連上雲端', 'text-emerald-600');
     return result.data;
   } catch (error) {
     console.error('雲端進度載入失敗，改用本機快取', error);
+    updateSyncStatus('使用本機快取', 'text-rose-600');
     return null;
   }
 }
@@ -143,7 +171,7 @@ async function loadStudentAppData(seatNo) {
   completedDates = new Set(JSON.parse(localStorage.getItem(`g6_vocab_completed_${seatNo}`)) || []);
   learnedWordIds = new Set(JSON.parse(localStorage.getItem(`g6_learned_ids_${seatNo}`)) || []);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayKey();
   const cachedWords = JSON.parse(localStorage.getItem(`g6_daily_words_${seatNo}_${todayStr}`));
   const cachedIndex = localStorage.getItem(`g6_daily_index_${seatNo}_${todayStr}`);
   const cloudProgress = await loadStudentProgressFromCloud(seatNo);
@@ -151,9 +179,21 @@ async function loadStudentAppData(seatNo) {
   if (cloudProgress) {
     completedDates = new Set([...completedDates, ...(cloudProgress.completedDates || [])]);
     learnedWordIds = new Set([...learnedWordIds, ...(cloudProgress.learnedWordIds || [])]);
-    starredIds = new Set([...starredIds, ...(cloudProgress.starredIds || [])]);
-    (cloudProgress.starredWords || []).forEach(word => starredWordsMap.set(word.id, word));
-    starredSpellingCounts = { ...starredSpellingCounts, ...(cloudProgress.starredSpellingCounts || {}) };
+    // 收藏允許取消，因此有雲端狀態時以伺服器版本為準，避免舊裝置恢復已取消收藏。
+    if (cloudProgress.updatedAt) {
+      starredIds = new Set(cloudProgress.starredIds || []);
+      starredWordsMap = new Map((cloudProgress.starredWords || []).map(word => [word.id, word]));
+      starredSpellingCounts = cloudProgress.starredSpellingCounts || {};
+    }
+    if (Array.isArray(cloudProgress.quizHistory)) {
+      localStorage.setItem(`g6_vocab_quiz_history_${seatNo}`, JSON.stringify(
+        cloudProgress.quizHistory.map(item => ({
+          modeName: item.mode,
+          score: Number(item.score),
+          timestamp: item.timestamp || '雲端紀錄'
+        }))
+      ));
+    }
   }
 
   if (cachedWords && cachedWords.length > 0) {
@@ -396,7 +436,7 @@ function renderCalendar() {
 
   for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
 
-  const todayKey = new Date().toISOString().split('T')[0];
+  const todayKey = getTodayKey();
   for (let day = 1; day <= daysInMonth; day++) {
     const mm = String(month + 1).padStart(2, '0');
     const dd = String(day).padStart(2, '0');
@@ -430,6 +470,10 @@ function renderCalendar() {
 // 💡 事件接管綁定區 (使用 ?. 徹底解決 null 報錯問題)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+  if (currentUser && !currentUser.token) {
+    currentUser = null;
+    sessionStorage.removeItem('g6_portal_user');
+  }
   if (typeof initQuizModule === 'function') initQuizModule();
   if (typeof initAdminModule === 'function') initAdminModule();
 
@@ -481,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const seatNo = document.getElementById('input-student-seat').value.trim();
 
     try {
-      const response = await fetch('https://learning.ifit.myds.me:4061/api/login', {
+      const response = await apiFetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, seatNo })
@@ -494,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (data.success) {
-        currentUser = { name, seatNo };
+        currentUser = { name, seatNo, token: data.token, isAdmin: false };
         sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
         
         const hName = document.getElementById('header-user-name');
@@ -517,6 +561,27 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error(error);
       showToast("伺服器連線異常，請檢查網路", "fa-triangle-exclamation");
+    }
+  });
+
+  document.getElementById('form-admin-login')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('input-admin-id').value.trim();
+    const password = document.getElementById('input-admin-pwd').value;
+    try {
+      const response = await apiFetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || '登入失敗');
+      currentUser = { name: '系統管理員', seatNo: 'ADMIN', token: data.token, isAdmin: true };
+      sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+      showView('view-admin');
+      if (typeof renderAdminTables === 'function') await renderAdminTables();
+    } catch (error) {
+      showToast(error.message || '管理員登入失敗', 'fa-triangle-exclamation');
     }
   });
 
@@ -568,9 +633,10 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCard();
     } else {
       today30Words.forEach(w => learnedWordIds.add(w.id));
-      const todayKey = new Date().toISOString().split('T')[0];
+      const todayKey = getTodayKey();
       completedDates.add(todayKey);
       saveStudentAppData();
+      syncStudentProgressToCloud();
       switchAppTab('calendar');
     }
   });
@@ -589,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentUser) {
       if (currentUser.isAdmin) {
           showView('view-admin');
+          if (typeof renderAdminTables === 'function') renderAdminTables();
       } else {
         const subjectUserEl = document.getElementById('subject-user-name');
         if (subjectUserEl) subjectUserEl.textContent = currentUser.name;

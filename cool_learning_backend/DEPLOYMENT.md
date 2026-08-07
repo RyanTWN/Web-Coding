@@ -14,6 +14,7 @@ NAS 不再從原始碼建置，只需要拉取映像並重新建立容器。
 1. 在 NAS 建立部署資料夾，例如 `/volume1/docker/cool-learning`。
 2. 將 `compose.yaml`、`deploy-nas.sh` 和 `.env.example` 複製到該資料夾。
 3. 將 `.env.example` 改名為 `.env`，填入正確的資料庫設定。
+   `AUTH_SECRET` 必須是至少 32 個隨機字元，並請設定管理員帳號、強密碼與正式前端的 `CORS_ORIGINS`。
 4. 若 GHCR 套件是 Private，建立只含 `read:packages` 權限的 GitHub Personal Access Token，然後登入：
 
    ```sh
@@ -43,6 +44,8 @@ NAS 不再從原始碼建置，只需要拉取映像並重新建立容器。
 ```
 
 腳本會拉取前後端映像；只有映像有更新時才重建容器，接著確認網站與資料庫健康狀態。
+
+本次加入工作階段驗證後，部署完成時既有瀏覽器工作階段會自動失效，學生與管理員需要重新登入一次。
 
 ## 驗證版本
 

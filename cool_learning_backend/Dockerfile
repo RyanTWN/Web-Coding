@@ -9,7 +9,7 @@ WORKDIR /app
 
 # 複製 package.json 並安裝依賴套件
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 # 複製後端所有程式碼 (包含 server.js)
 COPY . .

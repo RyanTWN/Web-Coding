@@ -4,12 +4,24 @@ console.log("🔥 【重大宣告】：新版的 server.js 已經成功載入！
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const crypto = require('crypto');
 const API_BASE_URL = "https://learning.ifit.myds.me:4061/api/login";
 const APP_VERSION = process.env.APP_VERSION || 'development';
+const AUTH_SECRET = process.env.AUTH_SECRET || '';
+
+function getTaipeiDateKey() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+}
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = (process.env.CORS_ORIGINS || '*').split(',').map(value => value.trim());
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('不允許的網站來源'));
+  }
+}));
+app.use(express.json({ limit: '2mb' }));
 
 // 設定 MariaDB 連線池
 const pool = mysql.createPool({
@@ -32,6 +44,9 @@ app.get('/api/health', async (_req, res) => {
 });
 
 async function initializeDatabaseSchema() {
+  if (AUTH_SECRET.length < 32) {
+    throw new Error('AUTH_SECRET 必須設定為至少 32 個字元');
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_learning_state (
       seat_no VARCHAR(32) PRIMARY KEY,
@@ -46,20 +61,108 @@ async function initializeDatabaseSchema() {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS student_math_state (
+      seat_no VARCHAR(32) NOT NULL,
+      learning_date DATE NOT NULL,
+      publisher VARCHAR(32) NOT NULL,
+      unit_name VARCHAR(255) NOT NULL,
+      questions_json LONGTEXT NOT NULL,
+      current_question_index INT NOT NULL DEFAULT 0,
+      completed TINYINT(1) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (seat_no, learning_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS math_quiz_logs (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      seat_no VARCHAR(32) NOT NULL,
+      learning_date DATE NOT NULL,
+      publisher VARCHAR(32) NOT NULL,
+      unit_name VARCHAR(255) NOT NULL,
+      score INT NOT NULL,
+      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_math_daily_result (seat_no, learning_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  const [quizCreatedAtColumns] = await pool.query("SHOW COLUMNS FROM quiz_logs LIKE 'created_at'");
+  if (quizCreatedAtColumns.length === 0) {
+    await pool.query('ALTER TABLE quiz_logs ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
+  }
+}
+
+function encodeTokenPart(value) {
+  return Buffer.from(value).toString('base64url');
+}
+
+function issueToken(subject, role) {
+  const payload = encodeTokenPart(JSON.stringify({ sub: String(subject), role, exp: Date.now() + 12 * 60 * 60 * 1000 }));
+  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function readToken(token) {
+  if (!token || !token.includes('.')) return null;
+  const [payload, signature] = token.split('.');
+  const expected = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest();
+  let actual;
+  try { actual = Buffer.from(signature, 'base64url'); } catch (_) { return null; }
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return parsed.exp > Date.now() ? parsed : null;
+  } catch (_) { return null; }
+}
+
+function requireAuth(req, res, next) {
+  const token = req.get('authorization')?.replace(/^Bearer\s+/i, '');
+  const auth = readToken(token);
+  if (!auth) return res.status(401).json({ success: false, error: '請重新登入' });
+  req.auth = auth;
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (req.auth?.role !== 'admin') return res.status(403).json({ success: false, error: '需要管理員權限' });
+  next();
+}
+
+function requireOwnSeat(req, res, next) {
+  const seatNo = req.body?.seatNo || req.query?.seatNo || req.query?.studentId;
+  if (req.auth.role !== 'admin' && String(seatNo) !== req.auth.sub) {
+    return res.status(403).json({ success: false, error: '不可操作其他學生資料' });
+  }
+  next();
+}
+
+function safeEqual(left, right) {
+  const a = Buffer.from(String(left || ''));
+  const b = Buffer.from(String(right || ''));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function isDateKey(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
 }
 
 // [API] 學生登入
 app.post('/api/login', async (req, res) => {
-  const { name, seatNo } = req.body;
+  const name = String(req.body?.name || '').trim();
+  const seatNo = String(req.body?.seatNo || '').trim();
   const ip = req.ip || req.connection.remoteAddress;
+  if (!name || !/^[A-Za-z0-9_-]{1,32}$/.test(seatNo)) {
+    return res.status(400).json({ success: false, error: '姓名或座號格式錯誤' });
+  }
   try {
-    // 1. 確保學生存在 (若不存在則新增，觸發資料庫寫入預設的 registration_date)
-    await pool.query(`INSERT INTO students (seat_no, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = ?`, [seatNo, name, name]);
-    await pool.query(`INSERT INTO login_logs (seat_no, ip_address) VALUES (?, ?)`, [seatNo, ip]);
-    
-    // 2. 取得學生完整資料 (包含試用期與付費狀態欄位)
+    // 學生帳號必須先由管理員建立，姓名與座號都相符才簽發工作階段。
     const [rows] = await pool.query(`SELECT * FROM students WHERE seat_no = ?`, [seatNo]);
     const student = rows[0];
+    if (!student || String(student.name).trim() !== name) {
+      return res.status(401).json({ success: false, error: '姓名或座號不正確' });
+    }
+    await pool.query(`INSERT INTO login_logs (seat_no, ip_address) VALUES (?, ?)`, [seatNo, ip]);
     
     // 3. 計算試用天數 (若舊生尚無 registration_date，則以當下時間計算，給予全新 7 天試用)
     const regDateStr = student.registration_date || new Date();
@@ -81,19 +184,70 @@ app.post('/api/login', async (req, res) => {
     }
 
     // 5. 仍在試用期內或已付費：正常放行，並回傳剩餘天數與狀態給前端
+    const token = issueToken(seatNo, 'student');
     res.json({ 
         success: true, 
         status: 'active',
         is_premium: isPremium ? 1 : 0,
         days_remaining: isPremium ? '無限' : Math.max(0, 7 - diffInDays),
         message: "登入成功",
-        data: student
+        data: student,
+        token
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+    return res.status(503).json({ success: false, error: '管理員登入尚未設定' });
+  }
+  if (!safeEqual(username, process.env.ADMIN_USERNAME) || !safeEqual(password, process.env.ADMIN_PASSWORD)) {
+    return res.status(401).json({ success: false, error: '管理員帳號或密碼錯誤' });
+  }
+  res.json({ success: true, token: issueToken('admin', 'admin') });
+});
+
+app.post('/api/admin/students', requireAuth, requireAdmin, async (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  const seatNo = String(req.body?.seatNo || '').trim();
+  if (!name || !/^[A-Za-z0-9_-]{1,32}$/.test(seatNo)) {
+    return res.status(400).json({ success: false, error: '姓名或座號格式錯誤' });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO students (seat_no, name) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+      [seatNo, name]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/admin/students/:seatNo', requireAuth, requireAdmin, async (req, res) => {
+  const seatNo = String(req.params.seatNo || '').trim();
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    for (const table of ['student_learning_state', 'student_math_state', 'math_quiz_logs', 'learning_progress', 'quiz_logs', 'login_logs']) {
+      await connection.query(`DELETE FROM ${table} WHERE seat_no = ?`, [seatNo]);
+    }
+    await connection.query('DELETE FROM students WHERE seat_no = ?', [seatNo]);
+    await connection.commit();
+    res.json({ success: true });
+  } catch (err) {
+    if (connection) await connection.rollback();
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 // 取得每日 30 個單字的 API (具備完整空值防呆保護)
-app.get('/api/get-daily-words', async (req, res) => {
+app.get('/api/get-daily-words', requireAuth, requireOwnSeat, async (req, res) => {
     const studentId = req.query.studentId;
     
     if (!studentId) {
@@ -116,7 +270,7 @@ app.get('/api/get-daily-words', async (req, res) => {
         current_day_index = current_day_index !== null && current_day_index !== undefined ? current_day_index : 0;
         
         // 取得今天的日期字串 (YYYY-MM-DD)
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getTaipeiDateKey();
         
         // 2. 判斷是否為新的一天 (如果 last_learn_date 是 NULL，代表從未學習過)
         if (!last_learn_date || last_learn_date !== todayStr) {
@@ -148,7 +302,7 @@ app.get('/api/get-daily-words', async (req, res) => {
 });
 
 // [API] 讀取學生完整學習狀態，供跨裝置與重新載入時同步。
-app.get('/api/student-progress', async (req, res) => {
+app.get('/api/student-progress', requireAuth, requireOwnSeat, async (req, res) => {
   const { seatNo } = req.query;
   if (!seatNo) return res.status(400).json({ success: false, error: '缺少座號' });
 
@@ -162,7 +316,12 @@ app.get('/api/student-progress', async (req, res) => {
       [seatNo]
     );
 
-    if (rows.length === 0) return res.json({ success: true, data: null });
+    const [quizRows] = await pool.query(
+      `SELECT id, mode, score, created_at AS timestamp
+       FROM quiz_logs WHERE seat_no = ? ORDER BY id DESC LIMIT 100`,
+      [seatNo]
+    );
+    if (rows.length === 0) return res.json({ success: true, data: { quizHistory: quizRows } });
     const row = rows[0];
     const parseJson = (value, fallback) => {
       try { return JSON.parse(value); } catch (_) { return fallback; }
@@ -180,7 +339,8 @@ app.get('/api/student-progress', async (req, res) => {
         starredIds: parseJson(row.starred_ids, []),
         starredWords: parseJson(row.starred_words, []),
         starredSpellingCounts: parseJson(row.starred_spelling_counts, {}),
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
+        quizHistory: quizRows
       }
     });
   } catch (err) {
@@ -189,19 +349,27 @@ app.get('/api/student-progress', async (req, res) => {
 });
 
 // [API] 儲存學生完整學習狀態；完成當日學習時同步寫入 learning_progress。
-app.post('/api/student-progress', async (req, res) => {
+app.post('/api/student-progress', requireAuth, requireOwnSeat, async (req, res) => {
   const {
     seatNo, learningDate, currentWordIndex = 0, completed = false,
     completedDates = [], learnedWordIds = [], starredIds = [],
     starredWords = [], starredSpellingCounts = {}
   } = req.body;
 
-  if (!seatNo || !learningDate) {
+  if (!seatNo || !isDateKey(learningDate)) {
     return res.status(400).json({ success: false, error: '缺少座號或學習日期' });
   }
 
-  const connection = await pool.getConnection();
+  if (![completedDates, learnedWordIds, starredIds, starredWords].every(Array.isArray)) {
+    return res.status(400).json({ success: false, error: '進度資料格式錯誤' });
+  }
+  if (learnedWordIds.length > 5000 || starredWords.length > 2000) {
+    return res.status(413).json({ success: false, error: '進度資料超過允許大小' });
+  }
+
+  let connection;
   try {
+    connection = await pool.getConnection();
     await connection.beginTransaction();
     await connection.query(
       `INSERT INTO student_learning_state
@@ -218,7 +386,7 @@ app.post('/api/student-progress', async (req, res) => {
          starred_words = VALUES(starred_words),
          starred_spelling_counts = VALUES(starred_spelling_counts)`,
       [
-        seatNo, learningDate, Number(currentWordIndex) || 0, completed ? 1 : 0,
+        seatNo, learningDate, Math.max(0, Math.min(29, Number(currentWordIndex) || 0)), completed ? 1 : 0,
         JSON.stringify(completedDates), JSON.stringify(learnedWordIds),
         JSON.stringify(starredIds), JSON.stringify(starredWords),
         JSON.stringify(starredSpellingCounts)
@@ -237,15 +405,87 @@ app.post('/api/student-progress', async (req, res) => {
     await connection.commit();
     res.json({ success: true });
   } catch (err) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     res.status(500).json({ success: false, error: err.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/math-progress', requireAuth, requireOwnSeat, async (req, res) => {
+  const { seatNo, date } = req.query;
+  if (!seatNo || !isDateKey(date)) return res.status(400).json({ success: false, error: '缺少座號或日期' });
+  try {
+    const [states] = await pool.query(
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date,
+              publisher, unit_name, questions_json, current_question_index, completed, updated_at
+       FROM student_math_state WHERE seat_no = ? AND learning_date = ?`,
+      [seatNo, date]
+    );
+    const [history] = await pool.query(
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS date, publisher,
+              unit_name AS unit, score, completed_at
+       FROM math_quiz_logs WHERE seat_no = ? ORDER BY learning_date DESC LIMIT 100`,
+      [seatNo]
+    );
+    const state = states[0];
+    res.json({
+      success: true,
+      data: state ? {
+        date: state.learning_date,
+        publisher: state.publisher,
+        unit: state.unit_name,
+        questions: JSON.parse(state.questions_json),
+        currentIndex: state.current_question_index,
+        completed: Boolean(state.completed),
+        updatedAt: state.updated_at
+      } : null,
+      history
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/math-progress', requireAuth, requireOwnSeat, async (req, res) => {
+  const { seatNo, date, publisher, unit, questions, currentIndex = 0, completed = false, score = 0 } = req.body || {};
+  if (!seatNo || !isDateKey(date) || !publisher || !unit || !Array.isArray(questions) || questions.length > 50) {
+    return res.status(400).json({ success: false, error: '數學進度資料格式錯誤' });
+  }
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    await connection.query(
+      `INSERT INTO student_math_state
+        (seat_no, learning_date, publisher, unit_name, questions_json, current_question_index, completed)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE publisher = VALUES(publisher), unit_name = VALUES(unit_name),
+         questions_json = VALUES(questions_json), current_question_index = VALUES(current_question_index),
+         completed = VALUES(completed)`,
+      [seatNo, date, publisher, unit, JSON.stringify(questions), Math.max(0, Math.min(10, Number(currentIndex) || 0)), completed ? 1 : 0]
+    );
+    if (completed) {
+      await connection.query(
+        `INSERT INTO math_quiz_logs (seat_no, learning_date, publisher, unit_name, score)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE publisher = VALUES(publisher), unit_name = VALUES(unit_name),
+           score = VALUES(score), completed_at = CURRENT_TIMESTAMP`,
+        [seatNo, date, publisher, unit, Math.max(0, Math.min(100, Number(score) || 0))]
+      );
+    }
+    await connection.commit();
+    res.json({ success: true });
+  } catch (err) {
+    if (connection) await connection.rollback();
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
 // [API] 學習打卡
-app.post('/api/complete-learning', async (req, res) => {
+app.post('/api/complete-learning', requireAuth, requireOwnSeat, async (req, res) => {
   const { seatNo, completedDate, learnedWordIds } = req.body;
   try {
     await pool.query(
@@ -258,7 +498,7 @@ app.post('/api/complete-learning', async (req, res) => {
 });
 
 // [API] 測驗歷程
-app.post('/api/quiz-log', async (req, res) => {
+app.post('/api/quiz-log', requireAuth, requireOwnSeat, async (req, res) => {
   const { seatNo, mode, score } = req.body;
   try {
     await pool.query(`INSERT INTO quiz_logs (seat_no, mode, score) VALUES (?, ?, ?)`, [seatNo, mode, score]);
@@ -267,21 +507,22 @@ app.post('/api/quiz-log', async (req, res) => {
 });
 
 // [API] 管理員後台數據
-app.get('/api/admin/analytics', async (req, res) => {
+app.get('/api/admin/analytics', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT 
-        s.seat_no, s.name, 
-        COUNT(DISTINCT lp.completed_date) AS total_days,
-        lp.learned_word_ids,
-        COUNT(DISTINCT ql.id) AS total_quizzes,
-        AVG(ql.score) AS avg_score,
-        MAX(ll.login_time) AS last_login
+        s.seat_no, s.name,
+        (SELECT COUNT(*) FROM learning_progress lp WHERE lp.seat_no = s.seat_no) AS total_days,
+        (SELECT COUNT(*) FROM quiz_logs ql WHERE ql.seat_no = s.seat_no) AS total_quizzes,
+        (SELECT AVG(ql.score) FROM quiz_logs ql WHERE ql.seat_no = s.seat_no) AS avg_score,
+        (SELECT MAX(ll.login_time) FROM login_logs ll WHERE ll.seat_no = s.seat_no) AS last_login,
+        COALESCE(JSON_LENGTH(sls.starred_ids), 0) AS starred_count,
+        COALESCE(JSON_LENGTH(sls.learned_word_ids), 0) AS learned_count,
+        (SELECT COUNT(*) FROM math_quiz_logs mql WHERE mql.seat_no = s.seat_no) AS math_quizzes,
+        (SELECT AVG(mql.score) FROM math_quiz_logs mql WHERE mql.seat_no = s.seat_no) AS math_avg_score
       FROM students s
-      LEFT JOIN learning_progress lp ON s.seat_no = lp.seat_no
-      LEFT JOIN quiz_logs ql ON s.seat_no = ql.seat_no
-      LEFT JOIN login_logs ll ON s.seat_no = ll.seat_no
-      GROUP BY s.seat_no, s.name
+      LEFT JOIN student_learning_state sls ON s.seat_no = sls.seat_no
+      ORDER BY s.seat_no
     `);
     res.json({ success: true, data: rows });
   } catch (err) { res.status(500).json({ error: err.message }); }

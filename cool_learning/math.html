@@ -160,10 +160,17 @@
     };
 
     let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user'));
+    const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
     let selectedPub = "康軒"; // 預設改為康軒
     let dailyQuestions = [];
     let currentIndex = 0;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+
+    function mathApiFetch(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (currentUser?.token) headers.set('Authorization', `Bearer ${currentUser.token}`);
+      return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+    }
 
     // 六年級專屬動態題型產生器
     function generateQuestion(unit) {
@@ -276,7 +283,7 @@
       return { q, a };
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       // 檢查是否登入防呆處理
       if (!currentUser) {
         try {
@@ -287,11 +294,17 @@
         }
       }
 
+      if (!currentUser.token) {
+        sessionStorage.removeItem('g6_portal_user');
+        window.location.href = 'index.html';
+        return;
+      }
+
       document.getElementById('header-user-name').textContent = currentUser.name;
       document.getElementById('header-user-seat').textContent = `座號: ${currentUser.seatNo}`;
       
       updateUnitDropdown();
-      checkDailyState();
+      await checkDailyState();
 
       // 出版社按鈕切換
       document.querySelectorAll('.pub-btn').forEach(btn => {
@@ -324,10 +337,40 @@
       });
     }
 
-    function checkDailyState() {
-      const savedState = localStorage.getItem(`g6_math_daily_${currentUser.seatNo}_${todayStr}`);
-      if (savedState) {
-        const state = JSON.parse(savedState);
+    async function checkDailyState() {
+      const localStateText = localStorage.getItem(`g6_math_daily_${currentUser.seatNo}_${todayStr}`);
+      const localState = localStateText ? JSON.parse(localStateText) : null;
+      let state = localState;
+      try {
+        const response = await mathApiFetch(`/math-progress?seatNo=${encodeURIComponent(currentUser.seatNo)}&date=${todayStr}`);
+        const result = await response.json();
+        if (response.ok && result.success) {
+          if (result.data) {
+            const cloudState = result.data;
+            const localIsNewer = localState && (
+              localState.completed || Number(localState.currentIndex || 0) > Number(cloudState.currentIndex || 0)
+            );
+            state = localIsNewer ? localState : cloudState;
+            localStorage.setItem(`g6_math_daily_${currentUser.seatNo}_${todayStr}`, JSON.stringify(state));
+            if (localIsNewer) syncMathState(localState);
+          } else if (localState) {
+            syncMathState(localState);
+          }
+          if (Array.isArray(result.history)) {
+            localStorage.setItem(`g6_math_history_${currentUser.seatNo}`, JSON.stringify(result.history));
+            localStorage.setItem(`g6_math_completed_${currentUser.seatNo}`, JSON.stringify(result.history.map(item => item.date)));
+          }
+        } else if (response.status === 401) {
+          sessionStorage.removeItem('g6_portal_user');
+          window.location.href = 'index.html';
+          return;
+        }
+      } catch (error) {
+        console.error('數學雲端進度載入失敗，改用本機快取', error);
+      }
+
+      if (state) {
+        selectedPub = state.publisher || selectedPub;
         if (state.completed) {
           showView('view-result');
         } else {
@@ -393,8 +436,32 @@
     }
 
     function saveState(unit, isCompleted) {
-      const state = { unit: unit, questions: dailyQuestions, currentIndex: currentIndex, completed: isCompleted };
+      const state = { publisher: selectedPub, unit, questions: dailyQuestions, currentIndex, completed: isCompleted };
       localStorage.setItem(`g6_math_daily_${currentUser.seatNo}_${todayStr}`, JSON.stringify(state));
+      syncMathState(state);
+    }
+
+    async function syncMathState(state) {
+      try {
+        const response = await mathApiFetch('/math-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            seatNo: currentUser.seatNo,
+            date: todayStr,
+            publisher: state.publisher,
+            unit: state.unit,
+            questions: state.questions,
+            currentIndex: state.currentIndex,
+            completed: state.completed,
+            score: state.completed ? 100 : 0
+          }),
+          keepalive: Boolean(state.completed)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        console.error('數學進度同步失敗，已保留於本機等待重試', error);
+      }
     }
 
     function saveHistoryRecord() {
