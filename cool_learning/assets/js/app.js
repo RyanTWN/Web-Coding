@@ -14,6 +14,9 @@ let starredSpellingCounts = {};
 let completedDates = new Set();
 let learnedWordIds = new Set();
 let calendarViewDate = new Date();
+let selectedLearningDate = getTodayKey();
+let dailyProgressMap = new Map();
+let allWordsCompleted = false;
 let modalCallback = null;
 const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
 let progressSyncTimer = null;
@@ -80,14 +83,13 @@ function speakText(text) {
 }
 
 // 核心功能 1: 從後端獲取單字
-async function fetchDailyWordsFromCloud(studentId) {
+async function fetchDailyWordsFromCloud(studentId, learningDate = getTodayKey()) {
     try {
-        const response = await apiFetch(`/get-daily-words?studentId=${encodeURIComponent(studentId)}`);
+        const response = await apiFetch(`/get-daily-words?studentId=${encodeURIComponent(studentId)}&date=${encodeURIComponent(learningDate)}`);
         const result = await response.json().catch(() => ({}));
         
         if (response.ok && result.success) {
-            console.log(`成功載入第 ${result.currentDay} 天的學習單字！`);
-            return result.dailyWords; 
+            return result;
         } else {
             throw new Error(result.error || `伺服器回應 ${response.status}`);
         }
@@ -107,9 +109,8 @@ function saveStudentAppData() {
   localStorage.setItem(`g6_vocab_completed_${seatNo}`, JSON.stringify([...completedDates]));
   localStorage.setItem(`g6_learned_ids_${seatNo}`, JSON.stringify([...learnedWordIds]));
   
-  const todayStr = getTodayKey();
-  localStorage.setItem(`g6_daily_words_${seatNo}_${todayStr}`, JSON.stringify(today30Words));
-  localStorage.setItem(`g6_daily_index_${seatNo}_${todayStr}`, currentIndex);
+  localStorage.setItem(`g6_daily_words_${seatNo}_${selectedLearningDate}`, JSON.stringify(today30Words));
+  localStorage.setItem(`g6_daily_index_${seatNo}_${selectedLearningDate}`, currentIndex);
   scheduleProgressSync();
 }
 
@@ -121,7 +122,6 @@ function scheduleProgressSync() {
 async function syncStudentProgressToCloud() {
   if (!currentUser || currentUser.isAdmin) return;
 
-  const todayStr = getTodayKey();
   try {
     updateSyncStatus('同步中…', 'text-amber-600');
     const response = await apiFetch('/student-progress', {
@@ -129,9 +129,9 @@ async function syncStudentProgressToCloud() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         seatNo: currentUser.seatNo,
-        learningDate: todayStr,
+        learningDate: selectedLearningDate,
         currentWordIndex: currentIndex,
-        completed: completedDates.has(todayStr),
+        completed: completedDates.has(selectedLearningDate),
         completedDates: [...completedDates],
         learnedWordIds: [...learnedWordIds],
         starredIds: [...starredIds],
@@ -140,7 +140,11 @@ async function syncStudentProgressToCloud() {
       })
     });
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error || `HTTP ${response.status}`);
+    const justCompletedAllWords = Boolean(result.allWordsCompleted) && !allWordsCompleted;
+    allWordsCompleted = Boolean(result.allWordsCompleted);
+    if (justCompletedAllWords) showToast('恭喜所有單字已學習完成！', 'fa-trophy');
     updateSyncStatus('已同步', 'text-emerald-600');
   } catch (error) {
     // localStorage 保留離線資料；下一次操作時會再次同步。
@@ -182,6 +186,9 @@ async function loadStudentAppData(seatNo) {
   if (cloudProgress) {
     completedDates = new Set([...completedDates, ...(cloudProgress.completedDates || [])]);
     learnedWordIds = new Set([...learnedWordIds, ...(cloudProgress.learnedWordIds || [])]);
+    dailyProgressMap = new Map((cloudProgress.dailyProgress || []).map(item => [item.learningDate, item]));
+    completedDates = new Set((cloudProgress.dailyProgress || []).filter(item => item.completed).map(item => item.learningDate));
+    allWordsCompleted = Boolean(cloudProgress.allWordsCompleted);
     // 收藏允許取消，因此有雲端狀態時以伺服器版本為準，避免舊裝置恢復已取消收藏。
     if (cloudProgress.updatedAt) {
       starredIds = new Set(cloudProgress.starredIds || []);
@@ -199,19 +206,20 @@ async function loadStudentAppData(seatNo) {
     }
   }
 
-  if (cachedWords && cachedWords.length > 0) {
-    today30Words = cachedWords;
+  selectedLearningDate = todayStr;
+  const dailyResult = await fetchDailyWordsFromCloud(seatNo, todayStr);
+  if (dailyResult) {
+    today30Words = dailyResult.dailyWords || [];
     const localIndex = cachedIndex ? parseInt(cachedIndex, 10) : 0;
-    const cloudIndex = cloudProgress?.learningDate === todayStr ? Number(cloudProgress.currentWordIndex || 0) : 0;
-    currentIndex = Math.max(localIndex, cloudIndex);
+    currentIndex = Math.max(localIndex, Number(dailyResult.currentWordIndex || 0));
+    if (dailyResult.completed) completedDates.add(todayStr);
+    allWordsCompleted = Boolean(dailyResult.allWordsCompleted);
+  } else if (cachedWords && cachedWords.length > 0) {
+    today30Words = cachedWords;
+    currentIndex = cachedIndex ? parseInt(cachedIndex, 10) : 0;
+    showToast('目前使用本機快取，連線恢復後會再同步', 'fa-cloud-arrow-down');
   } else {
-    const dailyWords = await fetchDailyWordsFromCloud(seatNo);
-    if (dailyWords === null) return;
-    today30Words = dailyWords || [];
-    currentIndex = cloudProgress?.learningDate === todayStr
-      ? Number(cloudProgress.currentWordIndex || 0)
-      : 0;
-    saveStudentAppData(); 
+    return;
   }
 
   if (today30Words.length === 0) {
@@ -220,6 +228,28 @@ async function loadStudentAppData(seatNo) {
   }
   saveStudentAppData();
   renderCard();
+  if (allWordsCompleted) showToast('恭喜所有單字已學習完成！', 'fa-trophy');
+}
+
+async function openLearningDate(learningDate) {
+  if (!currentUser || learningDate > getTodayKey()) return;
+  updateSyncStatus('載入指定日期…', 'text-amber-600');
+  const result = await fetchDailyWordsFromCloud(currentUser.seatNo, learningDate);
+  if (!result) return;
+  selectedLearningDate = learningDate;
+  today30Words = result.dailyWords || [];
+  currentIndex = result.completed ? 0 : Number(result.currentWordIndex || 0);
+  if (result.completed) completedDates.add(learningDate);
+  dailyProgressMap.set(learningDate, {
+    learningDate,
+    currentWordIndex: currentIndex,
+    completed: Boolean(result.completed)
+  });
+  localStorage.setItem(`g6_daily_words_${currentUser.seatNo}_${learningDate}`, JSON.stringify(today30Words));
+  localStorage.setItem(`g6_daily_index_${currentUser.seatNo}_${learningDate}`, currentIndex);
+  switchAppTab('learn');
+  renderCard();
+  showToast(result.completed ? `正在複習 ${learningDate} 的 30 個單字` : `正在補學 ${learningDate} 的 30 個單字`, result.completed ? 'fa-rotate-left' : 'fa-book-open');
 }
 
 // 畫面切換 (加入防呆)
@@ -447,7 +477,8 @@ function renderCard() {
   const progText = document.getElementById('progress-text');
   if (progText) {
     const percent = Math.round(((currentIndex + 1) / today30Words.length) * 100);
-    progText.textContent = `${currentIndex + 1} / ${today30Words.length} · ${percent}%`;
+    const dateLabel = selectedLearningDate === getTodayKey() ? '' : `${selectedLearningDate} · `;
+    progText.textContent = `${dateLabel}${currentIndex + 1} / ${today30Words.length} · ${percent}%`;
   }
   
   const starBadge = document.getElementById('starred-count-badge');
@@ -505,9 +536,14 @@ function renderCalendar() {
     const dd = String(day).padStart(2, '0');
     const key = `${year}-${mm}-${dd}`;
 
-    const cell = document.createElement('div');
-    cell.className = completedDates.has(key) ? "h-8 bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center" : "h-8 bg-slate-50 text-slate-600 rounded-xl text-xs flex items-center justify-center";
+    const cell = document.createElement(key <= todayKey ? 'button' : 'div');
+    cell.className = completedDates.has(key) ? "h-8 bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center hover:bg-emerald-600" : key <= todayKey ? "h-8 bg-amber-50 text-amber-800 rounded-xl text-xs flex items-center justify-center hover:bg-amber-100" : "h-8 bg-slate-50 text-slate-300 rounded-xl text-xs flex items-center justify-center";
     cell.textContent = day;
+    if (key <= todayKey) {
+      cell.type = 'button';
+      cell.title = completedDates.has(key) ? '點擊複習當日單字' : '點擊補學當日單字';
+      cell.addEventListener('click', () => openLearningDate(key));
+    }
     grid.appendChild(cell);
   }
 
@@ -697,8 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCard();
     } else {
       today30Words.forEach(w => learnedWordIds.add(w.id));
-      const todayKey = getTodayKey();
-      completedDates.add(todayKey);
+      completedDates.add(selectedLearningDate);
+      dailyProgressMap.set(selectedLearningDate, { learningDate: selectedLearningDate, currentWordIndex: 29, completed: true });
       saveStudentAppData();
       syncStudentProgressToCloud();
       switchAppTab('calendar');

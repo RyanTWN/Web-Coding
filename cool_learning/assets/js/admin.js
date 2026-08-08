@@ -2,10 +2,14 @@
 //import { VOCABULARY_DATA } from './data/vocabulary.js';
 
 let adminAnalytics = [];
+let adminWordsPage = 1;
+let adminWordsTotal = 0;
+const ADMIN_WORDS_PAGE_SIZE = 25;
 
 function initAdminModule() {
   document.getElementById('admin-tab-users').onclick = () => switchAdminTab('users');
   document.getElementById('admin-tab-analytics').onclick = () => switchAdminTab('analytics');
+  document.getElementById('admin-tab-words').onclick = () => switchAdminTab('words');
   document.getElementById('btn-admin-logout').onclick = () => {
     sessionStorage.removeItem('g6_portal_user');
     location.reload();
@@ -22,17 +26,35 @@ function initAdminModule() {
   };
   document.getElementById('close-detail-modal-btn').onclick = closeStudentDetailModal;
   document.getElementById('close-detail-modal-footer-btn').onclick = closeStudentDetailModal;
+  document.getElementById('form-add-word').onsubmit = handleAddWord;
+  document.getElementById('word-search').oninput = debounce(() => { adminWordsPage = 1; loadAdminWords(); }, 300);
+  document.getElementById('word-filter-level').onchange = () => { adminWordsPage = 1; loadAdminWords(); };
+  document.getElementById('word-filter-enabled').onchange = () => { adminWordsPage = 1; loadAdminWords(); };
+  document.getElementById('word-prev-page').onclick = () => { if (adminWordsPage > 1) { adminWordsPage--; loadAdminWords(); } };
+  document.getElementById('word-next-page').onclick = () => {
+    if (adminWordsPage * ADMIN_WORDS_PAGE_SIZE < adminWordsTotal) { adminWordsPage++; loadAdminWords(); }
+  };
 }
 
 function switchAdminTab(tab) {
-  if (tab === 'users') {
-    document.getElementById('admin-panel-users').classList.remove('hidden');
-    document.getElementById('admin-panel-analytics').classList.add('hidden');
-  } else {
-    document.getElementById('admin-panel-users').classList.add('hidden');
-    document.getElementById('admin-panel-analytics').classList.remove('hidden');
+  for (const name of ['users', 'analytics', 'words']) {
+    document.getElementById(`admin-panel-${name}`).classList.toggle('hidden', name !== tab);
+    const button = document.getElementById(`admin-tab-${name}`);
+    button.classList.toggle('bg-amber-500', name === tab);
+    button.classList.toggle('text-white', name === tab);
+    button.classList.toggle('shadow-md', name === tab);
+    button.classList.toggle('text-slate-500', name !== tab);
   }
-  renderAdminTables();
+  if (tab === 'words') loadAdminWords();
+  else renderAdminTables();
+}
+
+function debounce(callback, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => callback(...args), delay);
+  };
 }
 
 function escapeHtml(value) {
@@ -190,4 +212,84 @@ async function deleteStudent(seatNo, refresh = true) {
 async function clearAllStudents() {
   for (const student of [...studentsList]) await deleteStudent(student.seatNo, false);
   await renderAdminTables();
+}
+
+async function loadAdminWords() {
+  const params = new URLSearchParams({ page: adminWordsPage, limit: ADMIN_WORDS_PAGE_SIZE });
+  const search = document.getElementById('word-search').value.trim();
+  const level = document.getElementById('word-filter-level').value;
+  const enabled = document.getElementById('word-filter-enabled').value;
+  if (search) params.set('search', search);
+  if (level) params.set('level', level);
+  if (enabled !== '') params.set('enabled', enabled);
+  const tbody = document.getElementById('admin-words-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">載入中…</td></tr>';
+  try {
+    const response = await apiFetch(`/admin/words?${params}`);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || '單字資料載入失敗');
+    adminWordsTotal = Number(result.pagination?.total || 0);
+    renderAdminWords(result.data || []);
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-rose-500">${escapeHtml(error.message)}</td></tr>`;
+    showToast(error.message || '單字資料載入失敗', 'fa-triangle-exclamation');
+  }
+}
+
+function renderAdminWords(words) {
+  const tbody = document.getElementById('admin-words-tbody');
+  tbody.innerHTML = '';
+  for (const word of words) {
+    const enabled = Boolean(word.learning_enabled);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="p-3 font-bold text-brand-600">${escapeHtml(word.vocabulary)}</td>
+      <td class="p-3">${escapeHtml(word.chinese)}</td>
+      <td class="p-3 max-w-sm"><div>${escapeHtml(word.sentence)}</div><div class="text-slate-400 mt-1">${escapeHtml(word.translate)}</div></td>
+      <td class="p-3 font-bold">Level ${Number(word.level)}</td>
+      <td class="p-3"><button type="button" class="px-3 py-1.5 rounded-lg font-bold ${enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${enabled ? '已啟用' : '已停用'}</button></td>`;
+    tr.querySelector('button').onclick = () => toggleWordLearning(word.id, !enabled);
+    tbody.appendChild(tr);
+  }
+  if (!words.length) tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">找不到符合條件的單字</td></tr>';
+  const totalPages = Math.max(1, Math.ceil(adminWordsTotal / ADMIN_WORDS_PAGE_SIZE));
+  document.getElementById('word-pagination-summary').textContent = `${adminWordsTotal} 個單字 · 第 ${adminWordsPage} / ${totalPages} 頁`;
+  document.getElementById('word-prev-page').disabled = adminWordsPage <= 1;
+  document.getElementById('word-next-page').disabled = adminWordsPage >= totalPages;
+}
+
+async function toggleWordLearning(id, learningEnabled) {
+  try {
+    const response = await apiFetch(`/admin/words/${encodeURIComponent(id)}/learning-enabled`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ learningEnabled })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || '狀態更新失敗');
+    await loadAdminWords();
+    showToast(learningEnabled ? '單字已啟用' : '單字已停用', 'fa-circle-check');
+  } catch (error) { showToast(error.message || '狀態更新失敗', 'fa-triangle-exclamation'); }
+}
+
+async function handleAddWord(event) {
+  event.preventDefault();
+  const payload = {
+    vocabulary: document.getElementById('add-word-vocabulary').value.trim(),
+    chinese: document.getElementById('add-word-chinese').value.trim(),
+    sentence: document.getElementById('add-word-sentence').value.trim(),
+    translate: document.getElementById('add-word-translate').value.trim(),
+    level: Number(document.getElementById('add-word-level').value),
+    learningEnabled: document.getElementById('add-word-enabled').checked
+  };
+  try {
+    const response = await apiFetch('/admin/words', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || '新增單字失敗');
+    event.target.reset();
+    document.getElementById('add-word-enabled').checked = true;
+    adminWordsPage = 1;
+    await loadAdminWords();
+    showToast('單字新增成功', 'fa-circle-check');
+  } catch (error) { showToast(error.message || '新增單字失敗', 'fa-triangle-exclamation'); }
 }

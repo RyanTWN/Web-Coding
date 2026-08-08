@@ -307,9 +307,10 @@
         <button id="btn-admin-logout" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs flex items-center gap-1.5"><i class="fa-solid fa-right-from-bracket"></i> 退出管理員</button>
       </div>
 
-      <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
+      <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-100 pb-3">
         <button id="admin-tab-users" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white shadow-md"><i class="fa-solid fa-users mr-1.5"></i>帳號管理 (CSV匯入)</button>
         <button id="admin-tab-analytics" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"><i class="fa-solid fa-chart-line mr-1.5"></i>全班學習成效追蹤 (2000字稽核)</button>
+        <button id="admin-tab-words" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"><i class="fa-solid fa-spell-check mr-1.5"></i>單字管理</button>
       </div>
 
       <div id="admin-panel-users">
@@ -390,12 +391,44 @@
           </div>
         </div>
       </div>
+
+      <div id="admin-panel-words" class="hidden space-y-5">
+        <form id="form-add-word" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-brand-500"></i>新增英文單字</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input id="add-word-vocabulary" required maxlength="255" placeholder="英文單字，例如 abandon" class="py-2 px-3 text-xs font-bold rounded-xl border">
+            <input id="add-word-chinese" required maxlength="255" placeholder="中文解釋" class="py-2 px-3 text-xs font-bold rounded-xl border">
+            <textarea id="add-word-sentence" required maxlength="2000" placeholder="英文例句" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
+            <textarea id="add-word-translate" required maxlength="2000" placeholder="例句中文翻譯" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
+            <select id="add-word-level" required class="py-2 px-3 text-xs font-bold rounded-xl border">
+              <option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option>
+            </select>
+            <label class="flex items-center gap-2 text-xs font-bold text-slate-700"><input id="add-word-enabled" type="checkbox" checked>加入每日學習</label>
+          </div>
+          <button type="submit" class="px-4 py-2 bg-brand-500 text-white font-bold text-xs rounded-xl shadow-sm">新增單字</button>
+        </form>
+
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="p-3 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <input id="word-search" placeholder="搜尋單字、中文或例句" class="py-2 px-3 text-xs rounded-xl border sm:col-span-2">
+            <select id="word-filter-level" class="py-2 px-3 text-xs rounded-xl border"><option value="">全部 Level</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option></select>
+            <select id="word-filter-enabled" class="py-2 px-3 text-xs rounded-xl border"><option value="">全部狀態</option><option value="1">已啟用</option><option value="0">已停用</option></select>
+          </div>
+          <div class="max-h-[420px] overflow-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse min-w-[760px]">
+              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 sticky top-0"><tr><th class="p-3">單字</th><th class="p-3">中文</th><th class="p-3">例句 / 翻譯</th><th class="p-3">Level</th><th class="p-3">學習狀態</th></tr></thead>
+              <tbody id="admin-words-tbody" class="text-xs divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+          <div class="p-3 bg-slate-50 border-t flex items-center justify-between text-xs font-bold text-slate-600"><span id="word-pagination-summary">0 個單字</span><div class="flex gap-2"><button id="word-prev-page" type="button" class="px-3 py-1.5 bg-white border rounded-lg disabled:opacity-40">上一頁</button><button id="word-next-page" type="button" class="px-3 py-1.5 bg-white border rounded-lg disabled:opacity-40">下一頁</button></div></div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <script src="assets/js/app.js?v=20260808-auth-fix"></script>
+  <script src="assets/js/app.js?v=20260809-word-management"></script>
   <script src="assets/js/quiz.js"></script> 
-  <script src="assets/js/admin.js"></script> 
+  <script src="assets/js/admin.js?v=20260809-word-management"></script>
   
   <script>
     // 確保 showToast 函式在全域環境中可用

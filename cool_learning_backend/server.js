@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const API_BASE_URL = "https://learning.ifit.myds.me:4061/api/login";
 const APP_VERSION = process.env.APP_VERSION || 'development';
 const AUTH_SECRET = process.env.AUTH_SECRET || '';
+const WORD_FIELDS = Object.freeze(['vocabulary', 'chinese', 'sentence', 'translate']);
 
 function getTaipeiDateKey() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
@@ -77,6 +78,47 @@ async function initializeDatabaseSchema() {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (seat_no, learning_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS english_word_cycle_state (
+      seat_no VARCHAR(32) NOT NULL,
+      difficulty TINYINT NOT NULL,
+      cycle_no INT NOT NULL DEFAULT 1,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (seat_no, difficulty)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS english_daily_assignments (
+      seat_no VARCHAR(32) NOT NULL,
+      learning_date DATE NOT NULL,
+      position_no TINYINT UNSIGNED NOT NULL,
+      word_id BIGINT NOT NULL,
+      difficulty TINYINT NOT NULL,
+      cycle_no INT NOT NULL,
+      completed TINYINT(1) NOT NULL DEFAULT 0,
+      assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      completed_at TIMESTAMP NULL,
+      PRIMARY KEY (seat_no, learning_date, position_no),
+      UNIQUE KEY uq_english_daily_word (seat_no, learning_date, word_id),
+      KEY ix_english_cycle_words (seat_no, difficulty, cycle_no, word_id),
+      KEY ix_english_completed_words (seat_no, completed, word_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS english_daily_progress (
+      seat_no VARCHAR(32) NOT NULL,
+      learning_date DATE NOT NULL,
+      current_word_index TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      completed TINYINT(1) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      completed_at TIMESTAMP NULL,
+      PRIMARY KEY (seat_no, learning_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    INSERT IGNORE INTO english_daily_progress (seat_no, learning_date, current_word_index, completed, completed_at)
+    SELECT seat_no, completed_date, 29, 1, CURRENT_TIMESTAMP FROM learning_progress
   `);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS math_quiz_logs (
@@ -236,7 +278,7 @@ app.delete('/api/admin/students/:seatNo', requireAuth, requireAdmin, async (req,
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
-    for (const table of ['student_learning_state', 'student_math_state', 'math_quiz_logs', 'learning_progress', 'quiz_logs', 'login_logs']) {
+    for (const table of ['english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state', 'student_learning_state', 'student_math_state', 'math_quiz_logs', 'learning_progress', 'quiz_logs', 'login_logs']) {
       await connection.query(`DELETE FROM ${table} WHERE seat_no = ?`, [seatNo]);
     }
     await connection.query('DELETE FROM students WHERE seat_no = ?', [seatNo]);
@@ -250,89 +292,294 @@ app.delete('/api/admin/students/:seatNo', requireAuth, requireAdmin, async (req,
   }
 });
 
-// 取得每日 30 個單字的 API (具備完整空值防呆保護)
+const DAILY_DIFFICULTY_QUOTAS = Object.freeze({ 3: 10, 2: 15, 1: 5 });
+
+async function getEnglishCompletionStatus(connection, seatNo) {
+  const [[counts]] = await connection.query(
+    `SELECT (SELECT COUNT(*) FROM words_pool WHERE learning_enabled = 1) AS total,
+            (SELECT COUNT(DISTINCT a.word_id)
+             FROM english_daily_assignments a
+             JOIN words_pool w ON w.id = a.word_id
+             WHERE a.seat_no = ? AND a.completed = 1 AND w.learning_enabled = 1) AS learned`,
+    [seatNo]
+  );
+  const total = Number(counts.total || 0);
+  const learned = Number(counts.learned || 0);
+  return { totalWords: total, learnedWords: learned, allWordsCompleted: total > 0 && learned >= total };
+}
+
+// 取得指定日期固定的 30 字；過去日期可建立補課，未來日期禁止預先抽字。
 app.get('/api/get-daily-words', requireAuth, requireOwnSeat, async (req, res) => {
-    const studentId = req.query.studentId;
-    
-    if (!studentId) {
-        return res.status(400).json({ error: '缺少學生 ID' });
+  const studentId = String(req.query.studentId || '').trim();
+  const learningDate = String(req.query.date || getTaipeiDateKey());
+  if (!studentId || !isDateKey(learningDate)) {
+    return res.status(400).json({ success: false, error: '缺少學生 ID 或日期格式錯誤' });
+  }
+  if (learningDate > getTaipeiDateKey()) {
+    return res.status(400).json({ success: false, error: '不可預先開啟未來日期的單字' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [students] = await connection.query('SELECT seat_no FROM students WHERE seat_no = ? FOR UPDATE', [studentId]);
+    if (students.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: '找不到學生資料' });
     }
 
-    try {
-        // 1. 查詢學生的學習進度
-        let [studentRows] = await pool.query(
-          `SELECT current_day_index,
-                  DATE_FORMAT(last_learn_date, '%Y-%m-%d') AS last_learn_date
-           FROM students WHERE seat_no = ?`,
-          [studentId]
+    let [assignments] = await connection.query(
+      `SELECT a.position_no, w.* FROM english_daily_assignments a
+       JOIN words_pool w ON w.id = a.word_id
+       WHERE a.seat_no = ? AND a.learning_date = ? ORDER BY a.position_no`,
+      [studentId, learningDate]
+    );
+
+    if (assignments.length === 0) {
+      const [legacyRows] = await connection.query(
+        `SELECT learned_word_ids FROM learning_progress
+         WHERE seat_no = ? AND completed_date = ? FOR UPDATE`,
+        [studentId, learningDate]
+      );
+      let legacyIds = [];
+      try { legacyIds = JSON.parse(legacyRows[0]?.learned_word_ids || '[]'); } catch (_) { legacyIds = []; }
+      // 舊版 learning_progress 儲存的是累積集合；最後加入的 30 個即為該日批次。
+      legacyIds = [...new Set(legacyIds.map(Number).filter(Number.isFinite))].slice(-30);
+      if (legacyIds.length === 30) {
+        const placeholders = legacyIds.map(() => '?').join(',');
+        const [legacyWords] = await connection.query(
+          `SELECT id, level AS difficulty FROM words_pool WHERE id IN (${placeholders})`,
+          legacyIds
         );
-        
-        // 如果找不到學生，自動幫他建立一筆
-        if (studentRows.length === 0) {
-            await pool.query('INSERT INTO students (seat_no, name, current_day_index) VALUES (?, ?, 0)', [studentId, '未知學生']);
-            [studentRows] = await pool.query(
-              `SELECT current_day_index,
-                      DATE_FORMAT(last_learn_date, '%Y-%m-%d') AS last_learn_date
-               FROM students WHERE seat_no = ?`,
-              [studentId]
+        const difficultyById = new Map(legacyWords.map(word => [Number(word.id), Number(word.difficulty)]));
+        if (difficultyById.size === 30) {
+          for (let index = 0; index < legacyIds.length; index++) {
+            await connection.query(
+              `INSERT INTO english_daily_assignments
+               (seat_no, learning_date, position_no, word_id, difficulty, cycle_no, completed, completed_at)
+               VALUES (?, ?, ?, ?, ?, 0, 1, CURRENT_TIMESTAMP)`,
+              [studentId, learningDate, index + 1, legacyIds[index], difficultyById.get(legacyIds[index])]
             );
+          }
+          await connection.query(
+            `INSERT INTO english_daily_progress
+             (seat_no, learning_date, current_word_index, completed, completed_at)
+             VALUES (?, ?, 29, 1, CURRENT_TIMESTAMP)
+             ON DUPLICATE KEY UPDATE current_word_index = 29, completed = 1,
+               completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)`,
+            [studentId, learningDate]
+          );
+          [assignments] = await connection.query(
+            `SELECT a.position_no, w.* FROM english_daily_assignments a
+             JOIN words_pool w ON w.id = a.word_id
+             WHERE a.seat_no = ? AND a.learning_date = ? ORDER BY a.position_no`,
+            [studentId, learningDate]
+          );
         }
-
-        let { current_day_index, last_learn_date } = studentRows[0];
-        
-        // 【防呆關鍵】：如果欄位是 NULL，強制給予安全預設值！
-        current_day_index = Number.isFinite(Number(current_day_index)) ? Number(current_day_index) : 0;
-        const storedDayIndex = current_day_index;
-
-        const [[wordCountRow]] = await pool.query('SELECT COUNT(*) AS total FROM words_pool');
-        const totalWords = Number(wordCountRow.total || 0);
-        if (totalWords === 0) {
-            return res.status(503).json({ success: false, error: '單字資料庫目前沒有資料' });
-        }
-        const totalBatches = Math.max(1, Math.ceil(totalWords / 30));
-        current_day_index = ((current_day_index % totalBatches) + totalBatches) % totalBatches;
-        if (current_day_index !== storedDayIndex) {
-            await pool.query('UPDATE students SET current_day_index = ? WHERE seat_no = ?', [current_day_index, studentId]);
-        }
-        
-        // 取得今天的日期字串 (YYYY-MM-DD)
-        const todayStr = getTaipeiDateKey();
-        
-        // 2. 判斷是否為新的一天 (如果 last_learn_date 是 NULL，代表從未學習過)
-        if (!last_learn_date || last_learn_date !== todayStr) {
-            // 如果不是今天，且之前已經有學過（不是第一次），進度才往後推一天
-            if (last_learn_date !== null && last_learn_date !== undefined) {
-                current_day_index++;
-            }
-            
-            // 依資料庫實際單字數循環，不再寫死 40 天。
-            current_day_index %= totalBatches;
-            
-            // 更新資料庫中的進度與今天日期
-            await pool.query('UPDATE students SET current_day_index = ?, last_learn_date = ? WHERE seat_no = ?', [current_day_index, todayStr, studentId]);
-        }
-
-        // 3. 從 words_pool 抽出 30 個單字
-        const offset = current_day_index * 30;
-        let [words] = await pool.query('SELECT * FROM words_pool ORDER BY id LIMIT 30 OFFSET ?', [offset]);
-
-        // 防止舊資料留下超界索引；自動回到第一批並修正學生狀態。
-        if (words.length === 0) {
-            current_day_index = 0;
-            [words] = await pool.query('SELECT * FROM words_pool ORDER BY id LIMIT 30');
-            await pool.query(
-              'UPDATE students SET current_day_index = ?, last_learn_date = ? WHERE seat_no = ?',
-              [0, todayStr, studentId]
-            );
-        }
-
-        // 4. 回傳成功結果
-        res.json({ success: true, dailyWords: words, currentDay: current_day_index + 1 });
-
-    } catch (error) {
-        console.error("抓取單字失敗:", error);
-        res.status(500).json({ error: '資料庫錯誤: ' + error.message });
+      }
     }
+
+    if (assignments.length === 0) {
+      const [difficultyCounts] = await connection.query(
+        `SELECT level AS difficulty, COUNT(*) AS total FROM words_pool
+         WHERE learning_enabled = 1 AND level IN (1, 2, 3) GROUP BY level`
+      );
+      const countMap = new Map(difficultyCounts.map(row => [Number(row.difficulty), Number(row.total)]));
+      const [[allWordCount]] = await connection.query('SELECT COUNT(*) AS total FROM words_pool WHERE learning_enabled = 1');
+      const supportedWordCount = [...countMap.values()].reduce((sum, count) => sum + count, 0);
+      if (supportedWordCount !== Number(allWordCount.total)) {
+        await connection.rollback();
+        return res.status(409).json({ success: false, error: 'words_pool.level 只能使用 1、2、3' });
+      }
+      for (const [difficultyText, quota] of Object.entries(DAILY_DIFFICULTY_QUOTAS)) {
+        const difficulty = Number(difficultyText);
+        if ((countMap.get(difficulty) || 0) < quota) {
+          await connection.rollback();
+          return res.status(409).json({
+            success: false,
+            error: `難度 ${difficulty} 的單字至少需要 ${quota} 個，目前只有 ${countMap.get(difficulty) || 0} 個`
+          });
+        }
+      }
+
+      let position = 1;
+      for (const [difficultyText, quota] of Object.entries(DAILY_DIFFICULTY_QUOTAS)) {
+        const difficulty = Number(difficultyText);
+        await connection.query(
+          `INSERT INTO english_word_cycle_state (seat_no, difficulty, cycle_no)
+           VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE seat_no = VALUES(seat_no)`,
+          [studentId, difficulty]
+        );
+        const [[cycleRow]] = await connection.query(
+          `SELECT cycle_no FROM english_word_cycle_state
+           WHERE seat_no = ? AND difficulty = ? FOR UPDATE`,
+          [studentId, difficulty]
+        );
+        let cycleNo = Number(cycleRow.cycle_no);
+        let remaining = quota;
+        const selectedToday = [];
+
+        while (remaining > 0) {
+          const exclusionSql = selectedToday.length ? ` AND w.id NOT IN (${selectedToday.map(() => '?').join(',')})` : '';
+          const [available] = await connection.query(
+            `SELECT w.id FROM words_pool w
+             WHERE w.level = ? AND w.learning_enabled = 1${exclusionSql}
+               AND NOT EXISTS (
+                 SELECT 1 FROM english_daily_assignments a
+                 WHERE a.seat_no = ? AND a.difficulty = ? AND a.cycle_no = ? AND a.word_id = w.id
+               )
+             ORDER BY RAND() LIMIT ?`,
+            [difficulty, ...selectedToday, studentId, difficulty, cycleNo, remaining]
+          );
+
+          if (available.length === 0) {
+            cycleNo += 1;
+            await connection.query(
+              'UPDATE english_word_cycle_state SET cycle_no = ? WHERE seat_no = ? AND difficulty = ?',
+              [cycleNo, studentId, difficulty]
+            );
+            continue;
+          }
+
+          for (const row of available) {
+            selectedToday.push(row.id);
+            await connection.query(
+              `INSERT INTO english_daily_assignments
+               (seat_no, learning_date, position_no, word_id, difficulty, cycle_no)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [studentId, learningDate, position++, row.id, difficulty, cycleNo]
+            );
+          }
+          remaining -= available.length;
+        }
+      }
+      await connection.query(
+        `INSERT INTO english_daily_progress (seat_no, learning_date)
+         VALUES (?, ?) ON DUPLICATE KEY UPDATE seat_no = VALUES(seat_no)`,
+        [studentId, learningDate]
+      );
+      [assignments] = await connection.query(
+        `SELECT a.position_no, w.* FROM english_daily_assignments a
+         JOIN words_pool w ON w.id = a.word_id
+         WHERE a.seat_no = ? AND a.learning_date = ? ORDER BY a.position_no`,
+        [studentId, learningDate]
+      );
+    }
+
+    const [[progress = {}]] = await connection.query(
+      `SELECT current_word_index, completed FROM english_daily_progress
+       WHERE seat_no = ? AND learning_date = ?`,
+      [studentId, learningDate]
+    );
+    const completion = await getEnglishCompletionStatus(connection, studentId);
+    await connection.commit();
+    res.json({
+      success: true,
+      learningDate,
+      dailyWords: assignments,
+      currentWordIndex: Number(progress.current_word_index || 0),
+      completed: Boolean(progress.completed),
+      ...completion
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error('抓取單字失敗:', error);
+    res.status(500).json({ success: false, error: '資料庫錯誤: ' + error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+// [API] 管理員瀏覽、搜尋、新增與啟停單字。
+app.get('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
+  const search = String(req.query.search || '').trim();
+  const level = req.query.level === undefined || req.query.level === '' ? null : Number(req.query.level);
+  const enabled = req.query.enabled === undefined || req.query.enabled === '' ? null : Number(req.query.enabled);
+  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(10, Number.parseInt(req.query.limit, 10) || 25));
+  if (level !== null && ![1, 2, 3].includes(level)) {
+    return res.status(400).json({ success: false, error: 'level 只能是 1、2、3' });
+  }
+  if (enabled !== null && ![0, 1].includes(enabled)) {
+    return res.status(400).json({ success: false, error: '啟用狀態格式錯誤' });
+  }
+
+  const conditions = [];
+  const params = [];
+  if (search) {
+    conditions.push('(vocabulary LIKE ? OR chinese LIKE ? OR sentence LIKE ? OR translate LIKE ?)');
+    const keyword = `%${search}%`;
+    params.push(keyword, keyword, keyword, keyword);
+  }
+  if (level !== null) {
+    conditions.push('level = ?');
+    params.push(level);
+  }
+  if (enabled !== null) {
+    conditions.push('learning_enabled = ?');
+    params.push(enabled);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  try {
+    const [[countRow]] = await pool.query(`SELECT COUNT(*) AS total FROM words_pool ${where}`, params);
+    const [rows] = await pool.query(
+      `SELECT id, vocabulary, chinese, sentence, translate, level, learning_enabled
+       FROM words_pool ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [...params, limit, (page - 1) * limit]
+    );
+    res.json({ success: true, data: rows, pagination: { page, limit, total: Number(countRow.total) } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
+  const word = Object.fromEntries(WORD_FIELDS.map(field => [field, String(req.body?.[field] || '').trim()]));
+  const level = Number(req.body?.level);
+  const learningEnabled = req.body?.learningEnabled === false || Number(req.body?.learningEnabled) === 0 ? 0 : 1;
+  if (WORD_FIELDS.some(field => !word[field])) {
+    return res.status(400).json({ success: false, error: '單字、中文、例句與例句翻譯皆為必填' });
+  }
+  if (![1, 2, 3].includes(level)) {
+    return res.status(400).json({ success: false, error: 'level 只能是 1、2、3' });
+  }
+  if (word.vocabulary.length > 255 || word.chinese.length > 255 || word.sentence.length > 2000 || word.translate.length > 2000) {
+    return res.status(400).json({ success: false, error: '輸入內容過長' });
+  }
+  try {
+    const [duplicates] = await pool.query(
+      'SELECT id FROM words_pool WHERE LOWER(TRIM(vocabulary)) = LOWER(?) LIMIT 1',
+      [word.vocabulary]
+    );
+    if (duplicates.length) {
+      return res.status(409).json({ success: false, error: '這個英文單字已存在' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO words_pool (vocabulary, chinese, sentence, translate, level, learning_enabled)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [word.vocabulary, word.chinese, word.sentence, word.translate, level, learningEnabled]
+    );
+    res.status(201).json({ success: true, data: { id: result.insertId } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.patch('/api/admin/words/:id/learning-enabled', requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const learningEnabled = req.body?.learningEnabled === true || Number(req.body?.learningEnabled) === 1 ? 1 :
+    req.body?.learningEnabled === false || Number(req.body?.learningEnabled) === 0 ? 0 : null;
+  if (!Number.isSafeInteger(id) || id < 1 || learningEnabled === null) {
+    return res.status(400).json({ success: false, error: '單字 ID 或啟用狀態格式錯誤' });
+  }
+  try {
+    const [result] = await pool.query('UPDATE words_pool SET learning_enabled = ? WHERE id = ?', [learningEnabled, id]);
+    if (!result.affectedRows) return res.status(404).json({ success: false, error: '找不到單字' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // [API] 讀取學生完整學習狀態，供跨裝置與重新載入時同步。
@@ -355,7 +602,27 @@ app.get('/api/student-progress', requireAuth, requireOwnSeat, async (req, res) =
        FROM quiz_logs WHERE seat_no = ? ORDER BY id DESC LIMIT 100`,
       [seatNo]
     );
-    if (rows.length === 0) return res.json({ success: true, data: { quizHistory: quizRows } });
+    const [dailyRows] = await pool.query(
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date,
+              current_word_index, completed, updated_at
+       FROM english_daily_progress WHERE seat_no = ? ORDER BY learning_date`,
+      [seatNo]
+    );
+    const completion = await getEnglishCompletionStatus(pool, seatNo);
+    if (rows.length === 0) return res.json({
+      success: true,
+      data: {
+        quizHistory: quizRows,
+        dailyProgress: dailyRows.map(row => ({
+          learningDate: row.learning_date,
+          currentWordIndex: Number(row.current_word_index),
+          completed: Boolean(row.completed),
+          updatedAt: row.updated_at
+        })),
+        completedDates: dailyRows.filter(row => row.completed).map(row => row.learning_date),
+        ...completion
+      }
+    });
     const row = rows[0];
     const parseJson = (value, fallback) => {
       try { return JSON.parse(value); } catch (_) { return fallback; }
@@ -374,7 +641,14 @@ app.get('/api/student-progress', requireAuth, requireOwnSeat, async (req, res) =
         starredWords: parseJson(row.starred_words, []),
         starredSpellingCounts: parseJson(row.starred_spelling_counts, {}),
         updatedAt: row.updated_at,
-        quizHistory: quizRows
+        quizHistory: quizRows,
+        dailyProgress: dailyRows.map(item => ({
+          learningDate: item.learning_date,
+          currentWordIndex: Number(item.current_word_index),
+          completed: Boolean(item.completed),
+          updatedAt: item.updated_at
+        })),
+        ...completion
       }
     });
   } catch (err) {
@@ -427,17 +701,44 @@ app.post('/api/student-progress', requireAuth, requireOwnSeat, async (req, res) 
       ]
     );
 
+    const [assignedRows] = await connection.query(
+      `SELECT word_id FROM english_daily_assignments
+       WHERE seat_no = ? AND learning_date = ? ORDER BY position_no FOR UPDATE`,
+      [seatNo, learningDate]
+    );
+    if (assignedRows.length !== 30) {
+      await connection.rollback();
+      return res.status(409).json({ success: false, error: '此日期尚未建立完整的 30 字學習內容' });
+    }
+    await connection.query(
+      `INSERT INTO english_daily_progress
+       (seat_no, learning_date, current_word_index, completed, completed_at)
+       VALUES (?, ?, ?, ?, IF(?, CURRENT_TIMESTAMP, NULL))
+       ON DUPLICATE KEY UPDATE
+         current_word_index = GREATEST(current_word_index, VALUES(current_word_index)),
+         completed = GREATEST(completed, VALUES(completed)),
+         completed_at = IF(completed_at IS NULL AND VALUES(completed) = 1, CURRENT_TIMESTAMP, completed_at)`,
+      [seatNo, learningDate, Math.max(0, Math.min(29, Number(currentWordIndex) || 0)), completed ? 1 : 0, completed ? 1 : 0]
+    );
+
     if (completed) {
+      await connection.query(
+        `UPDATE english_daily_assignments SET completed = 1, completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
+         WHERE seat_no = ? AND learning_date = ?`,
+        [seatNo, learningDate]
+      );
+      const dailyWordIds = assignedRows.map(row => row.word_id);
       await connection.query(
         `INSERT INTO learning_progress (seat_no, completed_date, learned_word_ids)
          VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE learned_word_ids = VALUES(learned_word_ids)`,
-        [seatNo, learningDate, JSON.stringify(learnedWordIds)]
+        [seatNo, learningDate, JSON.stringify(dailyWordIds)]
       );
     }
 
     await connection.commit();
-    res.json({ success: true });
+    const completion = await getEnglishCompletionStatus(pool, seatNo);
+    res.json({ success: true, ...completion });
   } catch (err) {
     if (connection) await connection.rollback();
     res.status(500).json({ success: false, error: err.message });
