@@ -243,7 +243,7 @@ function renderAdminWords(words) {
     const enabled = Boolean(word.learning_enabled);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="p-3 font-bold text-brand-600">${escapeHtml(word.vocabulary)}</td>
+      <td class="p-3"><div class="font-bold text-brand-600">${escapeHtml(word.vocabulary)}</div><div class="text-slate-400 mt-1">${escapeHtml(word.phonetic)}</div></td>
       <td class="p-3">${escapeHtml(word.chinese)}</td>
       <td class="p-3 max-w-sm"><div>${escapeHtml(word.sentence)}</div><div class="text-slate-400 mt-1">${escapeHtml(word.translate)}</div></td>
       <td class="p-3 font-bold">Level ${Number(word.level)}</td>
@@ -274,6 +274,7 @@ async function handleAddWord(event) {
   event.preventDefault();
   const payload = {
     vocabulary: document.getElementById('add-word-vocabulary').value.trim(),
+    phonetic: document.getElementById('add-word-phonetic').value.trim(),
     chinese: document.getElementById('add-word-chinese').value.trim(),
     sentence: document.getElementById('add-word-sentence').value.trim(),
     translate: document.getElementById('add-word-translate').value.trim(),

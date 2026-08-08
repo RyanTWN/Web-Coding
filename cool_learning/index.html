@@ -397,7 +397,8 @@
           <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-brand-500"></i>新增英文單字</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input id="add-word-vocabulary" required maxlength="255" placeholder="英文單字，例如 abandon" class="py-2 px-3 text-xs font-bold rounded-xl border">
-            <input id="add-word-chinese" required maxlength="255" placeholder="中文解釋" class="py-2 px-3 text-xs font-bold rounded-xl border">
+            <input id="add-word-phonetic" required maxlength="255" placeholder="音標，例如 /əˈbændən/" class="py-2 px-3 text-xs font-bold rounded-xl border">
+            <input id="add-word-chinese" required maxlength="255" placeholder="中文解釋" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2">
             <textarea id="add-word-sentence" required maxlength="2000" placeholder="英文例句" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
             <textarea id="add-word-translate" required maxlength="2000" placeholder="例句中文翻譯" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
             <select id="add-word-level" required class="py-2 px-3 text-xs font-bold rounded-xl border">
@@ -426,9 +427,9 @@
     </div>
   </section>
 
-  <script src="assets/js/app.js?v=20260809-word-management"></script>
+  <script src="assets/js/app.js?v=20260809-word-management-phonetic"></script>
   <script src="assets/js/quiz.js"></script> 
-  <script src="assets/js/admin.js?v=20260809-word-management"></script>
+  <script src="assets/js/admin.js?v=20260809-word-management-phonetic"></script>
   
   <script>
     // 確保 showToast 函式在全域環境中可用

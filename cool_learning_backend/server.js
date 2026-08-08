@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const API_BASE_URL = "https://learning.ifit.myds.me:4061/api/login";
 const APP_VERSION = process.env.APP_VERSION || 'development';
 const AUTH_SECRET = process.env.AUTH_SECRET || '';
-const WORD_FIELDS = Object.freeze(['vocabulary', 'chinese', 'sentence', 'translate']);
+const WORD_FIELDS = Object.freeze(['vocabulary', 'phonetic', 'chinese', 'sentence', 'translate']);
 
 function getTaipeiDateKey() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
@@ -508,9 +508,9 @@ app.get('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
   const conditions = [];
   const params = [];
   if (search) {
-    conditions.push('(vocabulary LIKE ? OR chinese LIKE ? OR sentence LIKE ? OR translate LIKE ?)');
+    conditions.push('(vocabulary LIKE ? OR phonetic LIKE ? OR chinese LIKE ? OR sentence LIKE ? OR translate LIKE ?)');
     const keyword = `%${search}%`;
-    params.push(keyword, keyword, keyword, keyword);
+    params.push(keyword, keyword, keyword, keyword, keyword);
   }
   if (level !== null) {
     conditions.push('level = ?');
@@ -524,7 +524,7 @@ app.get('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [[countRow]] = await pool.query(`SELECT COUNT(*) AS total FROM words_pool ${where}`, params);
     const [rows] = await pool.query(
-      `SELECT id, vocabulary, chinese, sentence, translate, level, learning_enabled
+      `SELECT id, vocabulary, phonetic, chinese, sentence, translate, level, learning_enabled
        FROM words_pool ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
       [...params, limit, (page - 1) * limit]
     );
@@ -539,12 +539,12 @@ app.post('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
   const level = Number(req.body?.level);
   const learningEnabled = req.body?.learningEnabled === false || Number(req.body?.learningEnabled) === 0 ? 0 : 1;
   if (WORD_FIELDS.some(field => !word[field])) {
-    return res.status(400).json({ success: false, error: '單字、中文、例句與例句翻譯皆為必填' });
+    return res.status(400).json({ success: false, error: '單字、音標、中文、例句與例句翻譯皆為必填' });
   }
   if (![1, 2, 3].includes(level)) {
     return res.status(400).json({ success: false, error: 'level 只能是 1、2、3' });
   }
-  if (word.vocabulary.length > 255 || word.chinese.length > 255 || word.sentence.length > 2000 || word.translate.length > 2000) {
+  if (word.vocabulary.length > 255 || word.phonetic.length > 255 || word.chinese.length > 255 || word.sentence.length > 2000 || word.translate.length > 2000) {
     return res.status(400).json({ success: false, error: '輸入內容過長' });
   }
   try {
@@ -556,9 +556,9 @@ app.post('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
       return res.status(409).json({ success: false, error: '這個英文單字已存在' });
     }
     const [result] = await pool.query(
-      `INSERT INTO words_pool (vocabulary, chinese, sentence, translate, level, learning_enabled)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [word.vocabulary, word.chinese, word.sentence, word.translate, level, learningEnabled]
+      `INSERT INTO words_pool (vocabulary, phonetic, chinese, sentence, translate, level, learning_enabled)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [word.vocabulary, word.phonetic, word.chinese, word.sentence, word.translate, level, learningEnabled]
     );
     res.status(201).json({ success: true, data: { id: result.insertId } });
   } catch (err) {
