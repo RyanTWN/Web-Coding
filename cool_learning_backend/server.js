@@ -851,16 +851,23 @@ app.get('/api/admin/analytics', requireAuth, requireAdmin, async (req, res) => {
     const [rows] = await pool.query(`
       SELECT 
         s.seat_no, s.name,
-        (SELECT COUNT(*) FROM learning_progress lp WHERE lp.seat_no = s.seat_no) AS total_days,
-        (SELECT COUNT(*) FROM quiz_logs ql WHERE ql.seat_no = s.seat_no) AS total_quizzes,
-        (SELECT AVG(ql.score) FROM quiz_logs ql WHERE ql.seat_no = s.seat_no) AS avg_score,
-        (SELECT MAX(ll.login_time) FROM login_logs ll WHERE ll.seat_no = s.seat_no) AS last_login,
+        (SELECT COUNT(*) FROM learning_progress lp
+         WHERE lp.seat_no COLLATE utf8mb4_unicode_ci = s.seat_no COLLATE utf8mb4_unicode_ci) AS total_days,
+        (SELECT COUNT(*) FROM quiz_logs ql
+         WHERE ql.seat_no COLLATE utf8mb4_unicode_ci = s.seat_no COLLATE utf8mb4_unicode_ci) AS total_quizzes,
+        (SELECT AVG(ql.score) FROM quiz_logs ql
+         WHERE ql.seat_no COLLATE utf8mb4_unicode_ci = s.seat_no COLLATE utf8mb4_unicode_ci) AS avg_score,
+        (SELECT MAX(ll.login_time) FROM login_logs ll
+         WHERE ll.seat_no COLLATE utf8mb4_unicode_ci = s.seat_no COLLATE utf8mb4_unicode_ci) AS last_login,
         COALESCE(JSON_LENGTH(sls.starred_ids), 0) AS starred_count,
         COALESCE(JSON_LENGTH(sls.learned_word_ids), 0) AS learned_count,
-        (SELECT COUNT(*) FROM math_quiz_logs mql WHERE mql.seat_no = s.seat_no) AS math_quizzes,
-        (SELECT AVG(mql.score) FROM math_quiz_logs mql WHERE mql.seat_no = s.seat_no) AS math_avg_score
+        (SELECT COUNT(*) FROM math_quiz_logs mql
+         WHERE mql.seat_no COLLATE utf8mb4_unicode_ci = s.seat_no COLLATE utf8mb4_unicode_ci) AS math_quizzes,
+        (SELECT AVG(mql.score) FROM math_quiz_logs mql
+         WHERE mql.seat_no COLLATE utf8mb4_unicode_ci = s.seat_no COLLATE utf8mb4_unicode_ci) AS math_avg_score
       FROM students s
-      LEFT JOIN student_learning_state sls ON s.seat_no = sls.seat_no
+      LEFT JOIN student_learning_state sls
+        ON s.seat_no COLLATE utf8mb4_unicode_ci = sls.seat_no COLLATE utf8mb4_unicode_ci
       ORDER BY s.seat_no
     `);
     res.json({ success: true, data: rows });
