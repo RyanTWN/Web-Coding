@@ -292,15 +292,19 @@ app.delete('/api/admin/students/:seatNo', requireAuth, requireAdmin, async (req,
   }
 });
 
-const DAILY_DIFFICULTY_QUOTAS = Object.freeze({ 3: 10, 2: 15, 1: 5 });
+// 依目前啟用數量（L1=761、L2=660、L3=70）配置：
+// L3 固定 5 字；剩餘 25 字按 L1/L2 數量比例分配為 13/12。
+const DAILY_DIFFICULTY_QUOTAS = Object.freeze({ 3: 5, 2: 12, 1: 13 });
 
 async function getEnglishCompletionStatus(connection, seatNo) {
   const [[counts]] = await connection.query(
-    `SELECT (SELECT COUNT(*) FROM words_pool WHERE learning_enabled = 1) AS total,
+    `SELECT (SELECT COUNT(*) FROM words_pool
+             WHERE learning_enabled = 1 AND level IN (1, 2, 3)) AS total,
             (SELECT COUNT(DISTINCT a.word_id)
              FROM english_daily_assignments a
              JOIN words_pool w ON w.id = a.word_id
-             WHERE a.seat_no = ? AND a.completed = 1 AND w.learning_enabled = 1) AS learned`,
+             WHERE a.seat_no = ? AND a.completed = 1
+               AND w.learning_enabled = 1 AND w.level IN (1, 2, 3)) AS learned`,
     [seatNo]
   );
   const total = Number(counts.total || 0);
@@ -549,7 +553,7 @@ app.post('/api/admin/words', requireAuth, requireAdmin, async (req, res) => {
   }
   try {
     const [duplicates] = await pool.query(
-      'SELECT id FROM words_pool WHERE LOWER(TRIM(vocabulary)) = LOWER(?) LIMIT 1',
+      'SELECT id FROM words_pool WHERE BINARY LOWER(TRIM(vocabulary)) = BINARY LOWER(?) LIMIT 1',
       [word.vocabulary]
     );
     if (duplicates.length) {
