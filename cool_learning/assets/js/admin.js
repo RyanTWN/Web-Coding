@@ -68,7 +68,7 @@ async function renderAdminTables() {
     const response = await apiFetch('/admin/analytics');
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.error || '無法載入資料');
-    adminAnalytics = result.data || [];
+    adminAnalytics = (result.data || []).filter(row => String(row.seat_no || '').trim() !== '');
     studentsList = adminAnalytics.map(row => ({ name: row.name, seatNo: row.seat_no }));
   } catch (error) {
     showToast(error.message || '管理資料載入失敗', 'fa-triangle-exclamation');
@@ -201,8 +201,13 @@ function exportPerformanceCsv() {
 }
 
 async function deleteStudent(seatNo, refresh = true) {
+  const normalizedSeatNo = String(seatNo || '').trim();
+  if (!/^\d{5}$/.test(normalizedSeatNo)) {
+    showToast('無效的學生座號，已停止刪除', 'fa-triangle-exclamation');
+    return;
+  }
   try {
-    const response = await apiFetch(`/admin/students/${encodeURIComponent(seatNo)}`, { method: 'DELETE' });
+    const response = await apiFetch(`/admin/students/${encodeURIComponent(normalizedSeatNo)}`, { method: 'DELETE' });
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.error || '刪除失敗');
     if (refresh) await renderAdminTables();

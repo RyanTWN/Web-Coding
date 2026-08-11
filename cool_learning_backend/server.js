@@ -133,6 +133,38 @@ async function initializeDatabaseSchema() {
       UNIQUE KEY uq_math_daily_result (seat_no, learning_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nature_daily_progress (
+      seat_no VARCHAR(32) NOT NULL,
+      learning_date DATE NOT NULL,
+      publisher VARCHAR(16) NOT NULL,
+      chapter_name VARCHAR(255) NOT NULL,
+      curriculum_version VARCHAR(32) NOT NULL DEFAULT '115-G6-NATURE-1',
+      questions_json LONGTEXT NOT NULL,
+      answers_json LONGTEXT NOT NULL,
+      wrong_questions_json LONGTEXT NOT NULL,
+      current_question_index TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      completed TINYINT(1) NOT NULL DEFAULT 0,
+      score TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      completed_at TIMESTAMP NULL,
+      PRIMARY KEY (seat_no, learning_date),
+      KEY ix_nature_completed (seat_no, completed, learning_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nature_wrong_questions (
+      seat_no VARCHAR(32) NOT NULL,
+      question_id VARCHAR(100) NOT NULL,
+      question_json LONGTEXT NOT NULL,
+      wrong_count INT UNSIGNED NOT NULL DEFAULT 1,
+      mastered TINYINT(1) NOT NULL DEFAULT 0,
+      last_wrong_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      mastered_at TIMESTAMP NULL,
+      PRIMARY KEY (seat_no, question_id),
+      KEY ix_nature_review (seat_no, mastered, last_wrong_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
   const [quizCreatedAtColumns] = await pool.query("SHOW COLUMNS FROM quiz_logs LIKE 'created_at'");
   if (quizCreatedAtColumns.length === 0) {
     await pool.query('ALTER TABLE quiz_logs ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
@@ -198,8 +230,8 @@ app.post('/api/login', async (req, res) => {
   const name = String(req.body?.name || '').trim();
   const seatNo = String(req.body?.seatNo || '').trim();
   const ip = req.ip || req.connection.remoteAddress;
-  if (!name || !/^[A-Za-z0-9_-]{1,32}$/.test(seatNo)) {
-    return res.status(400).json({ success: false, error: '姓名或座號格式錯誤' });
+  if (!name || !/^\d{5}$/.test(seatNo)) {
+    return res.status(400).json({ success: false, error: '姓名不可空白，座號必須是 5 碼數字' });
   }
   try {
     // 學生帳號必須先由管理員建立，姓名與座號都相符才簽發工作階段。
@@ -274,11 +306,14 @@ app.post('/api/admin/students', requireAuth, requireAdmin, async (req, res) => {
 
 app.delete('/api/admin/students/:seatNo', requireAuth, requireAdmin, async (req, res) => {
   const seatNo = String(req.params.seatNo || '').trim();
+  if (!/^\d{5}$/.test(seatNo)) {
+    return res.status(400).json({ success: false, error: '座號必須是 5 碼數字' });
+  }
   let connection;
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
-    for (const table of ['english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state', 'student_learning_state', 'student_math_state', 'math_quiz_logs', 'learning_progress', 'quiz_logs', 'login_logs']) {
+    for (const table of ['english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state', 'student_learning_state', 'student_math_state', 'math_quiz_logs', 'nature_daily_progress', 'nature_wrong_questions', 'learning_progress', 'quiz_logs', 'login_logs']) {
       await connection.query(`DELETE FROM ${table} WHERE seat_no = ?`, [seatNo]);
     }
     await connection.query('DELETE FROM students WHERE seat_no = ?', [seatNo]);
@@ -823,6 +858,160 @@ app.post('/api/math-progress', requireAuth, requireOwnSeat, async (req, res) => 
   }
 });
 
+const NATURE_PUBLISHERS = new Set(['康軒', '南一', '翰林']);
+
+// 讀取今日固定題組、學習日曆與尚未精熟的錯題。
+app.get('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) => {
+  const seatNo = String(req.query.seatNo || '').trim();
+  const learningDate = String(req.query.date || '');
+  if (!seatNo || !isDateKey(learningDate) || learningDate > getTaipeiDateKey()) {
+    return res.status(400).json({ success: false, error: '缺少座號或自然科學練習日期錯誤' });
+  }
+  try {
+    const [states] = await pool.query(
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date,
+              publisher, chapter_name, curriculum_version, questions_json,
+              answers_json, wrong_questions_json, current_question_index,
+              completed, score, updated_at, completed_at
+       FROM nature_daily_progress WHERE seat_no = ? AND learning_date = ?`,
+      [seatNo, learningDate]
+    );
+    const [history] = await pool.query(
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS date, publisher,
+              chapter_name AS chapter, score, completed, completed_at
+       FROM nature_daily_progress
+       WHERE seat_no = ? AND completed = 1
+       ORDER BY learning_date DESC LIMIT 366`,
+      [seatNo]
+    );
+    const [wrongRows] = await pool.query(
+      `SELECT question_json FROM nature_wrong_questions
+       WHERE seat_no = ? AND mastered = 0 ORDER BY last_wrong_at DESC LIMIT 200`,
+      [seatNo]
+    );
+    const parseJson = (text, fallback) => {
+      try { return JSON.parse(text); } catch (_) { return fallback; }
+    };
+    const state = states[0];
+    res.json({
+      success: true,
+      data: state ? {
+        date: state.learning_date,
+        publisher: state.publisher,
+        chapter: state.chapter_name,
+        curriculumVersion: state.curriculum_version,
+        questions: parseJson(state.questions_json, []),
+        answers: parseJson(state.answers_json, []),
+        wrongQuestions: parseJson(state.wrong_questions_json, []),
+        currentIndex: Number(state.current_question_index),
+        completed: Boolean(state.completed),
+        score: Number(state.score),
+        updatedAt: state.updated_at
+      } : null,
+      history: history.map(item => ({ ...item, completed: Boolean(item.completed), score: Number(item.score) })),
+      wrongQuestions: wrongRows.map(row => parseJson(row.question_json, null)).filter(Boolean)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 儲存每日 20 題進度；同一天只能沿用第一次建立的出版社、章節與題組。
+app.post('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) => {
+  const {
+    seatNo, date, publisher, chapter, questions, answers = [], wrongQuestions = [],
+    currentIndex = 0, completed = false, score = 0
+  } = req.body || {};
+  const normalizedSeatNo = String(seatNo || '').trim();
+  const normalizedDate = String(date || '');
+  if (!normalizedSeatNo || !isDateKey(normalizedDate) || normalizedDate > getTaipeiDateKey()
+      || !NATURE_PUBLISHERS.has(publisher) || !String(chapter || '').trim()
+      || !Array.isArray(questions) || questions.length !== 20
+      || !Array.isArray(answers) || answers.length > 20
+      || !Array.isArray(wrongQuestions) || wrongQuestions.length > 20) {
+    return res.status(400).json({ success: false, error: '自然科學進度資料格式錯誤' });
+  }
+  const questionIds = questions.map(item => String(item?.id || ''));
+  if (new Set(questionIds).size !== 20 || questionIds.some(id => !/^[a-z0-9-]{3,100}$/.test(id))) {
+    return res.status(400).json({ success: false, error: '自然科學題組識別碼錯誤' });
+  }
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [existing] = await connection.query(
+      `SELECT publisher, chapter_name, questions_json, completed
+       FROM nature_daily_progress WHERE seat_no = ? AND learning_date = ? FOR UPDATE`,
+      [normalizedSeatNo, normalizedDate]
+    );
+    if (existing.length && (existing[0].publisher !== publisher || existing[0].chapter_name !== chapter
+        || existing[0].questions_json !== JSON.stringify(questions))) {
+      await connection.rollback();
+      return res.status(409).json({ success: false, error: '今日題組已固定，不可更換出版社或章節' });
+    }
+    if (existing[0]?.completed && !completed) {
+      await connection.rollback();
+      return res.status(409).json({ success: false, error: '今日練習已完成，不可回復為未完成' });
+    }
+    const safeIndex = Math.max(0, Math.min(20, Number(currentIndex) || 0));
+    const safeScore = completed ? Math.max(0, Math.min(100, Number(score) || 0)) : 0;
+    await connection.query(
+      `INSERT INTO nature_daily_progress
+        (seat_no, learning_date, publisher, chapter_name, questions_json, answers_json,
+         wrong_questions_json, current_question_index, completed, score, completed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, CURRENT_TIMESTAMP, NULL))
+       ON DUPLICATE KEY UPDATE answers_json = VALUES(answers_json),
+         wrong_questions_json = VALUES(wrong_questions_json),
+         current_question_index = GREATEST(current_question_index, VALUES(current_question_index)),
+         completed = GREATEST(completed, VALUES(completed)),
+         score = IF(VALUES(completed) = 1, VALUES(score), score),
+         completed_at = IF(VALUES(completed) = 1, COALESCE(completed_at, CURRENT_TIMESTAMP), completed_at)`,
+      [normalizedSeatNo, normalizedDate, publisher, String(chapter).trim(), JSON.stringify(questions),
+        JSON.stringify(answers), JSON.stringify(wrongQuestions), safeIndex, completed ? 1 : 0,
+        safeScore, completed ? 1 : 0]
+    );
+    for (const question of wrongQuestions) {
+      if (!questionIds.includes(String(question?.id || ''))) continue;
+      await connection.query(
+        `INSERT INTO nature_wrong_questions (seat_no, question_id, question_json)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE question_json = VALUES(question_json),
+           wrong_count = wrong_count + IF(mastered_at IS NULL, 0, 1), mastered = 0,
+           last_wrong_at = CURRENT_TIMESTAMP, mastered_at = NULL`,
+        [normalizedSeatNo, question.id, JSON.stringify(question)]
+      );
+    }
+    await connection.commit();
+    res.json({ success: true });
+  } catch (err) {
+    if (connection) await connection.rollback();
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/nature-review', requireAuth, requireOwnSeat, async (req, res) => {
+  const seatNo = String(req.body?.seatNo || '').trim();
+  const questionIds = Array.isArray(req.body?.questionIds)
+    ? [...new Set(req.body.questionIds.map(value => String(value)).filter(value => /^[a-z0-9-]{3,100}$/.test(value)))].slice(0, 50)
+    : [];
+  if (!seatNo || questionIds.length === 0) {
+    return res.status(400).json({ success: false, error: '缺少錯題複習資料' });
+  }
+  try {
+    const placeholders = questionIds.map(() => '?').join(',');
+    await pool.query(
+      `UPDATE nature_wrong_questions SET mastered = 1, mastered_at = CURRENT_TIMESTAMP
+       WHERE seat_no = ? AND question_id IN (${placeholders})`,
+      [seatNo, ...questionIds]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // [API] 學習打卡
 app.post('/api/complete-learning', requireAuth, requireOwnSeat, async (req, res) => {
   const { seatNo, completedDate, learnedWordIds } = req.body;
@@ -868,6 +1057,7 @@ app.get('/api/admin/analytics', requireAuth, requireAdmin, async (req, res) => {
       FROM students s
       LEFT JOIN student_learning_state sls
         ON s.seat_no COLLATE utf8mb4_unicode_ci = sls.seat_no COLLATE utf8mb4_unicode_ci
+      WHERE TRIM(COALESCE(s.seat_no, '')) <> ''
       ORDER BY s.seat_no
     `);
     res.json({ success: true, data: rows });

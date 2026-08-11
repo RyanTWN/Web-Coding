@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f59e0b">
+  <title>自然科學｜酷學習</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Fredoka', 'Noto Sans TC', 'sans-serif'] } } } };
+  </script>
+  <style>
+    body { background: radial-gradient(circle at top left, #fffbeb, #f8fafc 45%, #ecfeff); }
+    .answer-option[disabled] { cursor: default; }
+    .answer-option.is-correct { border-color: #10b981; background: #ecfdf5; color: #047857; }
+    .answer-option.is-wrong { border-color: #f43f5e; background: #fff1f2; color: #be123c; }
+    .calendar-cell { aspect-ratio: 1; }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen p-3 sm:p-6">
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 -translate-y-16 opacity-0 pointer-events-none z-50 transition-all duration-300">
+    <div id="toast-bg" class="bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 font-bold text-sm">
+      <i class="fa-solid fa-circle-info"></i><span id="toast-text"></span>
+    </div>
+  </div>
+
+  <header class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur px-4 sm:px-5 py-3 rounded-2xl border border-white shadow-sm mb-5">
+    <button id="btn-home" class="flex items-center gap-3 text-left">
+      <span class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center text-xl shadow"><i class="fa-solid fa-flask-vial"></i></span>
+      <span><strong class="block text-base sm:text-lg">自然科學實驗室</strong><small class="text-slate-500">115 學年度・國小六年級</small></span>
+    </button>
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:block text-right"><strong id="header-name" class="block text-sm">學生</strong><small id="header-seat" class="text-amber-700"></small></div>
+      <button id="btn-logout" title="登出" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </header>
+
+  <main class="w-full max-w-5xl mx-auto">
+    <section id="view-setup" class="grid lg:grid-cols-[1.35fr_.65fr] gap-5">
+      <div class="bg-white/95 rounded-3xl p-5 sm:p-7 shadow-xl border border-white">
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div><p class="text-xs font-black tracking-widest text-amber-600">DAILY SCIENCE</p><h1 class="text-2xl sm:text-3xl font-black mt-1">選擇今天的版本與章節</h1><p class="text-sm text-slate-500 mt-2">每日固定 20 題；開始後，當日版本與章節將鎖定。</p></div>
+          <span class="hidden sm:flex w-16 h-16 rounded-3xl bg-amber-100 text-amber-500 items-center justify-center text-3xl"><i class="fa-solid fa-microscope"></i></span>
+        </div>
+
+        <h2 class="font-black text-sm mb-3">1. 選出版社</h2>
+        <div id="publisher-list" class="grid grid-cols-3 gap-3 mb-6"></div>
+        <div class="flex items-center justify-between mb-3"><h2 class="font-black text-sm">2. 選練習章節</h2><span class="text-[11px] text-slate-400">六上、六下完整章節</span></div>
+        <select id="chapter-select" class="w-full p-3.5 rounded-2xl border-2 border-slate-200 bg-slate-50 font-bold focus:outline-none focus:border-amber-400"></select>
+        <div id="chapter-summary" class="mt-3 bg-amber-50 border border-amber-100 rounded-2xl p-4 text-xs leading-relaxed text-amber-900"></div>
+        <button id="btn-start" class="w-full mt-6 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black shadow-lg hover:brightness-105 active:scale-[.99]">開始今日 20 題 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+      </div>
+
+      <aside class="space-y-5">
+        <div class="bg-white/95 rounded-3xl p-5 shadow-lg border border-white">
+          <div class="flex justify-between items-center"><h2 class="font-black"><i class="fa-solid fa-calendar-check text-emerald-500 mr-2"></i>學習日曆</h2><span id="completion-count" class="text-xs font-bold text-emerald-600">0 天</span></div>
+          <div class="flex justify-between items-center my-4"><button id="cal-prev" class="w-8 h-8 rounded-xl bg-slate-100"><i class="fa-solid fa-chevron-left"></i></button><strong id="cal-title" class="text-sm"></strong><button id="cal-next" class="w-8 h-8 rounded-xl bg-slate-100"><i class="fa-solid fa-chevron-right"></i></button></div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          <p id="today-status" class="mt-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 text-center text-xs font-bold">完成今日 20 題即可點亮</p>
+        </div>
+        <button id="btn-review" class="w-full bg-white/95 rounded-3xl p-5 shadow-lg border border-white flex items-center justify-between text-left">
+          <span><strong class="block"><i class="fa-solid fa-rotate-left text-rose-500 mr-2"></i>錯題複習</strong><small class="text-slate-500">答對後移出待複習清單</small></span>
+          <span id="wrong-count" class="min-w-9 h-9 px-2 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-black">0</span>
+        </button>
+      </aside>
+    </section>
+
+    <section id="view-quiz" class="hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-3xl p-5 sm:p-8 shadow-xl border border-white">
+        <div class="flex items-center justify-between gap-3 mb-3"><span id="quiz-badge" class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black truncate"></span><span id="quiz-progress" class="text-sm font-black text-slate-500"></span></div>
+        <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mb-7"><div id="quiz-bar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"></div></div>
+        <p id="question-kind" class="text-xs font-black text-amber-600 tracking-wider mb-2"></p>
+        <h2 id="question-text" class="text-xl sm:text-2xl font-black leading-relaxed min-h-[5rem]"></h2>
+        <div id="answer-list" class="grid gap-3 mt-6"></div>
+        <div id="feedback" class="hidden mt-5 rounded-2xl p-4 text-sm leading-relaxed"></div>
+        <button id="btn-next" class="hidden w-full mt-5 py-3.5 rounded-2xl bg-slate-800 text-white font-black">下一題 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+      </div>
+    </section>
+
+    <section id="view-result" class="hidden max-w-lg mx-auto">
+      <div class="bg-white/95 rounded-3xl p-7 sm:p-9 shadow-xl border border-white text-center">
+        <div class="w-24 h-24 mx-auto rounded-full bg-emerald-100 text-emerald-500 flex items-center justify-center text-5xl"><i class="fa-solid fa-trophy"></i></div>
+        <h2 class="text-2xl font-black mt-5">今日自然練習完成！</h2>
+        <p class="text-slate-500 text-sm mt-2">學習日曆已點亮，錯題也已加入複習清單。</p>
+        <div class="grid grid-cols-2 gap-3 my-6"><div class="rounded-2xl bg-emerald-50 p-4"><small class="block text-emerald-700 font-bold">答對題數</small><strong id="result-correct" class="text-2xl text-emerald-600"></strong></div><div class="rounded-2xl bg-amber-50 p-4"><small class="block text-amber-700 font-bold">今日得分</small><strong id="result-score" class="text-2xl text-amber-600"></strong></div></div>
+        <div class="grid grid-cols-2 gap-3"><button id="result-review" class="py-3 rounded-2xl bg-rose-100 text-rose-700 font-black">複習錯題</button><button id="result-home" class="py-3 rounded-2xl bg-amber-500 text-white font-black">回到總覽</button></div>
+      </div>
+    </section>
+
+    <section id="view-review" class="hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-3xl p-5 sm:p-8 shadow-xl border border-white">
+        <div class="flex justify-between items-start gap-4"><div><p class="text-xs font-black text-rose-500 tracking-wider">REVIEW</p><h2 class="text-2xl font-black">錯題複習</h2><p id="review-meta" class="text-sm text-slate-500 mt-1"></p></div><button id="review-back" class="px-3 py-2 rounded-xl bg-slate-100 text-sm font-bold"><i class="fa-solid fa-xmark mr-1"></i>返回</button></div>
+        <div id="review-empty" class="hidden text-center py-14"><i class="fa-solid fa-circle-check text-5xl text-emerald-400"></i><p class="font-black mt-4">目前沒有待複習錯題</p></div>
+        <div id="review-content" class="mt-7"><span id="review-badge" class="text-xs font-bold text-rose-500"></span><h3 id="review-question" class="text-xl font-black mt-2 leading-relaxed"></h3><div id="review-answers" class="grid gap-3 mt-5"></div><div id="review-feedback" class="hidden mt-5 rounded-2xl p-4 text-sm"></div><button id="review-next" class="hidden w-full mt-5 py-3 rounded-2xl bg-slate-800 text-white font-black">下一題</button></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/nature.js?v=20260811"></script>
+</body>
+</html>
