@@ -6,6 +6,7 @@ let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || 'null')
 let selectedPublisher = '康軒';
 let dailyState = null;
 let history = [];
+let todaySummary = { completedAttempts: 0, totalQuestions: 0, totalScore: 0, nextAttemptNo: 1 };
 let wrongBank = [];
 let calendarDate = new Date(`${todayKey}T12:00:00`);
 let reviewQuestions = [];
@@ -193,7 +194,7 @@ function findChapter(publisher, title) {
   return (CURRICULUM[publisher] || []).find(item => item[0] === title);
 }
 
-function buildDailyQuestions(publisher, chapterTitle) {
+function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
   const chapter = findChapter(publisher, chapterTitle);
   const publisherSlug = { '康軒': 'knsh', '南一': 'nani', '翰林': 'hanlin' }[publisher];
   const chapterNo = CURRICULUM[publisher].findIndex(item => item[0] === chapterTitle) + 1;
@@ -206,12 +207,21 @@ function buildDailyQuestions(publisher, chapterTitle) {
       id,
       kind: variant ? '觀念確認' : '單元練習',
       question: variant ? `複習觀念：${prompt}` : prompt,
-      options: seededShuffle([correct, ...rest], `${todayKey}-${currentUser.seatNo}-${id}`),
+      options: seededShuffle([correct, ...rest], `${todayKey}-${currentUser.seatNo}-${attemptNo}-${id}`),
       answer: correct,
       explanation
     };
   }));
-  return seededShuffle(expanded, `${currentUser.seatNo}-${todayKey}-${publisher}-${chapterTitle}`).slice(0, DAILY_TOTAL);
+  return seededShuffle(expanded, `${currentUser.seatNo}-${todayKey}-${attemptNo}-${publisher}-${chapterTitle}`).slice(0, DAILY_TOTAL);
+}
+
+function getCalendarTotals(records, year, month) {
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+  return records.filter(item => item.date.startsWith(prefix)).reduce((total, item) => ({
+    completedAttempts: total.completedAttempts + Number(item.completedAttempts || 0),
+    totalQuestions: total.totalQuestions + Number(item.totalQuestions || 0),
+    totalScore: total.totalScore + Number(item.totalScore || 0)
+  }), { completedAttempts: 0, totalQuestions: 0, totalScore: 0 });
 }
 
 function showToast(message, tone = 'slate') {
@@ -261,6 +271,7 @@ async function loadProgress() {
   if (!response.ok || !result.success) throw new Error(result.error || '無法載入自然科學進度');
   dailyState = result.data;
   history = result.history || [];
+  todaySummary = result.todaySummary || todaySummary;
   wrongBank = result.wrongQuestions || [];
   document.getElementById('wrong-count').textContent = wrongBank.length;
   if (dailyState) {
@@ -270,9 +281,20 @@ async function loadProgress() {
     selectedPublisher = dailyState.publisher;
     renderPublisherButtons();
     renderChapterOptions(dailyState.chapter);
-    document.getElementById('btn-start').innerHTML = dailyState.completed ? '查看今日成果 <i class="fa-solid fa-trophy ml-1"></i>' : `繼續今日練習（${dailyState.currentIndex + 1} / ${DAILY_TOTAL}） <i class="fa-solid fa-arrow-right ml-1"></i>`;
+    document.getElementById('btn-start').innerHTML = `繼續第 ${dailyState.attemptNo} 次測驗（${dailyState.currentIndex + 1} / ${DAILY_TOTAL}） <i class="fa-solid fa-arrow-right ml-1"></i>`;
+  } else {
+    renderPublisherButtons();
+    renderChapterOptions();
+    renderStartButton();
   }
   renderCalendar();
+}
+
+function renderStartButton() {
+  const completed = Number(todaySummary.completedAttempts || 0);
+  document.getElementById('btn-start').innerHTML = completed
+    ? `再測 20 題（今日已完成 ${completed} 次） <i class="fa-solid fa-rotate-right ml-1"></i>`
+    : '開始第 1 次 20 題 <i class="fa-solid fa-arrow-right ml-1"></i>';
 }
 
 function getCorrectCount(state = dailyState) {
@@ -329,8 +351,9 @@ async function finishQuiz() {
   dailyState.completed = true;
   dailyState.currentIndex = DAILY_TOTAL;
   dailyState.score = Math.round(getCorrectCount() / DAILY_TOTAL * 100);
-  await syncState(true);
-  history = [{ date: todayKey, publisher: dailyState.publisher, chapter: dailyState.chapter, score: dailyState.score }, ...history.filter(item => item.date !== todayKey)];
+  const result = await syncState(true);
+  todaySummary = result.todaySummary || todaySummary;
+  history = [{ date: todayKey, ...todaySummary }, ...history.filter(item => item.date !== todayKey)];
   wrongBank = [...new Map([...wrongBank, ...dailyState.wrongQuestions].map(item => [item.id, item])).values()];
   document.getElementById('wrong-count').textContent = wrongBank.length;
   renderResult();
@@ -338,8 +361,10 @@ async function finishQuiz() {
 }
 
 function renderResult() {
+  document.getElementById('result-attempt').textContent = `第 ${dailyState.attemptNo} 次測驗`;
   document.getElementById('result-correct').textContent = `${getCorrectCount()} / ${DAILY_TOTAL}`;
   document.getElementById('result-score').textContent = `${dailyState.score} 分`;
+  document.getElementById('result-today-total').textContent = `今日累計：${todaySummary.completedAttempts} 次・${todaySummary.totalQuestions} 題・${todaySummary.totalScore} 分`;
   showView('view-result');
 }
 
@@ -347,19 +372,24 @@ async function syncState(completed) {
   const response = await natureFetch('/nature-progress', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: completed,
     body: JSON.stringify({
-      seatNo: currentUser.seatNo, date: todayKey, publisher: dailyState.publisher, chapter: dailyState.chapter,
+      seatNo: currentUser.seatNo, date: todayKey, attemptNo: dailyState.attemptNo,
+      publisher: dailyState.publisher, chapter: dailyState.chapter,
       questions: dailyState.questions, currentIndex: dailyState.currentIndex, answers: dailyState.answers,
       wrongQuestions: dailyState.wrongQuestions, completed, score: dailyState.score || 0
     })
   });
-  if (!response.ok) throw new Error(`自然科學進度同步失敗（HTTP ${response.status}）`);
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.success) throw new Error(result.error || `自然科學進度同步失敗（HTTP ${response.status}）`);
+  if (result.attemptNo) dailyState.attemptNo = Number(result.attemptNo);
+  return result;
 }
 
 async function startOrResume() {
   if (dailyState?.completed) return renderResult();
   if (!dailyState) {
     const chapter = document.getElementById('chapter-select').value;
-    dailyState = { date: todayKey, publisher: selectedPublisher, chapter, questions: buildDailyQuestions(selectedPublisher, chapter), currentIndex: 0, answers: [], wrongQuestions: [], completed: false, score: 0 };
+    const attemptNo = Number(todaySummary.nextAttemptNo || 1);
+    dailyState = { date: todayKey, attemptNo, publisher: selectedPublisher, chapter, questions: buildDailyQuestions(selectedPublisher, chapter, attemptNo), currentIndex: 0, answers: [], wrongQuestions: [], completed: false, score: 0 };
     await syncState(false);
   }
   showView('view-quiz');
@@ -370,7 +400,8 @@ function renderCalendar() {
   const year = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
   document.getElementById('cal-title').textContent = `${year} 年 ${month + 1} 月`;
-  const completed = new Set(history.filter(item => Number(item.completed ?? 1)).map(item => item.date));
+  const completed = new Set(history.filter(item => Number(item.completedAttempts || 0) > 0).map(item => item.date));
+  const monthTotals = getCalendarTotals(history, year, month);
   const grid = document.getElementById('calendar-grid');
   grid.innerHTML = '';
   for (let blank = 0; blank < new Date(year, month, 1).getDay(); blank++) grid.appendChild(document.createElement('span'));
@@ -378,17 +409,41 @@ function renderCalendar() {
     const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const cell = document.createElement('button');
     const isCompleted = completed.has(key);
-    cell.className = `calendar-cell rounded-xl text-xs font-bold flex items-center justify-center ${isCompleted ? 'bg-emerald-500 text-white shadow-sm' : key === todayKey ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-300' : key < todayKey ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-300'}`;
-    cell.textContent = day;
+    cell.className = `calendar-cell rounded-xl text-xs font-bold flex flex-col items-center justify-center leading-tight ${isCompleted ? 'bg-emerald-500 text-white shadow-sm' : key === todayKey ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-300' : key < todayKey ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-300'}`;
+    const dayLabel = document.createElement('span');
+    dayLabel.textContent = day;
+    cell.appendChild(dayLabel);
     const record = history.find(item => item.date === key);
-    cell.title = record ? `${record.publisher}・${record.chapter}・${record.score} 分` : key === todayKey ? '今天' : '';
+    if (record) {
+      const totalLabel = document.createElement('small');
+      totalLabel.className = 'text-[8px] opacity-90';
+      totalLabel.textContent = `${record.totalQuestions}題`;
+      cell.appendChild(totalLabel);
+    }
+    cell.title = record ? `${record.completedAttempts} 次・${record.totalQuestions} 題・累計 ${record.totalScore} 分` : key === todayKey ? '今天' : '';
+    cell.onclick = () => {
+      document.getElementById('calendar-detail').textContent = record
+        ? `${key}：${record.completedAttempts} 次・${record.totalQuestions} 題・累計 ${record.totalScore} 分`
+        : `${key}：尚無完成紀錄`;
+    };
     grid.appendChild(cell);
   }
-  document.getElementById('completion-count').textContent = `${completed.size} 天`;
-  const doneToday = completed.has(todayKey) || dailyState?.completed;
+  document.getElementById('completion-count').textContent = `${monthTotals.totalQuestions} 題・${monthTotals.totalScore} 分`;
+  const todayRecord = history.find(item => item.date === todayKey) || todaySummary;
+  const doneToday = Number(todayRecord.completedAttempts || 0) > 0;
   const status = document.getElementById('today-status');
   status.className = `mt-4 py-2.5 rounded-xl text-center text-xs font-bold ${doneToday ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-50 text-amber-800'}`;
-  status.innerHTML = doneToday ? '<i class="fa-solid fa-circle-check mr-1"></i>今日 20 題已完成' : '完成今日 20 題即可點亮';
+  status.innerHTML = doneToday
+    ? `<i class="fa-solid fa-circle-check mr-1"></i>今日 ${todayRecord.completedAttempts} 次・${todayRecord.totalQuestions} 題・累計 ${todayRecord.totalScore} 分`
+    : '每完成一次 20 題，就會加入今日統計';
+}
+
+function prepareNextAttempt() {
+  dailyState = null;
+  renderPublisherButtons();
+  renderChapterOptions();
+  renderStartButton();
+  showView('view-setup');
 }
 
 function openReview() {
@@ -413,7 +468,7 @@ function renderReviewQuestion() {
     const button = document.createElement('button');
     button.className = 'answer-option w-full p-4 rounded-2xl border-2 border-slate-200 text-left font-bold';
     button.textContent = option;
-    button.onclick = () => answerReview(option, button);
+    button.onclick = () => answerReview(option, button).catch(error => showToast(error.message, 'rose'));
     list.appendChild(button);
   });
   document.getElementById('review-feedback').classList.add('hidden');
@@ -432,8 +487,11 @@ async function answerReview(option, selectedButton) {
   }
   document.querySelectorAll('#review-answers .answer-option').forEach(button => { button.disabled = true; if (button.textContent === question.answer) button.classList.add('is-correct'); });
   feedback.innerHTML = `<strong>複習完成！</strong><br>${question.explanation}`;
-  await natureFetch('/nature-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seatNo: currentUser.seatNo, questionIds: [question.id] }) });
+  const response = await natureFetch('/nature-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seatNo: currentUser.seatNo, questionIds: [question.id] }) });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.success) throw new Error(result.error || '錯題複習狀態同步失敗');
   wrongBank = wrongBank.filter(item => item.id !== question.id);
+  if (dailyState) dailyState.wrongQuestions = dailyState.wrongQuestions.filter(item => item.id !== question.id);
   document.getElementById('wrong-count').textContent = wrongBank.length;
   document.getElementById('review-next').classList.remove('hidden');
 }
@@ -456,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-next').onclick = () => advanceQuestion().catch(error => showToast(error.message, 'rose'));
   document.getElementById('btn-review').onclick = openReview;
   document.getElementById('result-review').onclick = openReview;
-  document.getElementById('result-home').onclick = () => showView('view-setup');
+  document.getElementById('result-home').onclick = prepareNextAttempt;
   document.getElementById('review-back').onclick = () => showView(dailyState?.completed ? 'view-result' : 'view-setup');
   document.getElementById('review-next').onclick = () => { reviewIndex += 1; renderReviewQuestion(); };
   document.getElementById('cal-prev').onclick = () => { calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1); renderCalendar(); };

@@ -137,6 +137,7 @@ async function initializeDatabaseSchema() {
     CREATE TABLE IF NOT EXISTS nature_daily_progress (
       seat_no VARCHAR(32) NOT NULL,
       learning_date DATE NOT NULL,
+      attempt_no SMALLINT UNSIGNED NOT NULL DEFAULT 1,
       publisher VARCHAR(16) NOT NULL,
       chapter_name VARCHAR(255) NOT NULL,
       curriculum_version VARCHAR(32) NOT NULL DEFAULT '115-G6-NATURE-1',
@@ -148,8 +149,9 @@ async function initializeDatabaseSchema() {
       score TINYINT UNSIGNED NOT NULL DEFAULT 0,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       completed_at TIMESTAMP NULL,
-      PRIMARY KEY (seat_no, learning_date),
-      KEY ix_nature_completed (seat_no, completed, learning_date)
+      PRIMARY KEY (seat_no, learning_date, attempt_no),
+      KEY ix_nature_completed (seat_no, completed, learning_date),
+      KEY ix_nature_daily_attempt (seat_no, learning_date, completed, attempt_no)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
@@ -860,7 +862,16 @@ app.post('/api/math-progress', requireAuth, requireOwnSeat, async (req, res) => 
 
 const NATURE_PUBLISHERS = new Set(['康軒', '南一', '翰林']);
 
-// 讀取今日固定題組、學習日曆與尚未精熟的錯題。
+function mapNatureSummary(row = {}) {
+  return {
+    completedAttempts: Number(row.completed_attempts || 0),
+    totalQuestions: Number(row.total_questions || 0),
+    totalScore: Number(row.total_score || 0),
+    nextAttemptNo: Number(row.next_attempt_no || 1)
+  };
+}
+
+// 讀取今日未完成題組、每日彙總學習日曆與尚未精熟的錯題。
 app.get('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) => {
   const seatNo = String(req.query.seatNo || '').trim();
   const learningDate = String(req.query.date || '');
@@ -869,18 +880,32 @@ app.get('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =>
   }
   try {
     const [states] = await pool.query(
-      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date,
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date, attempt_no,
               publisher, chapter_name, curriculum_version, questions_json,
               answers_json, wrong_questions_json, current_question_index,
               completed, score, updated_at, completed_at
+       FROM nature_daily_progress
+       WHERE seat_no = ? AND learning_date = ? AND completed = 0
+       ORDER BY attempt_no DESC LIMIT 1`,
+      [seatNo, learningDate]
+    );
+    const [summaryRows] = await pool.query(
+      `SELECT COALESCE(SUM(completed = 1), 0) AS completed_attempts,
+              COALESCE(SUM(IF(completed = 1, 20, 0)), 0) AS total_questions,
+              COALESCE(SUM(IF(completed = 1, score, 0)), 0) AS total_score,
+              COALESCE(MAX(attempt_no), 0) + 1 AS next_attempt_no
        FROM nature_daily_progress WHERE seat_no = ? AND learning_date = ?`,
       [seatNo, learningDate]
     );
     const [history] = await pool.query(
-      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS date, publisher,
-              chapter_name AS chapter, score, completed, completed_at
+      `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS date,
+              COUNT(*) AS completed_attempts,
+              COUNT(*) * 20 AS total_questions,
+              SUM(score) AS total_score,
+              MAX(completed_at) AS completed_at
        FROM nature_daily_progress
        WHERE seat_no = ? AND completed = 1
+       GROUP BY learning_date
        ORDER BY learning_date DESC LIMIT 366`,
       [seatNo]
     );
@@ -897,6 +922,7 @@ app.get('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =>
       success: true,
       data: state ? {
         date: state.learning_date,
+        attemptNo: Number(state.attempt_no),
         publisher: state.publisher,
         chapter: state.chapter_name,
         curriculumVersion: state.curriculum_version,
@@ -908,7 +934,14 @@ app.get('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =>
         score: Number(state.score),
         updatedAt: state.updated_at
       } : null,
-      history: history.map(item => ({ ...item, completed: Boolean(item.completed), score: Number(item.score) })),
+      todaySummary: mapNatureSummary(summaryRows[0]),
+      history: history.map(item => ({
+        date: item.date,
+        completedAttempts: Number(item.completed_attempts),
+        totalQuestions: Number(item.total_questions),
+        totalScore: Number(item.total_score),
+        completedAt: item.completed_at
+      })),
       wrongQuestions: wrongRows.map(row => parseJson(row.question_json, null)).filter(Boolean)
     });
   } catch (err) {
@@ -916,15 +949,17 @@ app.get('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =>
   }
 });
 
-// 儲存每日 20 題進度；同一天只能沿用第一次建立的出版社、章節與題組。
+// 儲存每次 20 題進度；同一天可完成多次，但未完成的同一次題組不可更換。
 app.post('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) => {
   const {
-    seatNo, date, publisher, chapter, questions, answers = [], wrongQuestions = [],
+    seatNo, date, attemptNo, publisher, chapter, questions, answers = [], wrongQuestions = [],
     currentIndex = 0, completed = false, score = 0
   } = req.body || {};
   const normalizedSeatNo = String(seatNo || '').trim();
   const normalizedDate = String(date || '');
+  const normalizedAttemptNo = Number(attemptNo);
   if (!normalizedSeatNo || !isDateKey(normalizedDate) || normalizedDate > getTaipeiDateKey()
+      || !Number.isInteger(normalizedAttemptNo) || normalizedAttemptNo < 1 || normalizedAttemptNo > 65535
       || !NATURE_PUBLISHERS.has(publisher) || !String(chapter || '').trim()
       || !Array.isArray(questions) || questions.length !== 20
       || !Array.isArray(answers) || answers.length > 20
@@ -941,13 +976,14 @@ app.post('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =
     await connection.beginTransaction();
     const [existing] = await connection.query(
       `SELECT publisher, chapter_name, questions_json, completed
-       FROM nature_daily_progress WHERE seat_no = ? AND learning_date = ? FOR UPDATE`,
-      [normalizedSeatNo, normalizedDate]
+       FROM nature_daily_progress
+       WHERE seat_no = ? AND learning_date = ? AND attempt_no = ? FOR UPDATE`,
+      [normalizedSeatNo, normalizedDate, normalizedAttemptNo]
     );
     if (existing.length && (existing[0].publisher !== publisher || existing[0].chapter_name !== chapter
         || existing[0].questions_json !== JSON.stringify(questions))) {
       await connection.rollback();
-      return res.status(409).json({ success: false, error: '今日題組已固定，不可更換出版社或章節' });
+      return res.status(409).json({ success: false, error: '本次題組已固定，不可更換出版社或章節' });
     }
     if (existing[0]?.completed && !completed) {
       await connection.rollback();
@@ -957,16 +993,16 @@ app.post('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =
     const safeScore = completed ? Math.max(0, Math.min(100, Number(score) || 0)) : 0;
     await connection.query(
       `INSERT INTO nature_daily_progress
-        (seat_no, learning_date, publisher, chapter_name, questions_json, answers_json,
+        (seat_no, learning_date, attempt_no, publisher, chapter_name, questions_json, answers_json,
          wrong_questions_json, current_question_index, completed, score, completed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, CURRENT_TIMESTAMP, NULL))
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, CURRENT_TIMESTAMP, NULL))
        ON DUPLICATE KEY UPDATE answers_json = VALUES(answers_json),
          wrong_questions_json = VALUES(wrong_questions_json),
          current_question_index = GREATEST(current_question_index, VALUES(current_question_index)),
          completed = GREATEST(completed, VALUES(completed)),
          score = IF(VALUES(completed) = 1, VALUES(score), score),
          completed_at = IF(VALUES(completed) = 1, COALESCE(completed_at, CURRENT_TIMESTAMP), completed_at)`,
-      [normalizedSeatNo, normalizedDate, publisher, String(chapter).trim(), JSON.stringify(questions),
+      [normalizedSeatNo, normalizedDate, normalizedAttemptNo, publisher, String(chapter).trim(), JSON.stringify(questions),
         JSON.stringify(answers), JSON.stringify(wrongQuestions), safeIndex, completed ? 1 : 0,
         safeScore, completed ? 1 : 0]
     );
@@ -981,8 +1017,16 @@ app.post('/api/nature-progress', requireAuth, requireOwnSeat, async (req, res) =
         [normalizedSeatNo, question.id, JSON.stringify(question)]
       );
     }
+    const [summaryRows] = await connection.query(
+      `SELECT COALESCE(SUM(completed = 1), 0) AS completed_attempts,
+              COALESCE(SUM(IF(completed = 1, 20, 0)), 0) AS total_questions,
+              COALESCE(SUM(IF(completed = 1, score, 0)), 0) AS total_score,
+              COALESCE(MAX(attempt_no), 0) + 1 AS next_attempt_no
+       FROM nature_daily_progress WHERE seat_no = ? AND learning_date = ?`,
+      [normalizedSeatNo, normalizedDate]
+    );
     await connection.commit();
-    res.json({ success: true });
+    res.json({ success: true, attemptNo: normalizedAttemptNo, todaySummary: mapNatureSummary(summaryRows[0]) });
   } catch (err) {
     if (connection) await connection.rollback();
     res.status(500).json({ success: false, error: err.message });

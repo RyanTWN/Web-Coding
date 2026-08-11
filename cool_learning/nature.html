@@ -58,10 +58,11 @@
 
       <aside class="space-y-5">
         <div class="bg-white/95 rounded-3xl p-5 shadow-lg border border-white">
-          <div class="flex justify-between items-center"><h2 class="font-black"><i class="fa-solid fa-calendar-check text-emerald-500 mr-2"></i>學習日曆</h2><span id="completion-count" class="text-xs font-bold text-emerald-600">0 天</span></div>
+          <div class="flex justify-between items-center"><h2 class="font-black"><i class="fa-solid fa-calendar-check text-emerald-500 mr-2"></i>學習日曆</h2><span id="completion-count" class="text-xs font-bold text-emerald-600">0 題・0 分</span></div>
           <div class="flex justify-between items-center my-4"><button id="cal-prev" class="w-8 h-8 rounded-xl bg-slate-100"><i class="fa-solid fa-chevron-left"></i></button><strong id="cal-title" class="text-sm"></strong><button id="cal-next" class="w-8 h-8 rounded-xl bg-slate-100"><i class="fa-solid fa-chevron-right"></i></button></div>
           <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
           <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          <p id="calendar-detail" class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選日期查看題數與分數</p>
           <p id="today-status" class="mt-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 text-center text-xs font-bold">完成今日 20 題即可點亮</p>
         </div>
         <button id="btn-review" class="w-full bg-white/95 rounded-3xl p-5 shadow-lg border border-white flex items-center justify-between text-left">
@@ -86,10 +87,11 @@
     <section id="view-result" class="hidden max-w-lg mx-auto">
       <div class="bg-white/95 rounded-3xl p-7 sm:p-9 shadow-xl border border-white text-center">
         <div class="w-24 h-24 mx-auto rounded-full bg-emerald-100 text-emerald-500 flex items-center justify-center text-5xl"><i class="fa-solid fa-trophy"></i></div>
-        <h2 class="text-2xl font-black mt-5">今日自然練習完成！</h2>
-        <p class="text-slate-500 text-sm mt-2">學習日曆已點亮，錯題也已加入複習清單。</p>
-        <div class="grid grid-cols-2 gap-3 my-6"><div class="rounded-2xl bg-emerald-50 p-4"><small class="block text-emerald-700 font-bold">答對題數</small><strong id="result-correct" class="text-2xl text-emerald-600"></strong></div><div class="rounded-2xl bg-amber-50 p-4"><small class="block text-amber-700 font-bold">今日得分</small><strong id="result-score" class="text-2xl text-amber-600"></strong></div></div>
-        <div class="grid grid-cols-2 gap-3"><button id="result-review" class="py-3 rounded-2xl bg-rose-100 text-rose-700 font-black">複習錯題</button><button id="result-home" class="py-3 rounded-2xl bg-amber-500 text-white font-black">回到總覽</button></div>
+        <h2 class="text-2xl font-black mt-5">本次自然練習完成！</h2>
+        <p id="result-attempt" class="text-amber-600 text-sm font-black mt-2"></p>
+        <div class="grid grid-cols-2 gap-3 mt-5"><div class="rounded-2xl bg-emerald-50 p-4"><small class="block text-emerald-700 font-bold">本次答對</small><strong id="result-correct" class="text-2xl text-emerald-600"></strong></div><div class="rounded-2xl bg-amber-50 p-4"><small class="block text-amber-700 font-bold">本次得分</small><strong id="result-score" class="text-2xl text-amber-600"></strong></div></div>
+        <p id="result-today-total" class="my-4 rounded-2xl bg-slate-50 py-3 text-sm font-black text-slate-600"></p>
+        <div class="grid grid-cols-2 gap-3"><button id="result-review" class="py-3 rounded-2xl bg-rose-100 text-rose-700 font-black">複習錯題</button><button id="result-home" class="py-3 rounded-2xl bg-amber-500 text-white font-black">再測 20 題</button></div>
       </div>
     </section>
 
