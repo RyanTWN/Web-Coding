@@ -1,10 +1,7 @@
 // 全局狀態管理
 let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user')) || null;
-let studentsList = JSON.parse(localStorage.getItem('g6_portal_students')) || [
-  { name: "王小明", seatNo: "60101", created: "2026-07-01" },
-  { name: "李小華", seatNo: "60102", created: "2026-07-01" },
-  { name: "陳大文", seatNo: "60103", created: "2026-07-01" }
-];
+// 管理後台用；一律由 /api/admin/analytics 的真實資料覆蓋（見 admin.js），這裡只需要空陣列起始值。
+let studentsList = [];
 
 let today30Words = [];
 let currentIndex = 0;
@@ -18,11 +15,45 @@ let selectedLearningDate = getTodayKey();
 let dailyProgressMap = new Map();
 let allWordsCompleted = false;
 let modalCallback = null;
-const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
 let progressSyncTimer = null;
+let studentLoginStage = 'identity'; // 'identity' | 'password'
 
 function getTodayKey() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+}
+
+// 將學生登入表單重置回「輸入姓名/座號」的第一階段。
+function resetStudentLoginForm() {
+  studentLoginStage = 'identity';
+  document.getElementById('student-login-step-identity')?.classList.remove('hidden');
+  document.getElementById('student-login-step-password')?.classList.add('hidden');
+  document.getElementById('student-login-password-existing')?.classList.remove('hidden');
+  document.getElementById('student-login-password-setup')?.classList.add('hidden');
+  const passwordInput = document.getElementById('input-student-password');
+  if (passwordInput) passwordInput.value = '';
+  const newPasswordInput = document.getElementById('input-student-new-password');
+  if (newPasswordInput) newPasswordInput.value = '';
+  const confirmInput = document.getElementById('input-student-new-password-confirm');
+  if (confirmInput) confirmInput.value = '';
+  const submitBtn = document.getElementById('btn-student-login-submit');
+  if (submitBtn) submitBtn.innerHTML = '開始學習 GO! <i class="fa-solid fa-arrow-right"></i>';
+}
+
+// 切換到第二階段：{ setup: true } 顯示「首次登入設定密碼」欄位，否則顯示一般密碼欄位。
+function showStudentLoginPasswordStep({ setup }) {
+  studentLoginStage = 'password';
+  document.getElementById('student-login-step-identity')?.classList.add('hidden');
+  document.getElementById('student-login-step-password')?.classList.remove('hidden');
+  document.getElementById('student-login-password-existing')?.classList.toggle('hidden', setup);
+  document.getElementById('student-login-password-setup')?.classList.toggle('hidden', !setup);
+  const submitBtn = document.getElementById('btn-student-login-submit');
+  if (submitBtn) {
+    submitBtn.innerHTML = setup
+      ? '設定密碼並登入 <i class="fa-solid fa-arrow-right"></i>'
+      : '登入 <i class="fa-solid fa-arrow-right"></i>';
+  }
+  const passwordInput = document.getElementById('input-student-password');
+  if (passwordInput) { passwordInput.value = ''; if (!setup) passwordInput.focus(); }
 }
 
 function updateSyncStatus(text, className = 'text-slate-400') {
@@ -590,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-logout')?.addEventListener('click', () => {
     currentUser = null;
     sessionStorage.removeItem('g6_portal_user');
+    resetStudentLoginForm();
     showView('view-login');
   });
 
@@ -601,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 登入頁籤切換
   document.getElementById('login-tab-student')?.addEventListener('click', () => {
+    resetStudentLoginForm();
     document.getElementById('form-student-login')?.classList.remove('hidden');
     document.getElementById('form-admin-login')?.classList.add('hidden');
     document.getElementById('login-tab-student')?.classList.add('bg-white', 'text-brand-600', 'shadow-sm');
@@ -618,23 +651,63 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-tab-student')?.classList.remove('bg-white', 'text-brand-600', 'shadow-sm');
   });
 
-  // 學生登入處理 (包含付費牆攔截)
+  // 學生登入處理：分兩階段。第一階段只送姓名+座號探測狀態，
+  // 第二階段依伺服器回應顯示「輸入密碼」或「首次登入設定密碼」畫面。
+  document.getElementById('btn-student-login-back')?.addEventListener('click', () => resetStudentLoginForm());
+
   document.getElementById('form-student-login')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('input-student-name').value.trim();
     const seatNo = document.getElementById('input-student-seat').value.trim();
+    const payload = { name, seatNo };
+
+    if (studentLoginStage === 'password') {
+      const isSetupStep = !document.getElementById('student-login-password-setup')?.classList.contains('hidden');
+      if (isSetupStep) {
+        const newPassword = document.getElementById('input-student-new-password').value;
+        const confirmPassword = document.getElementById('input-student-new-password-confirm').value;
+        if (newPassword.length < 6 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+          showToast('密碼至少需要 6 碼，且需同時包含英文字母與數字', 'fa-triangle-exclamation');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          showToast('兩次輸入的密碼不一致，請再確認一次', 'fa-triangle-exclamation');
+          return;
+        }
+        payload.newPassword = newPassword;
+      } else {
+        payload.password = document.getElementById('input-student-password').value;
+      }
+    }
 
     try {
       const response = await apiFetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, seatNo })
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
 
       if (data.status === 'expired') {
         document.getElementById('paywall-modal')?.classList.remove('hidden');
         return; 
+      }
+
+      if (data.status === 'needs_password_setup') {
+        showStudentLoginPasswordStep({ setup: true });
+        if (data.error) showToast(data.error, 'fa-triangle-exclamation');
+        return;
+      }
+
+      if (data.status === 'needs_password') {
+        showStudentLoginPasswordStep({ setup: false });
+        showToast(data.message || '請輸入密碼', 'fa-lock');
+        return;
+      }
+
+      if (data.status === 'locked') {
+        showToast(data.message || '帳號已鎖定，請稍後再試', 'fa-lock');
+        return;
       }
 
       if (data.success) {
@@ -647,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(hSeat) hSeat.textContent = `座號: ${currentUser.seatNo}`;
         document.getElementById('user-profile-badge')?.classList.remove('hidden');
 
+        resetStudentLoginForm();
         showView('view-subjects');
         
         if (data.is_premium === 1) {
@@ -656,7 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast(`免費試用中，剩餘 ${days} 天`, "fa-clock");
         }
       } else {
-        showToast(data.message || '登入失敗，請檢查資料', "fa-triangle-exclamation");
+        showToast(data.message || data.error || '登入失敗，請檢查資料', "fa-triangle-exclamation");
       }
     } catch (error) {
       console.error(error);

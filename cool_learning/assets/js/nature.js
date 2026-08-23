@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
+// API_BASE_URL 定義於 config.js（在這支檔案之前載入），不在這裡重複宣告。
 const DAILY_TOTAL = 20;
 const ALLOWED_PUBLISHERS = ['康軒', '南一', '翰林'];
 const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());

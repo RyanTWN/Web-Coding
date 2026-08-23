@@ -18,7 +18,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    name: Run backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: cool_learning_backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: cool_learning_backend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: cool_learning_backend
+        run: npm test
+
   publish:
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

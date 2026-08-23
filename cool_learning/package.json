@@ -1,0 +1,12 @@
+{
+  "name": "cool-learning-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "酷學習前端。只用來跑 Tailwind CLI 建置正式 CSS，不是 SPA 專案，沒有其他打包流程。",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/tailwind-input.css -o ./assets/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.13"
+  }
+}

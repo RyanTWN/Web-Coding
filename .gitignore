@@ -1,3 +1,5 @@
 
 generate_image.py
 .env
+node_modules/
+cool_learning/assets/css/tailwind.css

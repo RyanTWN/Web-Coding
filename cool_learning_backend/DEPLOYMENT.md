@@ -9,6 +9,27 @@
 
 NAS 不再從原始碼建置，只需要拉取映像並重新建立容器。
 
+## 資料庫帳號（最小權限原則）
+
+後端**不應該**用 root 帳號連線 MariaDB。第一次設定（或現有環境要收斂權限時），
+用有 GRANT 權限的帳號（例如 root）執行一次：
+
+```sh
+mysql -uroot -p < cool_learning_backend/ops/provision-app-db-user.sql
+```
+
+執行前記得把腳本裡的 `CHANGE_ME_STRONG_PASSWORD` 換成實際要用的強密碼。這支腳本會
+建立一個 `cool_learning_app` 帳號，只授權存取 `cool_learning` 這一個資料庫，權限只有
+`SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES`（原因見腳本內註解），
+沒有任何全域權限、也沒有 `DROP`。`.env` 的 `DB_USER`/`DB_PASSWORD` 要改成這個帳號。
+
+如果現有環境的 `.env` 目前還是設 `DB_USER=root`，收斂步驟：
+1. 執行上面的腳本建立新帳號。
+2. 把 `.env` 的 `DB_USER`/`DB_PASSWORD` 換成新帳號。
+3. 重新部署、確認 `/api/health` 正常、後台功能都正常運作後，
+   再考慮要不要限制 root 帳號的遠端登入來源（這步驟依你的 NAS/MariaDB 設定而定，
+   不在這份腳本的範圍內）。
+
 ## 第一次設定 NAS
 
 1. 在 NAS 建立部署資料夾，例如 `/volume1/docker/cool-learning`。

@@ -69,7 +69,12 @@ async function renderAdminTables() {
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.error || '無法載入資料');
     adminAnalytics = (result.data || []).filter(row => String(row.seat_no || '').trim() !== '');
-    studentsList = adminAnalytics.map(row => ({ name: row.name, seatNo: row.seat_no }));
+    studentsList = adminAnalytics.map(row => ({
+      name: row.name,
+      seatNo: row.seat_no,
+      hasPassword: Boolean(Number(row.has_password)),
+      isLocked: Boolean(Number(row.is_locked))
+    }));
   } catch (error) {
     showToast(error.message || '管理資料載入失敗', 'fa-triangle-exclamation');
     return;
@@ -81,18 +86,31 @@ async function renderAdminTables() {
 
   studentsList.forEach(student => {
     const tr = document.createElement('tr');
+    const statusBadge = student.isLocked
+      ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-600 rounded-full font-bold">已鎖定</span>'
+      : student.hasPassword
+        ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-full font-bold">已設定</span>'
+        : '<span class="px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full font-bold">尚未設定</span>';
     tr.innerHTML = `
       <td class="p-3 font-bold text-brand-600">${escapeHtml(student.seatNo)}</td>
       <td class="p-3 font-bold text-slate-800">${escapeHtml(student.name)}</td>
-      <td class="p-3 text-slate-400 text-[11px]">MariaDB</td>
-      <td class="p-3 text-right">
-        <button class="px-2 py-1 bg-rose-50 text-rose-600 font-bold rounded-lg text-[11px]">刪除</button>
+      <td class="p-3 text-[11px]">${statusBadge}</td>
+      <td class="p-3 text-right whitespace-nowrap">
+        <button class="btn-reset-password px-2 py-1 bg-amber-50 text-amber-600 font-bold rounded-lg text-[11px] mr-1">重設密碼</button>
+        <button class="btn-delete-student px-2 py-1 bg-rose-50 text-rose-600 font-bold rounded-lg text-[11px]">刪除</button>
       </td>
     `;
-    tr.querySelector('button').onclick = () => {
+    tr.querySelector('.btn-delete-student').onclick = () => {
       openCustomModal("刪除帳號？", `刪除 ${student.name}？`, () => {
         deleteStudent(student.seatNo);
       });
+    };
+    tr.querySelector('.btn-reset-password').onclick = () => {
+      openCustomModal(
+        "重設密碼？",
+        `重設 ${student.name}（座號 ${student.seatNo}）的密碼？重設後該學生下次登入時，需要重新設定一組新密碼。`,
+        () => resetStudentPassword(student.seatNo)
+      );
     };
     tbodyUsers.appendChild(tr);
   });
@@ -211,6 +229,21 @@ async function deleteStudent(seatNo, refresh = true) {
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.error || '刪除失敗');
     if (refresh) await renderAdminTables();
+  } catch (error) { showToast(error.message, 'fa-triangle-exclamation'); }
+}
+
+async function resetStudentPassword(seatNo) {
+  const normalizedSeatNo = String(seatNo || '').trim();
+  if (!/^\d{5}$/.test(normalizedSeatNo)) {
+    showToast('無效的學生座號，已停止重設', 'fa-triangle-exclamation');
+    return;
+  }
+  try {
+    const response = await apiFetch(`/admin/students/${encodeURIComponent(normalizedSeatNo)}/reset-password`, { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || '重設失敗');
+    showToast('已重設，該學生下次登入時需設定新密碼', 'fa-circle-check');
+    await renderAdminTables();
   } catch (error) { showToast(error.message, 'fa-triangle-exclamation'); }
 }
 

@@ -12,26 +12,13 @@
   <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
   <title>酷學習 Cool Learning - 國小六年級自主學習平台</title>
   
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <link rel="stylesheet" href="assets/css/style.css">
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { 50: '#f0f7ff', 100: '#e0effe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
-          },
-          fontFamily: { sans: ['Fredoka', 'Noto Sans TC', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="assets/css/tailwind.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen">
 
@@ -174,15 +161,43 @@
       </div>
 
       <form id="form-student-login" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-user text-brand-500 mr-1"></i>學生姓名 Name</label>
-          <input type="text" id="input-student-name" required placeholder="例如：張小明" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+        <div id="student-login-step-identity" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-user text-brand-500 mr-1"></i>學生姓名 Name</label>
+            <input type="text" id="input-student-name" required placeholder="例如：張小明" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-id-card text-brand-500 mr-1"></i>5碼座號 Seat Number</label>
+            <input type="text" id="input-student-seat" required maxlength="5" placeholder="例如：60101" pattern="[0-9]{5}" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-id-card text-brand-500 mr-1"></i>5碼座號 Seat Number</label>
-          <input type="text" id="input-student-seat" required maxlength="5" placeholder="例如：60101" pattern="[0-9]{5}" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+
+        <div id="student-login-step-password" class="space-y-4 hidden">
+          <button type="button" id="btn-student-login-back" class="text-xs text-slate-400 font-bold underline flex items-center gap-1">
+            <i class="fa-solid fa-arrow-left"></i>返回修改姓名/座號
+          </button>
+
+          <div id="student-login-password-existing">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-lock text-brand-500 mr-1"></i>密碼 Password</label>
+            <input type="password" id="input-student-password" placeholder="••••••••" autocomplete="current-password" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+          </div>
+
+          <div id="student-login-password-setup" class="space-y-3 hidden">
+            <p class="text-xs text-brand-600 font-bold bg-brand-50 rounded-xl p-3 leading-relaxed">
+              <i class="fa-solid fa-circle-info mr-1"></i>這是你第一次登入，請設定一組屬於自己的密碼（至少 6 碼，需同時包含英文字母與數字），下次登入要記得用喔！
+            </p>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-key text-brand-500 mr-1"></i>設定新密碼</label>
+              <input type="password" id="input-student-new-password" placeholder="至少 6 碼，含英文字母與數字" autocomplete="new-password" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-key text-brand-500 mr-1"></i>再輸入一次確認</label>
+              <input type="password" id="input-student-new-password-confirm" placeholder="再輸入一次新密碼" autocomplete="new-password" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+            </div>
+          </div>
         </div>
-        <button type="submit" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-black rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
+
+        <button type="submit" id="btn-student-login-submit" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-black rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
           開始學習 GO! <i class="fa-solid fa-arrow-right"></i>
         </button>
       </form>
@@ -349,7 +364,7 @@
           <div class="max-h-[300px] overflow-y-auto custom-scrollbar">
             <table class="w-full text-left border-collapse">
               <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
-                <tr><th class="p-3">5碼座號</th><th class="p-3">學生姓名</th><th class="p-3">建立日期</th><th class="p-3 text-right">操作</th></tr>
+                <tr><th class="p-3">5碼座號</th><th class="p-3">學生姓名</th><th class="p-3">密碼狀態</th><th class="p-3 text-right">操作</th></tr>
               </thead>
               <tbody id="admin-students-tbody" class="text-xs divide-y divide-slate-100"></tbody>
             </table>
@@ -427,6 +442,7 @@
     </div>
   </section>
 
+  <script src="assets/js/config.js"></script>
   <script src="assets/js/app.js?v=20260809-word-management-phonetic"></script>
   <script src="assets/js/quiz.js"></script> 
   <script src="assets/js/admin.js?v=20260809-word-management-phonetic"></script>
