@@ -1,4 +1,4 @@
-name: Build and publish website containers
+﻿name: Build and publish website containers
 
 on:
   push:
@@ -92,54 +92,3 @@ jobs:
             APP_VERSION=${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
-
-  deploy:
-    name: Deploy to Synology NAS
-    needs: publish
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Configure SSH
-        env:
-          NAS_HOST: ${{ secrets.NAS_HOST }}
-          NAS_PORT: ${{ secrets.NAS_PORT }}
-          NAS_SSH_KEY: ${{ secrets.NAS_SSH_KEY }}
-          NAS_KNOWN_HOSTS: ${{ secrets.NAS_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$NAS_SSH_KEY" > ~/.ssh/nas_deploy_key
-          chmod 600 ~/.ssh/nas_deploy_key
-          if [ -n "$NAS_KNOWN_HOSTS" ]; then
-            printf '%s\n' "$NAS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          else
-            ssh-keyscan -p "$NAS_PORT" -H "$NAS_HOST" > ~/.ssh/known_hosts
-          fi
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Upload deployment files
-        env:
-          NAS_HOST: ${{ secrets.NAS_HOST }}
-          NAS_PORT: ${{ secrets.NAS_PORT }}
-          NAS_USER: ${{ secrets.NAS_USER }}
-          NAS_DEPLOY_PATH: ${{ secrets.NAS_DEPLOY_PATH }}
-        run: |
-          deploy_path="${NAS_DEPLOY_PATH:-/volume1/docker/cool_learning_backend}"
-          ssh -i ~/.ssh/nas_deploy_key -p "$NAS_PORT" "$NAS_USER@$NAS_HOST" "mkdir -p '$deploy_path'"
-          scp -i ~/.ssh/nas_deploy_key -P "$NAS_PORT" \
-            cool_learning_backend/compose.yaml cool_learning_backend/deploy-nas.sh \
-            cool_learning_backend/deploy-nas-cicd.sh \
-            "$NAS_USER@$NAS_HOST:$deploy_path/"
-
-      - name: Deploy immutable image and verify health
-        env:
-          NAS_HOST: ${{ secrets.NAS_HOST }}
-          NAS_PORT: ${{ secrets.NAS_PORT }}
-          NAS_USER: ${{ secrets.NAS_USER }}
-          NAS_DEPLOY_PATH: ${{ secrets.NAS_DEPLOY_PATH }}
-        run: |
-          deploy_path="${NAS_DEPLOY_PATH:-/volume1/docker/cool_learning_backend}"
-          ssh -i ~/.ssh/nas_deploy_key -p "$NAS_PORT" "$NAS_USER@$NAS_HOST" \
-            "chmod 700 '$deploy_path/deploy-nas.sh' '$deploy_path/deploy-nas-cicd.sh' && cd '$deploy_path' && ./deploy-nas.sh 'sha-${GITHUB_SHA}'"
