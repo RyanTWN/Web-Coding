@@ -34,23 +34,31 @@ assert.ok(isAnswerCorrect('20 公尺', '20 公尺'), '字串選項應正確比�
 assert.strictEqual(isAnswerCorrect('1/3', '1/2'), false, '相異數值應判定錯誤');
 assert.strictEqual(isAnswerCorrect('abc', '12'), false, '非數值錯誤字串應判定錯誤');
 
-// 4. 題庫動態產生測試（抽驗所有單元產生 10 題且含提示與詳解）
+// 4. 題庫動態產生測試（抽驗所有單元產生 10 題且含提示與詳解，並保證同一輪題目絕不重複）
 for (const [publisher, units] of Object.entries(MATH_CURRICULUM)) {
   for (const unit of units) {
-    const questions = buildDailyMathQuestions(unit, 10);
-    assert.strictEqual(questions.length, 10, `${unit} 應產生 10 道練習題`);
-    assert.strictEqual(new Set(questions.map(q => q.id)).size, 10, '題目的 ID 不可重複');
-    
-    questions.forEach((q, idx) => {
-      assert.ok(q.q && q.q.length > 3, `第 ${idx + 1} 題題幹不可為空`);
-      assert.ok(q.a && q.a.length > 0, `第 ${idx + 1} 題必須有正確答案`);
-      assert.ok(q.hint && q.hint.includes('提示'), `第 ${idx + 1} 題必須有解題提示`);
-      assert.ok(q.explanation && q.explanation.includes('詳解'), `第 ${idx + 1} 題必須有步驟詳解`);
-      if (q.type === 'choice') {
-        assert.strictEqual(q.options.length, 4, '選擇題必須有 4 個選項');
-        assert.ok(q.options.includes(q.a), '選擇題選項中必須包含正確答案');
-      }
-    });
+    // 每個單元連續測試 3 輪，確保隨機生成時每一輪均無重複題目
+    for (let round = 1; round <= 3; round++) {
+      const questions = buildDailyMathQuestions(unit, 10);
+      assert.strictEqual(questions.length, 10, `${unit} 第 ${round} 輪應產生 10 道練習題`);
+      assert.strictEqual(new Set(questions.map(q => q.id)).size, 10, `${unit} 第 ${round} 輪題目的 ID 不可重複`);
+      assert.strictEqual(
+        new Set(questions.map(q => q.q)).size,
+        10,
+        `${unit} 第 ${round} 輪產生的 10 道題目內容 (q) 絕對不可重複！`
+      );
+      
+      questions.forEach((q, idx) => {
+        assert.ok(q.q && q.q.length > 3, `第 ${idx + 1} 題題幹不可為空`);
+        assert.ok(q.a && q.a.length > 0, `第 ${idx + 1} 題必須有正確答案`);
+        assert.ok(q.hint && q.hint.includes('提示'), `第 ${idx + 1} 題必須有解題提示`);
+        assert.ok(q.explanation && q.explanation.includes('詳解'), `第 ${idx + 1} 題必須有步驟詳解`);
+        if (q.type === 'choice') {
+          assert.strictEqual(q.options.length, 4, '選擇題必須有 4 個選項');
+          assert.ok(q.options.includes(q.a), '選擇題選項中必須包含正確答案');
+        }
+      });
+    }
   }
 }
 
