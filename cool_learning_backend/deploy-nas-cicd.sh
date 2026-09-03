@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+PATH="/usr/local/bin:/var/packages/ContainerManager/target/usr/bin:$PATH"
+export PATH
+
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$SCRIPT_DIR"
 

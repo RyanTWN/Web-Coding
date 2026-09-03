@@ -3,7 +3,7 @@
 # ==============================================================================
 param(
     [string]$NasHost = $(if ($env:NAS_HOST) { $env:NAS_HOST } else { "192.168.173.200" }),
-    [string]$NasUser = $(if ($env:NAS_USER) { $env:NAS_USER } else { "maxis" }),
+    [string]$NasUser = $(if ($env:NAS_USER) { $env:NAS_USER } else { "ryantwn" }),
     [int]$NasPort = 22,
     [string]$NasDeployPath = "/volume1/docker/cool_learning_backend",
     [string]$HealthUrl = "https://learning.ifit.myds.me:4061/api/health",
