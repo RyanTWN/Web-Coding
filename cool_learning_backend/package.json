@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "node tests/nature_logic.test.js && node tests/math_logic.test.js && node tests/password_auth.test.js && node tests/guardian_auth.test.js && node tests/google_play_verify.test.js"
+    "test": "node tests/nature_logic.test.js && node tests/math_logic.test.js && node tests/social_logic.test.js && node tests/password_auth.test.js && node tests/guardian_auth.test.js && node tests/google_play_verify.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

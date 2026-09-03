@@ -72,6 +72,10 @@ app.use('/api', require('./routes/nature')({
   pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
 }));
 
+app.use('/api', require('./routes/social')({
+  pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
+}));
+
 app.use('/api', require('./routes/misc')({ pool, requireAuth, requireOwnSeat }));
 
 initializeDatabaseSchema(pool, AUTH_SECRET)

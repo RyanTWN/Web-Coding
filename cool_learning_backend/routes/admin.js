@@ -65,7 +65,7 @@ module.exports = function createAdminRouter({
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
-    for (const table of ['english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state', 'student_learning_state', 'student_math_state', 'math_quiz_logs', 'math_wrong_questions', 'nature_daily_progress', 'nature_wrong_questions', 'learning_progress', 'quiz_logs', 'login_logs']) {
+    for (const table of ['english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state', 'student_learning_state', 'student_math_state', 'math_quiz_logs', 'math_wrong_questions', 'nature_daily_progress', 'nature_wrong_questions', 'social_daily_progress', 'social_wrong_questions', 'learning_progress', 'quiz_logs', 'login_logs']) {
       await connection.query(`DELETE FROM ${table} WHERE seat_no = ?`, [seatNo]);
     }
     await connection.query('DELETE FROM students WHERE seat_no = ?', [seatNo]);
