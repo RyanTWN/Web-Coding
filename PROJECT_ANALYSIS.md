@@ -225,7 +225,9 @@ cool_learning_backend/
   ├── 1:N ──> [english_daily_assignments 每日單字分配] (seat_no, learning_date, word_id)
   ├── 1:1 ──> [english_daily_progress 每日單字學習進度]
   ├── 1:N ──> [quiz_logs 英文測驗紀錄]
-  ├── 1:N ──> [math_quiz_logs 數學測驗紀錄]
+  ├── 1:1 ──> [student_math_state 數學當日作答狀態] (seat_no, learning_date, attempt_no, wrong_questions_json)
+  ├── 1:N ──> [math_quiz_logs 數學測驗紀錄] (seat_no, learning_date, attempt_no, score)
+  ├── 1:N ──> [math_wrong_questions 數學錯題本與掌握度] (seat_no, question_id, wrong_count, mastered)
   ├── 1:N ──> [nature_daily_progress 自然每日測驗與回合] (seat_no, learning_date, attempt_no)
   └── 1:N ──> [nature_wrong_questions 自然錯題本與掌握度] (seat_no, question_id, mastered)
 
@@ -246,7 +248,8 @@ cool_learning_backend/
 | **Phase 2: 題庫分級與營運後台** | 2026-08-08 ~ 08-09 | • 英文 30 字抽取最佳化（13:12:5 初中高階配比演算法）<br>• 建立完整管理後台 (admin.js)，支援單字 CRUD 與音標修正<br>• 引入單字庫學習開關 (`learning_enabled`) 與字庫批量滾動 | 已完成 |
 | **Phase 3: 自然學科與功能擴充** | 2026-08-11 | • 新增自然科 115 課綱學習（康軒/南一/翰林三大版本）<br>• 每日 20 題練習機制與支援單日多次測驗 (`attempt_no`)<br>• 建立自然科錯題本追蹤系統 (`nature_wrong_questions`) | 已完成 |
 | **Phase 4: 系統大重構與安全升級** | 2026-08-12 ~ 08-23 | • 學生密碼驗證與防暴破鎖定機制 (5 次錯鎖 15 分鐘)<br>• B2C 家長帳號系統 (Email/Google/Apple 雙重登入)<br>• 最小權限專用 DB 帳號 (`cool_learning_app`)，禁用 root 連線<br>• 後端架構模組化重構 (`server.js` 工廠函式化)<br>• 導入 Tailwind CLI 正式編譯，淘汰 CDN 動態編譯 | 已完成 |
-| **Phase 5: 行動 App 與健全度工程** | 2026-08-26 ~ 09-03 | • NAS 部署改採安全內部 Pull 模式，避免對外暴露 SSH<br>• 映像架構鎖定 amd64，消弭 Synology DS423+ 崩潰風險<br>• 建立 React Native TypeScript 家長與訂閱 App 骨架 (`cool_learning_app`)<br>• 實作部署後自動化線上冒煙測試腳本 (`smoke-test.sh`) | **目前進度** (最新已就緒) |
+| **Phase 5: 行動 App 與健全度工程** | 2026-08-26 ~ 09-03 | • NAS 部署改採安全內部 Pull 模式，避免對外暴露 SSH<br>• 映像架構鎖定 amd64，消弭 Synology DS423+ 崩潰風險<br>• 建立 React Native TypeScript 家長與訂閱 App 骨架 (`cool_learning_app`)<br>• 實作部署後自動化線上冒煙測試腳本 (`smoke-test.sh`) | 已完成 |
+| **Phase 6: 數學天地完整重構與 NAS 自動化部署 Skill** | 2026-09-04 | • 擴充小六數學 11 大核心單元，實作 110 組互不重複獨立產生器<br>• 導入題型洗牌分派與題幹文字/數值簽章雙重去重演算法（500+ 回合壓力測試 0 重複）<br>• 兩次機會防挫折流程（初次提示、二次步驟詳解）與分數/小數數值等價判定<br>• 建立 `math_wrong_questions` 錯題追蹤表與單日多回合 `attempt_no` 機制<br>• 打造 `nas-auto-deploy` 專屬 Skill 與一鍵自動化部署流水線腳本 (`nas-deploy-pipeline.ps1`) | **目前進度** (最新已就緒) |
 
 ---
 
@@ -260,7 +263,12 @@ cool_learning_backend/
 | **自然科學** | 三大版本切換 (康軒/南一/翰林) | 100% | 題庫與章節對照完整 |
 | | 每日 20 題練習與多回合紀錄 | 100% | 支援 `attempt_no` 累積 |
 | | 錯題本與掌握度標記 | 100% | 錯題收錄與再次答對自動掌握 |
-| **數學天地** | 課綱題庫 / 步驟詳解 / 兩次防挫折 / 錯題本 / 學習日曆 | 100% | 涵蓋小六 10 大核心單元、填空與選擇混合、提示與步驟詳解、錯題本與熟練掌握、多回合 |
+| **數學天地** | 課綱題庫與 110 組多樣產生器 | 100% | 涵蓋小六 11 大核心單元，每單元 10 組獨立題型產生器 |
+| | 題型洗牌與防重去重演算法 | 100% | 同輪測驗題型完全不同，題目文字與數值 0 重複 |
+| | 兩次防挫折與步驟推導詳解 | 100% | 初次答錯給予小提示，二次答錯展示完整步驟推導 |
+| | 數值與分數等價自動容錯 | 100% | 支援 1/2、2/4、0.5 等等價判定與快速輸入工具列 |
+| | 錯題本與熟練掌握機制 | 100% | 專屬 `math_wrong_questions` 表，複習答對自動精熟 |
+| | 學習日曆與多回合歷程 | 100% | 支援 `attempt_no` 紀錄與月曆題目數/總得分看板 |
 | **身分與安全** | 學生座號密碼登入與鎖定 | 100% | 連續錯 5 次鎖定 15 分鐘 |
 | | B2C 家長 Email + 密碼註冊登入 | 100% | 驗證與 JWT 簽發就緒 |
 | | Google Sign-In & Apple OAuth | 90% | 後端驗證代碼就緒，待填入線上 Client ID |
@@ -268,9 +276,10 @@ cool_learning_backend/
 | **商用付費** | 雙平台訂閱資料模型與 Webhooks | 90% | Pub/Sub 與收據驗證代碼就緒，待線上金鑰 |
 | | React Native 家長端 App 商業邏輯 | 85% | TS 0 error，待在原生機器執行 `init` 產出殼 |
 | **運維部署** | Docker Multi-stage 建置 (Tailwind CLI) | 100% | 產生 30KB minified 靜態 CSS |
-| | GitHub Actions CI 自動測試 | 100% | 部署前自動跑 4 組單元測試 |
+| | GitHub Actions CI 自動測試 (5組套件) | 100% | 涵蓋英語、自然、數學去重、認證與 Google Play 驗證 |
 | | NAS 排程自動 Pull 更新與自動回滾 | 100% | DS423+ amd64 最優化，安全無對外 SSH |
 | | 部署後冒煙測試 (Smoke Test) | 100% | `ops/smoke-test.sh` 一鍵線上檢測 |
+| | `nas-auto-deploy` 專用部署技能 | 100% | 整合 Git Push、CI/CD 監控、SSH 呼叫 NAS 與健康檢查 |
 
 ---
 
