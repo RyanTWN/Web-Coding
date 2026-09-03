@@ -132,6 +132,19 @@ async function initializeDatabaseSchema(pool, AUTH_SECRET) {
       KEY ix_nature_review (seat_no, mastered, last_wrong_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS math_wrong_questions (
+      seat_no VARCHAR(32) NOT NULL,
+      question_id VARCHAR(100) NOT NULL,
+      question_json LONGTEXT NOT NULL,
+      wrong_count INT UNSIGNED NOT NULL DEFAULT 1,
+      mastered TINYINT(1) NOT NULL DEFAULT 0,
+      last_wrong_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      mastered_at TIMESTAMP NULL,
+      PRIMARY KEY (seat_no, question_id),
+      KEY ix_math_review (seat_no, mastered, last_wrong_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
   // B2C 家長付費模式：家長帳號、子女檔案、訂閱狀態，與既有 students/seat_no 系統並存。
   await pool.query(`
     CREATE TABLE IF NOT EXISTS guardians (
@@ -209,6 +222,26 @@ async function initializeDatabaseSchema(pool, AUTH_SECRET) {
         ADD COLUMN failed_login_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER password_hash,
         ADD COLUMN locked_until TIMESTAMP NULL AFTER failed_login_attempts
     `);
+  }
+
+  // 數學科：支援多回合 (attempt_no) 與錯題紀錄
+  const [mathStateAttemptCols] = await pool.query("SHOW COLUMNS FROM student_math_state LIKE 'attempt_no'");
+  if (mathStateAttemptCols.length === 0) {
+    await pool.query("ALTER TABLE student_math_state ADD COLUMN attempt_no SMALLINT UNSIGNED NOT NULL DEFAULT 1 AFTER learning_date");
+  }
+  const [mathStateWrongCols] = await pool.query("SHOW COLUMNS FROM student_math_state LIKE 'wrong_questions_json'");
+  if (mathStateWrongCols.length === 0) {
+    await pool.query("ALTER TABLE student_math_state ADD COLUMN wrong_questions_json LONGTEXT NULL AFTER questions_json");
+  }
+  const [mathLogsAttemptCols] = await pool.query("SHOW COLUMNS FROM math_quiz_logs LIKE 'attempt_no'");
+  if (mathLogsAttemptCols.length === 0) {
+    await pool.query("ALTER TABLE math_quiz_logs ADD COLUMN attempt_no SMALLINT UNSIGNED NOT NULL DEFAULT 1 AFTER learning_date");
+    try {
+      await pool.query("ALTER TABLE math_quiz_logs DROP INDEX uq_math_daily_result");
+    } catch (_) {}
+    try {
+      await pool.query("ALTER TABLE math_quiz_logs ADD UNIQUE KEY uq_math_daily_attempt (seat_no, learning_date, attempt_no)");
+    } catch (_) {}
   }
 }
 

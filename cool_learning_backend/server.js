@@ -64,7 +64,9 @@ app.use('/api', require('./routes/english')({
   pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
 }));
 
-app.use('/api', require('./routes/math')({ pool, requireAuth, requireOwnSeat }));
+app.use('/api', require('./routes/math')({
+  pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
+}));
 
 app.use('/api', require('./routes/nature')({
   pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
