@@ -26,8 +26,8 @@
 <body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen is-login-state">
 
   <!-- Toast 訊息通知 -->
-  <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
-    <div class="bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-sm border border-slate-700/50">
+  <div id="toast-container" class="fixed left-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; top: 32px; transform: translate(-50%, -24px);">
+    <div class="bg-slate-900/95 backdrop-blur-md text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm border-2 border-slate-700">
       <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 text-lg"></i>
       <span id="toast-text">訊息通知</span>
     </div>
@@ -615,6 +615,12 @@
           </select>
         </div>
 
+        <!-- 彈窗內即時錯誤提示區 -->
+        <div id="link-child-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-xl text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
+          <i class="fa-solid fa-circle-exclamation text-rose-500 text-base shrink-0 mt-0.5"></i>
+          <span id="link-child-error-text" class="leading-relaxed font-semibold"></span>
+        </div>
+
         <div class="pt-3 flex gap-2">
           <button type="button" id="btn-cancel-child-link-modal" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50">取消</button>
           <button type="submit" id="btn-submit-child-link" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5">
@@ -626,25 +632,8 @@
   </div>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260904-guardian-flow"></script>
+  <script src="assets/js/app.js?v=20260904-fix-toast-popup"></script>
   <script src="assets/js/quiz.js"></script>
-
-  
-  <script>
-    // 確保 showToast 函式在全域環境中可用
-    window.showToast = window.showToast || function(text, iconClass = "fa-circle-info") {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-      document.getElementById('toast-text').textContent = text;
-      document.getElementById('toast-icon').className = `fa-solid ${iconClass} text-amber-400 text-lg`;
-      container.classList.remove('-translate-y-12', 'opacity-0', 'pointer-events-none');
-      container.classList.add('translate-y-0', 'opacity-100');
-      setTimeout(() => {
-        container.classList.remove('translate-y-0', 'opacity-100');
-        container.classList.add('-translate-y-12', 'opacity-0', 'pointer-events-none');
-      }, 3000);
-    };
-  </script>
 
 <!-- 付費解鎖彈窗 -->
 <div id="paywall-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4">
