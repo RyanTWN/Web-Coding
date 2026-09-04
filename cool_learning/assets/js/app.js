@@ -98,7 +98,7 @@ async function apiFetch(path, options = {}) {
   return response;
 }
 
-// UI 通知系統 (畫面正中央置中顯示，強制深色高對比)
+// UI 通知系統 (畫面正中央置中顯示，精緻透明毛玻璃感，寬敞呼吸感間距)
 function showToast(text, iconClass = "fa-circle-info") {
   const container = document.getElementById('toast-container');
   if (!container) {
@@ -108,13 +108,8 @@ function showToast(text, iconClass = "fa-circle-info") {
   
   const textEl = document.getElementById('toast-text');
   const iconEl = document.getElementById('toast-icon');
-  if (textEl) {
-    textEl.textContent = text;
-    textEl.style.color = '#ffffff';
-  }
-  if (iconEl) iconEl.className = `fa-solid ${iconClass} text-amber-400 text-2xl shrink-0`;
   
-  // 強制覆蓋任何可能影響居中與背景的樣式
+  // 強制覆蓋外層容器居中與層級
   container.style.position = 'fixed';
   container.style.zIndex = '9999999';
   container.style.top = '50%';
@@ -123,13 +118,46 @@ function showToast(text, iconClass = "fa-circle-info") {
   container.style.opacity = '1';
   container.style.pointerEvents = 'auto';
 
-  // 確保內部卡片 100% 為黑曜石深色背景與純白文字
+  // 精緻透明毛玻璃效果卡片
   const inner = container.firstElementChild;
   if (inner) {
-    inner.style.backgroundColor = '#0f172a';
+    inner.style.background = 'rgba(15, 23, 42, 0.78)';
+    inner.style.backdropFilter = 'blur(16px) saturate(180%)';
+    inner.style.webkitBackdropFilter = 'blur(16px) saturate(180%)';
+    inner.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+    inner.style.borderRadius = '20px';
+    inner.style.padding = '14px 26px';
+    inner.style.display = 'flex';
+    inner.style.alignItems = 'center';
+    inner.style.gap = '14px';
+    inner.style.boxShadow = '0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)';
     inner.style.color = '#ffffff';
-    inner.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.7)';
-    inner.style.border = '2px solid #475569';
+  }
+
+  // 獨立圓形圖示徽章，避免圖示與文字擠壓
+  if (iconEl) {
+    iconEl.className = `fa-solid ${iconClass} text-amber-300`;
+    iconEl.style.width = '36px';
+    iconEl.style.height = '36px';
+    iconEl.style.borderRadius = '50%';
+    iconEl.style.background = 'rgba(255, 255, 255, 0.12)';
+    iconEl.style.display = 'inline-flex';
+    iconEl.style.alignItems = 'center';
+    iconEl.style.justifyContent = 'center';
+    iconEl.style.fontSize = '16px';
+    iconEl.style.flexShrink = '0';
+  }
+
+  // 文字舒適排版
+  if (textEl) {
+    textEl.textContent = text;
+    textEl.style.color = '#ffffff';
+    textEl.style.fontSize = '15px';
+    textEl.style.fontWeight = '600';
+    textEl.style.letterSpacing = '0.3px';
+    textEl.style.lineHeight = '1.5';
+    textEl.style.maxWidth = 'min(75vw, 360px)';
+    textEl.style.textAlign = 'left';
   }
 
   if (window._toastTimer) clearTimeout(window._toastTimer);
@@ -137,7 +165,7 @@ function showToast(text, iconClass = "fa-circle-info") {
     container.style.transform = 'translate(-50%, -50%) scale(0.9)';
     container.style.opacity = '0';
     container.style.pointerEvents = 'none';
-  }, 3500);
+  }, 3200);
 }
 window.showToast = showToast;
 
