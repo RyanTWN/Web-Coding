@@ -24,8 +24,8 @@ RUN rm -f /usr/share/nginx/html/nginx.conf \
            /usr/share/nginx/html/tailwind.config.js \
            /usr/share/nginx/html/assets/css/tailwind-input.css && \
     rm -rf /usr/share/nginx/html/node_modules && \
-    sed -i -E "s|assets/js/app.js(\?v=[^\"']*)?|assets/js/app.js?v=${APP_VERSION}|g; s|assets/js/quiz.js(\?v=[^\"']*)?|assets/js/quiz.js?v=${APP_VERSION}|g; s|assets/js/admin.js(\?v=[^\"']*)?|assets/js/admin.js?v=${APP_VERSION}|g" \
-      /usr/share/nginx/html/index.html /usr/share/nginx/html/english.html /usr/share/nginx/html/admin.html
+    sed -i -E "s|assets/js/app.js(\?v=[^\"']*)?|assets/js/app.js?v=${APP_VERSION}|g; s|assets/js/quiz.js(\?v=[^\"']*)?|assets/js/quiz.js?v=${APP_VERSION}|g; s|assets/js/admin.js(\?v=[^\"']*)?|assets/js/admin.js?v=${APP_VERSION}|g; s|assets/js/nature.js(\?v=[^\"']*)?|assets/js/nature.js?v=${APP_VERSION}|g; s|assets/js/social.js(\?v=[^\"']*)?|assets/js/social.js?v=${APP_VERSION}|g; s|assets/js/math.js(\?v=[^\"']*)?|assets/js/math.js?v=${APP_VERSION}|g" \
+      /usr/share/nginx/html/index.html /usr/share/nginx/html/english.html /usr/share/nginx/html/admin.html /usr/share/nginx/html/nature.html /usr/share/nginx/html/social.html /usr/share/nginx/html/math.html
 
 EXPOSE 80
 

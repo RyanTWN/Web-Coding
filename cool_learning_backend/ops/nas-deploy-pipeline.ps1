@@ -33,7 +33,7 @@ if (-not $SkipPush) {
 if (-not $SkipCiWait) {
     Write-Host "[STEP 2] Waiting for GitHub Actions CI/CD to build and push containers..." -ForegroundColor Cyan
     $ciDone = $false
-    $timeoutSeconds = 600
+    $timeoutSeconds = 1200
     $startTime = Get-Date
 
     while (-not $ciDone) {
