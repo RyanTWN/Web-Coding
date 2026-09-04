@@ -545,6 +545,17 @@
         </button>
       </div>
 
+      <!-- 新增模式切換籤：建立全新子女 vs 綁定既有子女 -->
+      <div id="child-modal-tabs" class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl mb-4 text-xs font-bold">
+        <button type="button" id="tab-child-mode-create" class="py-2 rounded-lg bg-white text-teal-700 shadow-sm transition-all flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-user-plus"></i> 建立全新子女
+        </button>
+        <button type="button" id="tab-child-mode-link" class="py-2 rounded-lg text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-link"></i> 綁定既有子女
+        </button>
+      </div>
+
+      <!-- 表單 1：建立全新子女 / 修改子女 -->
       <form id="form-child-profile" class="space-y-3.5">
         <input type="hidden" id="input-child-id" value="">
         <div>
@@ -569,6 +580,46 @@
         <div class="pt-3 flex gap-2">
           <button type="button" id="btn-cancel-child-modal" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50">取消</button>
           <button type="submit" id="btn-submit-child-form" class="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md">確認儲存</button>
+        </div>
+      </form>
+
+      <!-- 表單 2：綁定學校名冊或既有學生子女 -->
+      <form id="form-child-link" class="space-y-3.5 hidden">
+        <div class="p-3 bg-teal-50 border border-teal-200/70 rounded-xl text-xs text-teal-800 font-medium leading-relaxed">
+          <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>適合已在學校名冊或已有自主學習進度的孩子，綁定後可完整繼承歷史成績與錯題本。
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">學生真實姓名 (必填)</label>
+          <input type="text" id="input-link-name" required placeholder="請輸入學校登記的學生姓名 (如：張小明)" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">5 碼學生座號 (必填)</label>
+          <input type="text" id="input-link-seat" required maxlength="5" pattern="[0-9]{5}" placeholder="例如：60101" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">學生密碼 (若已設定請輸入驗證)</label>
+          <input type="password" id="input-link-password" placeholder="若孩子已設密碼請填寫；若未設密碼可在此自訂 (至少 6 碼)" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-medium text-slate-800">
+          <p class="text-[10px] text-slate-400 mt-1 ml-1">確保家長本人綁定，防止非本人任意查詢他人子女學習記錄</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">自訂暱稱 (選填，預設為學生姓名)</label>
+          <input type="text" id="input-link-nickname" placeholder="例如：小明、寶貝兒子" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">年級</label>
+          <select id="input-link-grade" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800 bg-white">
+            <option value="國小六年級">國小六年級</option>
+            <option value="國小五年級">國小五年級</option>
+            <option value="國小四年級">國小四年級</option>
+            <option value="國中七年級">國中七年級</option>
+          </select>
+        </div>
+
+        <div class="pt-3 flex gap-2">
+          <button type="button" id="btn-cancel-child-link-modal" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50">取消</button>
+          <button type="submit" id="btn-submit-child-link" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-link"></i> 確認綁定子女
+          </button>
         </div>
       </form>
     </div>

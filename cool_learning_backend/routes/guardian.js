@@ -149,10 +149,89 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
   router.get('/guardian/children', requireAuth, requireGuardianRole, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, nickname, avatar_key, grade_level, linked_seat_no, created_at FROM child_profiles WHERE guardian_id = ? ORDER BY created_at ASC',
+      `SELECT c.id, c.nickname, c.avatar_key, c.grade_level, c.linked_seat_no, c.created_at,
+              CASE WHEN s.password_hash IS NOT NULL AND s.password_hash != '' THEN 1 ELSE 0 END AS has_password
+       FROM child_profiles c
+       LEFT JOIN students s ON s.seat_no = c.linked_seat_no
+       WHERE c.guardian_id = ? ORDER BY c.created_at ASC`,
       [req.auth.sub]
     );
     res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// [API] 綁定已存在的子女帳號（學校已有名冊或已有自主學習紀錄）
+  router.post('/guardian/children/link', requireAuth, requireGuardianRole, async (req, res) => {
+  const name = String(req.body?.name || '').trim().slice(0, 50);
+  const seatNo = String(req.body?.seatNo || '').trim();
+  const password = req.body?.password ? String(req.body.password).trim() : null;
+  const nickname = String(req.body?.nickname || '').trim().slice(0, 50) || name;
+  const gradeLevel = req.body?.gradeLevel ? String(req.body.gradeLevel).trim().slice(0, 20) : '國小六年級';
+
+  if (!name || !seatNo) {
+    return res.status(400).json({ success: false, error: '請輸入學生姓名與 5 碼座號' });
+  }
+  if (!/^\d{5}$/.test(seatNo)) {
+    return res.status(400).json({ success: false, error: '座號必須為 5 碼數字' });
+  }
+
+  try {
+    // 1. 查詢學生是否存在
+    const [students] = await pool.query('SELECT * FROM students WHERE seat_no = ?', [seatNo]);
+    if (students.length === 0) {
+      return res.status(404).json({ success: false, error: `找不到座號【${seatNo}】的學生資料，請確認座號是否正確` });
+    }
+    const student = students[0];
+
+    // 2. 姓名比對
+    if (student.name.trim() !== name) {
+      return res.status(400).json({ success: false, error: '學生姓名與該座號登記的姓名不吻合，請確認姓名' });
+    }
+
+    // 3. 密碼檢驗或初始化
+    if (student.password_hash) {
+      if (!password) {
+        return res.status(400).json({ success: false, error: '此學生已設定密碼，請輸入學生的登入密碼以確認家長身分' });
+      }
+      if (!verifyPassword(password, student.password_hash)) {
+        return res.status(401).json({ success: false, error: '學生密碼錯誤，請重新確認' });
+      }
+    } else if (password) {
+      // 若學生尚未有密碼，而家長有提供自選密碼，則為孩子建立密碼
+      if (password.length < 6 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        return res.status(400).json({ success: false, error: '子女自選密碼需至少 6 碼英數混合' });
+      }
+      await pool.query('UPDATE students SET password_hash = ? WHERE seat_no = ?', [hashPassword(password), seatNo]);
+    }
+
+    // 4. 檢查當前家長是否已綁定此子女
+    const [existing] = await pool.query(
+      'SELECT id FROM child_profiles WHERE guardian_id = ? AND linked_seat_no = ?',
+      [req.auth.sub, seatNo]
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({ success: false, error: `您已經綁定過【${name}】(座號: ${seatNo}) 了` });
+    }
+
+    // 5. 寫入 child_profiles
+    const [result] = await pool.query(
+      'INSERT INTO child_profiles (guardian_id, nickname, grade_level, linked_seat_no) VALUES (?, ?, ?, ?)',
+      [req.auth.sub, nickname, gradeLevel, seatNo]
+    );
+
+    res.json({
+      success: true,
+      message: `成功綁定子女【${name}】！`,
+      data: {
+        id: result.insertId,
+        nickname,
+        linked_seat_no: seatNo,
+        grade_level: gradeLevel,
+        has_password: Boolean(student.password_hash || password)
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -180,7 +259,7 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
       [req.auth.sub, nickname, avatarKey, gradeLevel, seatNo]
     );
     await connection.commit();
-    res.json({ success: true, data: { id: result.insertId, nickname, avatarKey, gradeLevel, linkedSeatNo: seatNo, hasPassword: !!passwordHash } });
+    res.json({ success: true, data: { id: result.insertId, nickname, avatarKey, gradeLevel, linked_seat_no: seatNo, has_password: !!passwordHash } });
   } catch (err) {
     if (connection) await connection.rollback();
     res.status(500).json({ success: false, error: err.message });

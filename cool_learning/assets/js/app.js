@@ -1058,12 +1058,48 @@ function initGuardianModule() {
   });
 
   // 新增/修改子女彈窗
+  function switchChildModalTab(mode) {
+    const tabCreate = document.getElementById('tab-child-mode-create');
+    const tabLink = document.getElementById('tab-child-mode-link');
+    const formProfile = document.getElementById('form-child-profile');
+    const formLink = document.getElementById('form-child-link');
+
+    if (mode === 'link') {
+      tabLink?.classList.add('bg-white', 'text-teal-700', 'shadow-sm');
+      tabLink?.classList.remove('text-slate-500');
+      tabCreate?.classList.remove('bg-white', 'text-teal-700', 'shadow-sm');
+      tabCreate?.classList.add('text-slate-500');
+      formProfile?.classList.add('hidden');
+      formLink?.classList.remove('hidden');
+    } else {
+      tabCreate?.classList.add('bg-white', 'text-teal-700', 'shadow-sm');
+      tabCreate?.classList.remove('text-slate-500');
+      tabLink?.classList.remove('bg-white', 'text-teal-700', 'shadow-sm');
+      tabLink?.classList.add('text-slate-500');
+      formLink?.classList.add('hidden');
+      formProfile?.classList.remove('hidden');
+    }
+  }
+
+  document.getElementById('tab-child-mode-create')?.addEventListener('click', () => switchChildModalTab('create'));
+  document.getElementById('tab-child-mode-link')?.addEventListener('click', () => switchChildModalTab('link'));
+
   document.getElementById('btn-open-add-child-modal')?.addEventListener('click', () => {
-    document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-user-plus text-teal-600"></i> 新增子女檔案';
+    document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-user-plus text-teal-600"></i> 新增或綁定子女';
+    document.getElementById('child-modal-tabs')?.classList.remove('hidden');
     document.getElementById('input-child-id').value = '';
     document.getElementById('input-child-nickname').value = '';
     document.getElementById('input-child-grade').value = '國小六年級';
     document.getElementById('input-child-password').value = '';
+
+    // 重設綁定表單
+    document.getElementById('input-link-name').value = '';
+    document.getElementById('input-link-seat').value = '';
+    document.getElementById('input-link-password').value = '';
+    document.getElementById('input-link-nickname').value = '';
+    document.getElementById('input-link-grade').value = '國小六年級';
+
+    switchChildModalTab('create');
     document.getElementById('modal-child-form')?.classList.remove('hidden');
   });
 
@@ -1073,7 +1109,11 @@ function initGuardianModule() {
   document.getElementById('btn-cancel-child-modal')?.addEventListener('click', () => {
     document.getElementById('modal-child-form')?.classList.add('hidden');
   });
+  document.getElementById('btn-cancel-child-link-modal')?.addEventListener('click', () => {
+    document.getElementById('modal-child-form')?.classList.add('hidden');
+  });
 
+  // 建立全新子女或修改
   document.getElementById('form-child-profile')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const childId = document.getElementById('input-child-id').value;
@@ -1100,12 +1140,53 @@ function initGuardianModule() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || '儲存子女資訊失敗');
 
-      showToast(childId ? '子女資料修改成功！' : '子女檔案新增成功！', 'fa-circle-check');
+      showToast(childId ? '子女資料修改成功！' : '全新子女檔案建立成功！', 'fa-circle-check');
       document.getElementById('modal-child-form')?.classList.add('hidden');
       loadGuardianDashboard();
     } catch (err) {
       console.error(err);
       showToast(err.message || '儲存失敗', 'fa-triangle-exclamation');
+    }
+  });
+
+  // 綁定既有子女
+  document.getElementById('form-child-link')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('input-link-name').value.trim();
+    const seatNo = document.getElementById('input-link-seat').value.trim();
+    const password = document.getElementById('input-link-password').value;
+    const nickname = document.getElementById('input-link-nickname').value.trim();
+    const gradeLevel = document.getElementById('input-link-grade').value;
+
+    if (!name || !seatNo) {
+      showToast('請輸入學生真實姓名與 5 碼座號', 'fa-triangle-exclamation');
+      return;
+    }
+    if (!/^\d{5}$/.test(seatNo)) {
+      showToast('座號必須為 5 碼數字', 'fa-triangle-exclamation');
+      return;
+    }
+    if (password && (password.length < 6 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password))) {
+      showToast('密碼需至少 6 碼英數組合', 'fa-triangle-exclamation');
+      return;
+    }
+
+    try {
+      showToast('正在驗證並綁定子女帳號...', 'fa-spinner fa-spin');
+      const response = await apiFetch('/guardian/children/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, seatNo, password, nickname, gradeLevel })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || '綁定子女失敗');
+
+      showToast(`成功綁定子女【${data.data?.nickname || name}】！`, 'fa-link');
+      document.getElementById('modal-child-form')?.classList.add('hidden');
+      loadGuardianDashboard();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || '綁定失敗', 'fa-triangle-exclamation');
     }
   });
 
@@ -1280,6 +1361,9 @@ window.startChildStudy = async function(childId, nickname, seatNo) {
 
 window.openEditChildModal = function(childId, nickname, gradeLevel) {
   document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-pen text-teal-600"></i> 修改子女資訊 / 密碼';
+  document.getElementById('child-modal-tabs')?.classList.add('hidden');
+  document.getElementById('form-child-profile')?.classList.remove('hidden');
+  document.getElementById('form-child-link')?.classList.add('hidden');
   document.getElementById('input-child-id').value = childId;
   document.getElementById('input-child-nickname').value = nickname;
   document.getElementById('input-child-grade').value = gradeLevel;
