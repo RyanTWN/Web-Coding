@@ -199,7 +199,7 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
         return res.status(400).json({ success: false, error: '此學生已設定密碼，請輸入學生的登入密碼以確認家長身分' });
       }
       if (!verifyPassword(password, student.password_hash)) {
-        return res.status(401).json({ success: false, error: '學生密碼錯誤，請重新確認' });
+        return res.status(400).json({ success: false, error: '學生密碼錯誤，請重新確認' });
       }
     } else if (password) {
       // 若學生尚未有密碼，而家長有提供自選密碼，則為孩子建立密碼

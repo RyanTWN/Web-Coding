@@ -77,7 +77,7 @@ async function apiFetch(path, options = {}) {
     }
   }
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  if (response.status === 401 && !path.endsWith('/login') && !path.endsWith('/register')) {
+  if (response.status === 401 && !path.endsWith('/login') && !path.endsWith('/register') && !path.endsWith('/link')) {
     if (path.startsWith('/guardian')) {
       currentGuardian = null;
       guardianToken = null;
@@ -96,7 +96,7 @@ async function apiFetch(path, options = {}) {
   return response;
 }
 
-// UI 通知系統 (加入防呆與最高層級精準置頂定位)
+// UI 通知系統 (畫面正中央置中顯示)
 function showToast(text, iconClass = "fa-circle-info") {
   const container = document.getElementById('toast-container');
   if (!container) {
@@ -107,21 +107,21 @@ function showToast(text, iconClass = "fa-circle-info") {
   const textEl = document.getElementById('toast-text');
   const iconEl = document.getElementById('toast-icon');
   if (textEl) textEl.textContent = text;
-  if (iconEl) iconEl.className = `fa-solid ${iconClass} text-amber-400 text-lg`;
+  if (iconEl) iconEl.className = `fa-solid ${iconClass} text-amber-400 text-2xl shrink-0`;
   
   container.style.zIndex = '9999999';
-  container.style.top = '32px';
+  container.style.top = '50%';
   container.style.left = '50%';
-  container.style.transform = 'translate(-50%, 0)';
+  container.style.transform = 'translate(-50%, -50%) scale(1)';
   container.style.opacity = '1';
   container.style.pointerEvents = 'auto';
 
   if (window._toastTimer) clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(() => {
-    container.style.transform = 'translate(-50%, -24px)';
+    container.style.transform = 'translate(-50%, -50%) scale(0.9)';
     container.style.opacity = '0';
     container.style.pointerEvents = 'none';
-  }, 4000);
+  }, 3500);
 }
 window.showToast = showToast;
 
