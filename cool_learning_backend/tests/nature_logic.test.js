@@ -30,6 +30,9 @@ vm.runInContext(source, sandbox, { filename: sourcePath });
 
 const { CURRICULUM, FACTS, INTEGRATION_FACTS, COMPETENCY_FACTS, TF_FACTS, buildDailyQuestions, getCalendarTotals } = sandbox.__natureTest;
 assert.deepStrictEqual(Object.keys(CURRICULUM), ['康軒', '南一', '翰林']);
+assert.strictEqual(CURRICULUM['康軒'][1][0], '[六上] 2. 水溶液', '康軒六上第2單元應為水溶液');
+assert.ok(CURRICULUM['康軒'][1][1].includes('solutions'), '康軒六上第2單元主題應包含 solutions');
+assert.ok(FACTS.solutions && FACTS.solutions.length >= 15, 'solutions 主題應有充足的核心概念庫');
 assert.ok(Object.values(FACTS).every(facts => facts.length >= 10), '每個主題至少需要 10 個核心觀念');
 
 // 驗證一分鐘快問快答題庫
