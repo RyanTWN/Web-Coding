@@ -58,6 +58,7 @@ sync_web_station() {
     else
         cp -R "$STAGING_DIR/." "$WEB_STATION_PATH/"
     fi
+    chmod -R a+rX "$WEB_STATION_PATH"
     rm -rf "$STAGING_DIR"
     STAGING_DIR=
 }

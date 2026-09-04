@@ -187,7 +187,10 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
 
     // 2. 姓名比對
     if (student.name.trim() !== name) {
-      return res.status(400).json({ success: false, error: '學生姓名與該座號登記的姓名不吻合，請確認姓名' });
+      return res.status(400).json({
+        success: false,
+        error: `學生姓名不吻合（該座號系統登記為：${student.name}，您輸入為：${name}）`
+      });
     }
 
     // 3. 密碼檢驗或初始化
