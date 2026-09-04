@@ -29,6 +29,7 @@ function getTodayKey() {
 // 將學生登入表單重置回「輸入姓名/座號」的第一階段。
 function resetStudentLoginForm() {
   studentLoginStage = 'identity';
+  document.getElementById('student-login-error')?.classList.add('hidden');
   document.getElementById('student-login-step-identity')?.classList.remove('hidden');
   document.getElementById('student-login-step-password')?.classList.add('hidden');
   document.getElementById('student-login-password-existing')?.classList.remove('hidden');
@@ -46,6 +47,7 @@ function resetStudentLoginForm() {
 // 切換到第二階段：{ setup: true } 顯示「首次登入設定密碼」欄位，否則顯示一般密碼欄位。
 function showStudentLoginPasswordStep({ setup }) {
   studentLoginStage = 'password';
+  document.getElementById('student-login-error')?.classList.add('hidden');
   document.getElementById('student-login-step-identity')?.classList.add('hidden');
   document.getElementById('student-login-step-password')?.classList.remove('hidden');
   document.getElementById('student-login-password-existing')?.classList.toggle('hidden', setup);
@@ -96,7 +98,7 @@ async function apiFetch(path, options = {}) {
   return response;
 }
 
-// UI 通知系統 (畫面正中央置中顯示)
+// UI 通知系統 (畫面正中央置中顯示，強制深色高對比)
 function showToast(text, iconClass = "fa-circle-info") {
   const container = document.getElementById('toast-container');
   if (!container) {
@@ -106,15 +108,29 @@ function showToast(text, iconClass = "fa-circle-info") {
   
   const textEl = document.getElementById('toast-text');
   const iconEl = document.getElementById('toast-icon');
-  if (textEl) textEl.textContent = text;
+  if (textEl) {
+    textEl.textContent = text;
+    textEl.style.color = '#ffffff';
+  }
   if (iconEl) iconEl.className = `fa-solid ${iconClass} text-amber-400 text-2xl shrink-0`;
   
+  // 強制覆蓋任何可能影響居中與背景的樣式
+  container.style.position = 'fixed';
   container.style.zIndex = '9999999';
   container.style.top = '50%';
   container.style.left = '50%';
   container.style.transform = 'translate(-50%, -50%) scale(1)';
   container.style.opacity = '1';
   container.style.pointerEvents = 'auto';
+
+  // 確保內部卡片 100% 為黑曜石深色背景與純白文字
+  const inner = container.firstElementChild;
+  if (inner) {
+    inner.style.backgroundColor = '#0f172a';
+    inner.style.color = '#ffffff';
+    inner.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.7)';
+    inner.style.border = '2px solid #475569';
+  }
 
   if (window._toastTimer) clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(() => {
@@ -706,8 +722,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // 第二階段依伺服器回應顯示「輸入密碼」或「首次登入設定密碼」畫面。
   document.getElementById('btn-student-login-back')?.addEventListener('click', () => resetStudentLoginForm());
 
+  // 輸入時自動隱藏學生登入錯誤
+  ['input-student-name', 'input-student-seat', 'input-student-password', 'input-student-new-password', 'input-student-new-password-confirm'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      document.getElementById('student-login-error')?.classList.add('hidden');
+    });
+  });
+
   document.getElementById('form-student-login')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btnSubmit = document.getElementById('btn-student-login-submit');
+    const errBox = document.getElementById('student-login-error');
+    const errText = document.getElementById('student-login-error-text');
+    const errIcon = document.getElementById('student-login-error-icon');
+
+    const showStudentLoginError = (msg, icon = 'fa-triangle-exclamation') => {
+      if (errBox && errText) {
+        errText.textContent = msg;
+        if (errIcon) errIcon.className = `fa-solid ${icon} text-rose-500 text-base shrink-0 mt-0.5`;
+        errBox.classList.remove('hidden');
+        errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      showToast(msg, icon);
+    };
+
+    errBox?.classList.add('hidden');
+
     const name = document.getElementById('input-student-name').value.trim();
     const seatNo = document.getElementById('input-student-seat').value.trim();
     const payload = { name, seatNo };
@@ -718,11 +758,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const newPassword = document.getElementById('input-student-new-password').value;
         const confirmPassword = document.getElementById('input-student-new-password-confirm').value;
         if (newPassword.length < 6 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-          showToast('密碼至少需要 6 碼，且需同時包含英文字母與數字', 'fa-triangle-exclamation');
+          showStudentLoginError('密碼至少需要 6 碼，且需同時包含英文字母與數字', 'fa-triangle-exclamation');
           return;
         }
         if (newPassword !== confirmPassword) {
-          showToast('兩次輸入的密碼不一致，請再確認一次', 'fa-triangle-exclamation');
+          showStudentLoginError('兩次輸入的密碼不一致，請再確認一次', 'fa-triangle-exclamation');
           return;
         }
         payload.newPassword = newPassword;
@@ -731,7 +771,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
     try {
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 驗證中...';
+      }
+
       const response = await apiFetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -746,18 +792,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (data.status === 'needs_password_setup') {
         showStudentLoginPasswordStep({ setup: true });
-        if (data.error) showToast(data.error, 'fa-triangle-exclamation');
+        if (data.error) showStudentLoginError(data.error, 'fa-triangle-exclamation');
         return;
       }
 
       if (data.status === 'needs_password') {
         showStudentLoginPasswordStep({ setup: false });
-        showToast(data.message || '請輸入密碼', 'fa-lock');
+        if (payload.password) {
+          showStudentLoginError(data.message || '密碼錯誤，請重新輸入', 'fa-lock');
+        } else {
+          showToast(data.message || '請輸入密碼', 'fa-lock');
+        }
         return;
       }
 
       if (data.status === 'locked') {
-        showToast(data.message || '帳號已鎖定，請稍後再試', 'fa-lock');
+        showStudentLoginError(data.message || '帳號已鎖定，請稍後再試', 'fa-lock');
         return;
       }
 
@@ -781,11 +831,16 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast(`免費試用中，剩餘 ${days} 天`, "fa-clock");
         }
       } else {
-        showToast(data.message || data.error || '登入失敗，請檢查資料', "fa-triangle-exclamation");
+        showStudentLoginError(data.message || data.error || '登入失敗，請檢查資料', 'fa-triangle-exclamation');
       }
     } catch (error) {
       console.error(error);
-      showToast("伺服器連線異常，請檢查網路", "fa-triangle-exclamation");
+      showStudentLoginError('伺服器連線異常，請檢查網路', 'fa-triangle-exclamation');
+    } finally {
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = originalBtnHtml;
+      }
     }
   });
 
@@ -979,13 +1034,41 @@ function initGuardianModule() {
     }
   });
 
+  // 輸入時自動隱藏家長登入錯誤
+  ['guardian-login-email', 'guardian-login-password'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      document.getElementById('guardian-login-error')?.classList.add('hidden');
+    });
+  });
+
   // 家長登入
   document.getElementById('form-guardian-login')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btnSubmit = document.getElementById('btn-guardian-login-submit');
+    const errBox = document.getElementById('guardian-login-error');
+    const errText = document.getElementById('guardian-login-error-text');
+
+    const showGuardianLoginError = (msg) => {
+      if (errBox && errText) {
+        errText.textContent = msg;
+        errBox.classList.remove('hidden');
+        errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      showToast(msg, 'fa-triangle-exclamation');
+    };
+
+    errBox?.classList.add('hidden');
+
     const email = document.getElementById('guardian-login-email').value.trim();
     const password = document.getElementById('guardian-login-password').value;
 
+    const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
     try {
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 驗證中...';
+      }
+
       const response = await apiFetch('/guardian/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1006,7 +1089,12 @@ function initGuardianModule() {
       loadGuardianDashboard();
     } catch (err) {
       console.error(err);
-      showToast(err.message || '登入失敗', 'fa-triangle-exclamation');
+      showGuardianLoginError(err.message || '登入失敗');
+    } finally {
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = originalBtnHtml;
+      }
     }
   });
 

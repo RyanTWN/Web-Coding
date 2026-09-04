@@ -878,11 +878,11 @@
 </head>
 <body class="english-page text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg" data-english-tab="learn">
 
-  <!-- Toast 訊息通知 -->
-  <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
-    <div class="bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-sm border-2 border-slate-700">
-      <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 text-lg"></i>
-      <span id="toast-text">訊息通知</span>
+  <!-- Toast 訊息通知 (畫面正中央，高對比深色卡片) -->
+  <div id="toast-container" class="fixed left-1/2 top-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; transform: translate(-50%, -50%) scale(0.9);">
+    <div id="toast-inner" style="background-color: #0f172a !important; color: #ffffff !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;" class="px-7 py-4 rounded-3xl flex items-center gap-3.5 font-bold text-base border-2 border-slate-600">
+      <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 text-2xl shrink-0"></i>
+      <span id="toast-text" style="color: #ffffff !important;" class="leading-relaxed text-sm sm:text-base">訊息通知</span>
     </div>
   </div>
 
@@ -1197,14 +1197,28 @@
     window.showToast = window.showToast || function(text, iconClass = "fa-circle-info") {
       const container = document.getElementById('toast-container');
       if (!container) return;
-      document.getElementById('toast-text').textContent = text;
-      document.getElementById('toast-icon').className = `fa-solid ${iconClass} text-amber-400 text-lg`;
-      container.classList.remove('-translate-y-12', 'opacity-0', 'pointer-events-none');
-      container.classList.add('translate-y-0', 'opacity-100');
-      setTimeout(() => {
-        container.classList.remove('translate-y-0', 'opacity-100');
-        container.classList.add('-translate-y-12', 'opacity-0', 'pointer-events-none');
-      }, 3000);
+      const textEl = document.getElementById('toast-text');
+      const iconEl = document.getElementById('toast-icon');
+      if (textEl) {
+        textEl.textContent = text;
+        textEl.style.color = '#ffffff';
+      }
+      if (iconEl) iconEl.className = `fa-solid ${iconClass} text-amber-400 text-2xl shrink-0`;
+      
+      container.style.position = 'fixed';
+      container.style.zIndex = '9999999';
+      container.style.top = '50%';
+      container.style.left = '50%';
+      container.style.transform = 'translate(-50%, -50%) scale(1)';
+      container.style.opacity = '1';
+      container.style.pointerEvents = 'auto';
+
+      if (window._toastTimer) clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        container.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        container.style.opacity = '0';
+        container.style.pointerEvents = 'none';
+      }, 3200);
     };
   </script>
 

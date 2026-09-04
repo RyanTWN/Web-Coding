@@ -126,6 +126,10 @@
               <input type="password" id="input-student-new-password-confirm" placeholder="再次輸入新密碼確認" autocomplete="new-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#21546e] focus:ring-2 focus:ring-[#21546e]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
             </div>
           </div>
+        <!-- 學生登入錯誤提示區 -->
+        <div id="student-login-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
+          <i id="student-login-error-icon" class="fa-solid fa-circle-exclamation text-rose-500 text-base shrink-0 mt-0.5"></i>
+          <span id="student-login-error-text" class="leading-relaxed font-semibold"></span>
         </div>
 
         <!-- 探索開始按鈕 -->
@@ -148,6 +152,13 @@
           <div>
             <input type="password" id="guardian-login-password" required placeholder="密碼" autocomplete="current-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
           </div>
+
+          <!-- 家長登入錯誤提示區 -->
+          <div id="guardian-login-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
+            <i class="fa-solid fa-circle-exclamation text-rose-500 text-base shrink-0 mt-0.5"></i>
+            <span id="guardian-login-error-text" class="leading-relaxed font-semibold"></span>
+          </div>
+
           <button type="submit" id="btn-guardian-login-submit" class="w-full py-3.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
             登入家長專區 <i class="fa-solid fa-arrow-right"></i>
           </button>
@@ -632,7 +643,7 @@
   </div>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260904-center-contrast"></script>
+  <script src="assets/js/app.js?v=20260904-center-all-v4"></script>
   <script src="assets/js/quiz.js"></script>
 
 <!-- 付費解鎖彈窗 -->
