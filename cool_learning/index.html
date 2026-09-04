@@ -25,11 +25,11 @@
 </head>
 <body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen is-login-state">
 
-  <!-- Toast 訊息通知 (畫面正中央) -->
+  <!-- Toast 訊息通知 (畫面正中央，高對比深色卡片) -->
   <div id="toast-container" class="fixed left-1/2 top-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; transform: translate(-50%, -50%) scale(0.9);">
-    <div class="bg-slate-900/95 backdrop-blur-md text-white px-7 py-4 rounded-3xl shadow-2xl flex items-center gap-3.5 font-bold text-base border-2 border-slate-700">
+    <div id="toast-inner" style="background-color: #0f172a !important; color: #ffffff !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;" class="px-7 py-4 rounded-3xl flex items-center gap-3.5 font-bold text-base border-2 border-slate-600">
       <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 text-2xl shrink-0"></i>
-      <span id="toast-text" class="leading-relaxed">訊息通知</span>
+      <span id="toast-text" style="color: #ffffff !important;" class="leading-relaxed text-sm sm:text-base">訊息通知</span>
     </div>
   </div>
 
@@ -632,7 +632,7 @@
   </div>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260904-center-toast"></script>
+  <script src="assets/js/app.js?v=20260904-center-contrast"></script>
   <script src="assets/js/quiz.js"></script>
 
 <!-- 付費解鎖彈窗 -->
