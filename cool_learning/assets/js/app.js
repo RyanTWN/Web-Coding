@@ -1616,10 +1616,11 @@ window.showRegisterInfoModal = function() {
 };
 
 window.showForgotPasswordInfoModal = function() {
+  const msg = '請通知家長、任課老師或管理員進行密碼重置';
   if (typeof showToast === 'function') {
-    showToast('學生若忘記密碼，請洽任課老師或管理員於後台點選【重設密碼】即可！', 'fa-key');
+    showToast(msg, 'fa-key');
   } else {
-    alert('學生若忘記密碼，請洽任課老師或管理員於後台點選【重設密碼】即可！');
+    alert(msg);
   }
 };
 
