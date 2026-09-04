@@ -1,10 +1,23 @@
-//import { studentsList, showToast, openCustomModal } from './app.js';
-//import { VOCABULARY_DATA } from './data/vocabulary.js';
-
 let adminAnalytics = [];
+let studentsList = [];
 let adminWordsPage = 1;
 let adminWordsTotal = 0;
 const ADMIN_WORDS_PAGE_SIZE = 25;
+
+// 管理員專屬 apiFetch 實作（帶入管理員 JWT Token）
+async function apiFetch(path, options = {}) {
+  const sessionUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || 'null');
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Authorization') && sessionUser?.token) {
+    headers.set('Authorization', `Bearer ${sessionUser.token}`);
+  }
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  if (response.status === 401) {
+    sessionStorage.removeItem('g6_portal_user');
+    window.location.reload();
+  }
+  return response;
+}
 
 function initAdminModule() {
   document.getElementById('admin-tab-users').onclick = () => switchAdminTab('users');
