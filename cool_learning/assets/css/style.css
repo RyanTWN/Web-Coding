@@ -1,7 +1,24 @@
+:root {
+  /* 登入頁面背景圖插槽：日後可直接替換 assets/images/login-bg.jpg，或覆寫此變數 */
+  --login-bg-url: url('../images/login-bg.jpg');
+  --login-bg-overlay: rgba(255, 255, 255, 0.2);
+}
+
 body {
   background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #fef3c7 100%);
   min-height: 100vh;
   font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+  transition: background 0.3s ease;
+}
+
+/* 登入狀態下的優雅背景美化（依據設計稿） */
+body.is-login-state {
+  background-color: #faf7f2;
+  background-image: var(--login-bg-url);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .card-bounce {

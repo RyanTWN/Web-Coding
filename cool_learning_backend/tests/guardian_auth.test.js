@@ -11,10 +11,19 @@ function isValidEmail(email) {
   return typeof email === 'string' && email.length <= 255 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function isValidChildPassword(password) {
+  return typeof password === 'string' && password.length >= 6 && password.length <= 72
+    && /[A-Za-z]/.test(password) && /[0-9]/.test(password);
+}
+
 assert.strictEqual(isValidGuardianPassword('abcd1234'), true, '8 碼英數混合應通過');
 assert.strictEqual(isValidGuardianPassword('abc123'), false, '未滿 8 碼應不通過（比學生密碼嚴格）');
 assert.strictEqual(isValidGuardianPassword('abcdefgh'), false, '純英文應不通過');
 assert.strictEqual(isValidGuardianPassword('12345678'), false, '純數字應不通過');
+
+assert.strictEqual(isValidChildPassword('abc123'), true, '子女自選密碼 6 碼英數混合應通過');
+assert.strictEqual(isValidChildPassword('12345'), false, '子女密碼小於 6 碼應不通過');
+assert.strictEqual(isValidChildPassword('abcdef'), false, '子女密碼純英文應不通過');
 
 assert.strictEqual(isValidEmail('parent@example.com'), true, '正常 email 應通過');
 assert.strictEqual(isValidEmail('not-an-email'), false, '缺少 @ 應不通過');

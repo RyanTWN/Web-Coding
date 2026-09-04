@@ -19,8 +19,11 @@
 
   <link rel="stylesheet" href="assets/css/tailwind.css">
   <link rel="stylesheet" href="assets/css/style.css">
+
+  <!-- Google Identity Services (GIS) SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen">
+<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen is-login-state">
 
   <!-- Toast 訊息通知 -->
   <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
@@ -45,77 +48,6 @@
     </div>
   </div>
 
-  <!-- 學生詳細學習歷程彈窗 (管理員用) -->
-  <div id="student-detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-white/80 card-flip-enter max-h-[90vh] flex flex-col justify-between">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 bg-gradient-to-tr from-brand-500 to-indigo-500 text-white rounded-2xl flex items-center justify-center text-lg font-black shadow-md">
-            <i class="fa-solid fa-user-graduate"></i>
-          </div>
-          <div>
-            <h3 id="modal-student-name" class="text-lg font-black text-slate-800">學生學習歷程</h3>
-            <p id="modal-student-meta" class="text-xs text-slate-400 font-medium">座號：60101</p>
-          </div>
-        </div>
-        <button id="close-detail-modal-btn" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="grid grid-cols-4 gap-2 my-4">
-        <div class="bg-brand-50 p-2.5 rounded-2xl text-center border border-brand-100">
-          <span class="text-[10px] text-brand-700 font-bold block">累積打卡</span>
-          <span id="detail-stat-completed" class="text-base font-black text-brand-600">0 天</span>
-        </div>
-        <div class="bg-amber-50 p-2.5 rounded-2xl text-center border border-amber-100">
-          <span class="text-[10px] text-amber-700 font-bold block">2000字進度</span>
-          <span id="detail-stat-learned-count" class="text-base font-black text-amber-600">0 字</span>
-        </div>
-        <div class="bg-emerald-50 p-2.5 rounded-2xl text-center border border-emerald-100">
-          <span class="text-[10px] text-emerald-700 font-bold block">測驗總次數</span>
-          <span id="detail-stat-quizzes" class="text-base font-black text-emerald-600">0 次</span>
-        </div>
-        <div class="bg-purple-50 p-2.5 rounded-2xl text-center border border-purple-100">
-          <span class="text-[10px] text-purple-700 font-bold block">標記難字</span>
-          <span id="detail-stat-starred" class="text-base font-black text-purple-600">0 個</span>
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 pr-1">
-        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-          <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center gap-1.5">
-            <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> 測驗歷程紀錄
-          </h4>
-          <div class="max-h-[140px] overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-100">
-            <table class="w-full text-left text-xs border-collapse">
-              <thead class="bg-slate-100 text-[10px] text-slate-500 font-bold uppercase sticky top-0">
-                <tr>
-                  <th class="p-2">測驗時間</th>
-                  <th class="p-2">測驗類別</th>
-                  <th class="p-2 text-right">得分結果</th>
-                </tr>
-              </thead>
-              <tbody id="detail-quiz-tbody" class="divide-y divide-slate-100 text-[11px]"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-          <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center gap-1.5">
-            <i class="fa-solid fa-star text-amber-400"></i> 目前收藏之難字本
-          </h4>
-          <div id="detail-starred-chips" class="flex flex-wrap gap-1.5 max-h-[90px] overflow-y-auto custom-scrollbar"></div>
-        </div>
-      </div>
-
-      <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-        <button id="close-detail-modal-footer-btn" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md">
-          關閉視窗
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- 全域頂部導覽列 -->
   <header id="global-header" class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/60 shadow-sm mb-4">
@@ -140,81 +72,128 @@
     </div>
   </header>
 
-  <!-- 登入頁面 -->
-  <section id="view-login" class="w-full max-w-md mx-auto my-auto py-4">
-    <div class="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80 card-flip-enter">
-      <div class="text-center mb-6">
-        <div class="w-20 h-20 bg-gradient-to-br from-brand-400 to-amber-300 rounded-3xl flex items-center justify-center text-white text-4xl mx-auto mb-3 shadow-lg transform -rotate-3">
-          <i class="fa-solid fa-graduation-cap"></i>
-        </div>
-        <h2 class="text-2xl font-black text-slate-800 tracking-wide">歡迎來到酷學習！</h2>
-        <p class="text-xs text-slate-500 mt-1 font-medium">請輸入姓名與5碼座號登入學習</p>
+  <!-- 登入頁面 (依據設計稿精緻改版) -->
+  <section id="view-login" class="w-full max-w-md mx-auto my-auto py-6 px-2">
+    <div class="relative bg-white/95 backdrop-blur-md rounded-[28px] p-7 sm:p-10 shadow-2xl border border-[#d6c7b2]/80 card-flip-enter overflow-hidden">
+      <!-- 呼應背景線條的微光環與波紋氛圍 -->
+      <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-gradient-to-br from-cyan-100/40 via-teal-100/30 to-amber-100/30 blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-gradient-to-tr from-amber-100/40 to-cyan-100/30 blur-2xl pointer-events-none"></div>
+
+      <!-- 標題區域 -->
+      <div class="text-center mb-6 relative">
+        <h2 class="text-3xl sm:text-4xl font-black text-[#173852] tracking-wider font-['Noto_Sans_TC']">酷學習</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-2 font-medium tracking-wide">探索知識的無限可能</p>
       </div>
 
-      <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl mb-6">
-        <button id="login-tab-student" class="py-2 rounded-xl text-xs font-bold transition-all bg-white text-brand-600 shadow-sm">
-          <i class="fa-solid fa-child mr-1"></i>學生登入
+      <!-- 學生/家長切換籤 -->
+      <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100/90 rounded-full mb-6 border border-slate-200/60">
+        <button id="login-tab-student" class="py-2.5 rounded-full text-xs font-bold transition-all bg-white text-[#173852] shadow-sm flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-graduation-cap text-teal-600"></i>學生模式
         </button>
-        <button id="login-tab-admin" class="py-2 rounded-xl text-xs font-bold transition-all text-slate-500 hover:text-slate-700">
-          <i class="fa-solid fa-user-shield mr-1"></i>管理員登入
+        <button id="login-tab-guardian" class="py-2.5 rounded-full text-xs font-bold transition-all text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-user-shield text-[#173852]"></i>家長模式
         </button>
       </div>
 
+      <!-- 學生登入表單 -->
       <form id="form-student-login" class="space-y-4">
-        <div id="student-login-step-identity" class="space-y-4">
+        <div id="student-login-step-identity" class="space-y-3.5">
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-user text-brand-500 mr-1"></i>學生姓名 Name</label>
-            <input type="text" id="input-student-name" required placeholder="例如：張小明" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+            <input type="text" id="input-student-name" required placeholder="學生姓名 / 暱稱" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#21546e] focus:ring-2 focus:ring-[#21546e]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-id-card text-brand-500 mr-1"></i>5碼座號 Seat Number</label>
-            <input type="text" id="input-student-seat" required maxlength="5" placeholder="例如：60101" pattern="[0-9]{5}" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+            <input type="text" id="input-student-seat" required maxlength="5" placeholder="5 碼座號 (例如：60101)" pattern="[0-9]{5}" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#21546e] focus:ring-2 focus:ring-[#21546e]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
           </div>
         </div>
 
         <div id="student-login-step-password" class="space-y-4 hidden">
-          <button type="button" id="btn-student-login-back" class="text-xs text-slate-400 font-bold underline flex items-center gap-1">
+          <button type="button" id="btn-student-login-back" class="text-xs text-slate-400 hover:text-slate-600 font-bold underline flex items-center gap-1">
             <i class="fa-solid fa-arrow-left"></i>返回修改姓名/座號
           </button>
 
           <div id="student-login-password-existing">
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-lock text-brand-500 mr-1"></i>密碼 Password</label>
-            <input type="password" id="input-student-password" placeholder="••••••••" autocomplete="current-password" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+            <input type="password" id="input-student-password" placeholder="輸入密碼" autocomplete="current-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#21546e] focus:ring-2 focus:ring-[#21546e]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
           </div>
 
           <div id="student-login-password-setup" class="space-y-3 hidden">
-            <p class="text-xs text-brand-600 font-bold bg-brand-50 rounded-xl p-3 leading-relaxed">
-              <i class="fa-solid fa-circle-info mr-1"></i>這是你第一次登入，請設定一組屬於自己的密碼（至少 6 碼，需同時包含英文字母與數字），下次登入要記得用喔！
+            <p class="text-xs text-teal-700 font-medium bg-teal-50/90 border border-teal-200/70 rounded-2xl p-3 leading-relaxed">
+              <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>這是你第一次登入，請設定一組自選密碼（至少 6 碼，需含英文字母與數字），下次登入要記得用喔！
             </p>
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-key text-brand-500 mr-1"></i>設定新密碼</label>
-              <input type="password" id="input-student-new-password" placeholder="至少 6 碼，含英文字母與數字" autocomplete="new-password" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+              <input type="password" id="input-student-new-password" placeholder="設定新密碼 (至少 6 碼，含英數)" autocomplete="new-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#21546e] focus:ring-2 focus:ring-[#21546e]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-key text-brand-500 mr-1"></i>再輸入一次確認</label>
-              <input type="password" id="input-student-new-password-confirm" placeholder="再輸入一次新密碼" autocomplete="new-password" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
+              <input type="password" id="input-student-new-password-confirm" placeholder="再次輸入新密碼確認" autocomplete="new-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#21546e] focus:ring-2 focus:ring-[#21546e]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
             </div>
           </div>
         </div>
 
-        <button type="submit" id="btn-student-login-submit" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-black rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
-          開始學習 GO! <i class="fa-solid fa-arrow-right"></i>
+        <!-- 探索開始按鈕 -->
+        <button type="submit" id="btn-student-login-submit" class="w-full py-3.5 bg-gradient-to-r from-[#173852] via-[#21546e] to-[#3a7d88] hover:from-[#112a3e] hover:to-[#2b646e] text-white font-bold rounded-full shadow-lg shadow-cyan-950/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-3 tracking-wide">
+          探索開始！
         </button>
+
+        <div class="flex items-center justify-center gap-3 text-xs text-slate-500 pt-2 font-medium">
+          <button type="button" onclick="showForgotPasswordInfoModal()" class="hover:text-[#173852] transition-colors underline-offset-4 hover:underline">忘記密碼？</button>
+        </div>
       </form>
 
-      <form id="form-admin-login" class="space-y-4 hidden">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-user-gear text-amber-500 mr-1"></i>管理員帳號 Account</label>
-          <input type="text" id="input-admin-id" required placeholder="請輸入 admin" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-amber-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1"><i class="fa-solid fa-lock text-amber-500 mr-1"></i>密碼 Password</label>
-          <input type="password" id="input-admin-pwd" required placeholder="••••••••" class="w-full py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-amber-500 focus:outline-none font-bold text-slate-800 bg-slate-50/50">
-        </div>
-        <button type="submit" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
-          進入管理後台 <i class="fa-solid fa-shield-halved"></i>
-        </button>
-      </form>
+      <!-- 家長認證容器 (登入與註冊切換) -->
+      <div id="guardian-auth-container" class="hidden space-y-4">
+        <!-- 家長登入表單 -->
+        <form id="form-guardian-login" class="space-y-3.5">
+          <div>
+            <input type="email" id="guardian-login-email" required placeholder="家長電子信箱 (Email)" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
+          </div>
+          <div>
+            <input type="password" id="guardian-login-password" required placeholder="密碼" autocomplete="current-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
+          </div>
+          <button type="submit" id="btn-guardian-login-submit" class="w-full py-3.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
+            登入家長專區 <i class="fa-solid fa-arrow-right"></i>
+          </button>
+
+          <!-- 切換註冊 -->
+          <div class="text-center pt-2">
+            <button type="button" id="btn-switch-to-register" class="text-xs text-teal-700 font-bold hover:underline">
+              還沒有家長帳號？立即免費註冊
+            </button>
+          </div>
+
+          <!-- 第三方登入 (Google) -->
+          <div class="mt-4 pt-4 border-t border-slate-200/80 space-y-2">
+            <div id="google-signin-btn-container" class="flex justify-center w-full min-h-[44px]"></div>
+            <button type="button" id="btn-guardian-google-login" class="w-full py-3 px-4 bg-white hover:bg-slate-50 border border-slate-300 rounded-full text-xs font-bold text-slate-700 flex items-center justify-center gap-2.5 shadow-sm transition-all">
+              <i class="fa-brands fa-google text-rose-500 text-base"></i> 使用 Google 帳號登入
+            </button>
+          </div>
+        </form>
+
+        <!-- 家長註冊表單 -->
+        <form id="form-guardian-register" class="space-y-3.5 hidden">
+          <div>
+            <input type="text" id="guardian-register-name" placeholder="家長稱謂 (例如: 王爸爸、李媽媽，選填)" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
+          </div>
+          <div>
+            <input type="email" id="guardian-register-email" required placeholder="電子信箱 (Email，作為登入帳號)" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
+          </div>
+          <div>
+            <input type="password" id="guardian-register-password" required placeholder="設定密碼 (至少 8 碼，含英數)" autocomplete="new-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
+          </div>
+          <div>
+            <input type="password" id="guardian-register-confirm" required placeholder="再輸入一次新密碼" autocomplete="new-password" class="w-full py-3.5 px-5 rounded-full border border-slate-300 focus:border-[#173852] focus:ring-2 focus:ring-[#173852]/20 focus:outline-none font-medium text-slate-800 bg-white/95 placeholder:text-slate-400 text-sm transition-all shadow-sm">
+          </div>
+          <button type="submit" id="btn-guardian-register-submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
+            註冊並開啟家長專區 <i class="fa-solid fa-circle-check"></i>
+          </button>
+
+          <!-- 切換登入 -->
+          <div class="text-center pt-2">
+            <button type="button" id="btn-switch-to-login" class="text-xs text-slate-500 font-bold hover:underline">
+              已有家長帳號？返回登入
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </section>
 
@@ -308,144 +287,297 @@
     </div>
   </section>
 
-  <!-- 管理員後台 -->
-  <section id="view-admin" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter">
-    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80">
-      <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+   <!-- 家長專屬儀表板 (Guardian Dashboard) -->
+  <section id="view-guardian-dashboard" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter pb-8">
+    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#d6c7b2]/80">
+      <!-- 家長歡迎標題列 -->
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-xl shadow-md"><i class="fa-solid fa-user-shield"></i></div>
+          <div class="w-12 h-12 bg-gradient-to-tr from-[#173852] to-[#3a7d88] text-white rounded-2xl flex items-center justify-center text-xl shadow-md">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
           <div>
-            <h2 class="text-2xl font-black text-slate-800">學習管理後台</h2>
-            <p class="text-xs text-slate-500 font-medium">學生帳號管理與 2000 字學習數據稽核</p>
+            <div class="flex items-center gap-2">
+              <h2 class="text-2xl font-black text-[#173852]">家長專區儀表板</h2>
+              <span class="bg-teal-100 text-teal-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">VIP 會員家庭</span>
+            </div>
+            <p id="guardian-user-display" class="text-xs text-slate-500 font-medium">歡迎，<span id="guardian-email-badge">parent@example.com</span></p>
           </div>
         </div>
-        <button id="btn-admin-logout" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs flex items-center gap-1.5"><i class="fa-solid fa-right-from-bracket"></i> 退出管理員</button>
+        <div class="flex items-center gap-2">
+          <button id="btn-guardian-logout" class="px-4 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-bold rounded-xl text-xs transition-colors border border-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-right-from-bracket"></i> 登出家長帳號
+          </button>
+        </div>
       </div>
 
+      <!-- 5 大功能分頁籤 -->
       <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-        <button id="admin-tab-users" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white shadow-md"><i class="fa-solid fa-users mr-1.5"></i>帳號管理 (CSV匯入)</button>
-        <button id="admin-tab-analytics" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"><i class="fa-solid fa-chart-line mr-1.5"></i>全班學習成效追蹤 (2000字稽核)</button>
-        <button id="admin-tab-words" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"><i class="fa-solid fa-spell-check mr-1.5"></i>單字管理</button>
+        <button id="guardian-tab-children" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all bg-[#173852] text-white shadow-md flex items-center gap-1.5">
+          <i class="fa-solid fa-children"></i> 子女管理
+        </button>
+        <button id="guardian-tab-tracking" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-pie"></i> 學習追蹤
+        </button>
+        <button id="guardian-tab-growth" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-award"></i> 成長記錄
+        </button>
+        <button id="guardian-tab-support" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-headset"></i> 聯絡客服
+        </button>
+        <button id="guardian-tab-community" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-brands fa-line text-emerald-600 text-sm"></i> LINE 社群
+        </button>
       </div>
 
-      <div id="admin-panel-users">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-            <h4 class="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-user-plus text-brand-500"></i> 手動新增單一學生</h4>
-            <form id="form-add-student" class="space-y-2.5">
-              <div class="grid grid-cols-2 gap-2">
-                <input type="text" id="add-student-name" required placeholder="姓名 (如: 張小明)" class="w-full py-2 px-3 text-xs font-bold rounded-xl border">
-                <input type="text" id="add-student-seat" required maxlength="5" pattern="[0-9]{5}" placeholder="5碼座號 (如: 60101)" class="w-full py-2 px-3 text-xs font-bold rounded-xl border">
-              </div>
-              <button type="submit" class="w-full py-2 bg-brand-500 text-white font-bold text-xs rounded-xl shadow-sm">新增學生</button>
-            </form>
+      <!-- 1. 子女管理面板 -->
+      <div id="guardian-panel-children">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-address-book text-teal-600"></i> 子女檔案清單
+            </h4>
+            <p class="text-xs text-slate-500 mt-0.5">每位子女均有專屬 5 碼虛擬座號，可由家長一鍵代登或在孩子設備獨立登入</p>
           </div>
-
-          <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="font-bold text-sm text-amber-900 flex items-center gap-2"><i class="fa-solid fa-file-csv text-amber-600"></i> CSV 檔批次匯入帳號</h4>
-                <button id="btn-download-csv-template" class="text-[11px] font-bold text-amber-700 hover:underline flex items-center gap-1"><i class="fa-solid fa-download"></i> 下載 CSV 範本</button>
-              </div>
-              <p class="text-[11px] text-amber-700/80 mb-3">請選擇格式為 `姓名,座號` 的 CSV 檔案匯入帳號。</p>
-            </div>
-            <div>
-              <input type="file" id="csv-file-input" accept=".csv" class="hidden">
-              <button id="btn-trigger-csv-upload" class="w-full py-2 bg-amber-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-upload"></i> 選擇 CSV 檔案並匯入</button>
-            </div>
-          </div>
+          <button id="btn-open-add-child-modal" class="px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all">
+            <i class="fa-solid fa-user-plus"></i> + 新增子女檔案
+          </button>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><i class="fa-solid fa-list-check text-slate-500"></i> 學生帳號清單 (<span id="admin-user-count">0</span> 人)</span>
-            <button id="btn-clear-all-students" class="text-xs text-rose-500 font-bold"><i class="fa-solid fa-trash-can mr-1"></i>清空學生名單</button>
-          </div>
-          <div class="max-h-[300px] overflow-y-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse">
-              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
-                <tr><th class="p-3">5碼座號</th><th class="p-3">學生姓名</th><th class="p-3">密碼狀態</th><th class="p-3 text-right">操作</th></tr>
-              </thead>
-              <tbody id="admin-students-tbody" class="text-xs divide-y divide-slate-100"></tbody>
-            </table>
+        <div id="guardian-children-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 子女卡片由 JS 動態渲染 -->
+          <div class="col-span-full py-12 text-center text-slate-400">
+            <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-teal-600"></i>
+            <p class="text-xs font-medium">正在載入子女檔案...</p>
           </div>
         </div>
       </div>
 
-      <div id="admin-panel-analytics" class="hidden">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div class="bg-brand-50 border border-brand-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-brand-700 block">學生總數</span><span id="stat-total-students" class="text-xl font-black text-brand-600">0 人</span></div>
-          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-emerald-700 block">今日學習完成</span><span id="stat-completed-today" class="text-xl font-black text-emerald-600">0 人</span></div>
-          <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-amber-700 block">平均打卡天數</span><span id="stat-avg-days" class="text-xl font-black text-amber-600">0 天</span></div>
-          <div class="bg-purple-50 border border-purple-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-purple-700 block">平均標記難字</span><span id="stat-avg-starred" class="text-xl font-black text-purple-600">0 個</span></div>
-        </div>
-
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-chart-simple text-amber-500"></i> 全班學生學習進度與 2000 字稽核一覽表</h4>
-          <button id="btn-export-performance-csv" class="px-3 py-1.5 bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-file-export"></i> 匯出學習成效 CSV 報表</button>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <div class="max-h-[320px] overflow-y-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse">
-              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
-                <tr>
-                  <th class="p-3">座號</th>
-                  <th class="p-3">姓名</th>
-                  <th class="p-3">今日打卡</th>
-                  <th class="p-3">累積打卡</th>
-                  <th class="p-3">2000字進度</th>
-                  <th class="p-3">測驗次數</th>
-                  <th class="p-3">平均測驗分數</th>
-                  <th class="p-3">難字數</th>
-                  <th class="p-3 text-right">詳情</th>
-                </tr>
-              </thead>
-              <tbody id="admin-performance-tbody" class="text-xs divide-y divide-slate-100"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div id="admin-panel-words" class="hidden space-y-5">
-        <form id="form-add-word" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-brand-500"></i>新增英文單字</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input id="add-word-vocabulary" required maxlength="255" placeholder="英文單字，例如 abandon" class="py-2 px-3 text-xs font-bold rounded-xl border">
-            <input id="add-word-phonetic" required maxlength="255" placeholder="音標，例如 /əˈbændən/" class="py-2 px-3 text-xs font-bold rounded-xl border">
-            <input id="add-word-chinese" required maxlength="255" placeholder="中文解釋" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2">
-            <textarea id="add-word-sentence" required maxlength="2000" placeholder="英文例句" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
-            <textarea id="add-word-translate" required maxlength="2000" placeholder="例句中文翻譯" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
-            <select id="add-word-level" required class="py-2 px-3 text-xs font-bold rounded-xl border">
-              <option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option>
+      <!-- 2. 學習追蹤面板 -->
+      <div id="guardian-panel-tracking" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-700">選擇檢視子女：</label>
+            <select id="tracking-child-select" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white">
             </select>
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-700"><input id="add-word-enabled" type="checkbox" checked>加入每日學習</label>
           </div>
-          <button type="submit" class="px-4 py-2 bg-brand-500 text-white font-bold text-xs rounded-xl shadow-sm">新增單字</button>
-        </form>
+          <span class="text-xs text-slate-500">數據涵蓋小六四大核心學科累計進度</span>
+        </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <div class="p-3 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-2">
-            <input id="word-search" placeholder="搜尋單字、中文或例句" class="py-2 px-3 text-xs rounded-xl border sm:col-span-2">
-            <select id="word-filter-level" class="py-2 px-3 text-xs rounded-xl border"><option value="">全部 Level</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option></select>
-            <select id="word-filter-enabled" class="py-2 px-3 text-xs rounded-xl border"><option value="">全部狀態</option><option value="1">已啟用</option><option value="0">已停用</option></select>
+        <div id="tracking-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- 英文單字追蹤卡 -->
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4 rounded-2xl border border-blue-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-blue-900">英文天地</span>
+              <i class="fa-solid fa-book-open text-blue-500"></i>
+            </div>
+            <div class="text-2xl font-black text-blue-700 mb-1"><span id="track-eng-days">0</span> <span class="text-xs font-bold text-blue-500">天完成</span></div>
+            <p class="text-[11px] text-blue-600/80 font-medium">測驗平均：<span id="track-eng-score">0</span> 分 (共 <span id="track-eng-quizzes">0</span> 次)</p>
           </div>
-          <div class="max-h-[420px] overflow-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse min-w-[760px]">
-              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 sticky top-0"><tr><th class="p-3">單字</th><th class="p-3">中文</th><th class="p-3">例句 / 翻譯</th><th class="p-3">Level</th><th class="p-3">學習狀態</th></tr></thead>
-              <tbody id="admin-words-tbody" class="text-xs divide-y divide-slate-100"></tbody>
-            </table>
+
+          <!-- 數學天地追蹤卡 -->
+          <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 rounded-2xl border border-emerald-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-900">數學天地</span>
+              <i class="fa-solid fa-calculator text-emerald-500"></i>
+            </div>
+            <div class="text-2xl font-black text-emerald-700 mb-1"><span id="track-math-quizzes">0</span> <span class="text-xs font-bold text-emerald-500">回測驗</span></div>
+            <p class="text-[11px] text-emerald-600/80 font-medium">均分：<span id="track-math-score">0</span> 分 | 已掌握錯題：<span id="track-math-mastered">0</span> 題</p>
           </div>
-          <div class="p-3 bg-slate-50 border-t flex items-center justify-between text-xs font-bold text-slate-600"><span id="word-pagination-summary">0 個單字</span><div class="flex gap-2"><button id="word-prev-page" type="button" class="px-3 py-1.5 bg-white border rounded-lg disabled:opacity-40">上一頁</button><button id="word-next-page" type="button" class="px-3 py-1.5 bg-white border rounded-lg disabled:opacity-40">下一頁</button></div></div>
+
+          <!-- 自然科學追蹤卡 -->
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 p-4 rounded-2xl border border-amber-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-amber-900">自然科學</span>
+              <i class="fa-solid fa-flask text-amber-500"></i>
+            </div>
+            <div class="text-2xl font-black text-amber-700 mb-1"><span id="track-nature-days">0</span> <span class="text-xs font-bold text-amber-500">回完成</span></div>
+            <p class="text-[11px] text-amber-600/80 font-medium">均分：<span id="track-nature-score">0</span> 分 | 已掌握：<span id="track-nature-mastered">0</span> 題</p>
+          </div>
+
+          <!-- 社會人文追蹤卡 -->
+          <div class="bg-gradient-to-br from-rose-50 to-orange-50/60 p-4 rounded-2xl border border-rose-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-rose-900">社會人文</span>
+              <i class="fa-solid fa-earth-americas text-rose-500"></i>
+            </div>
+            <div class="text-2xl font-black text-rose-700 mb-1"><span id="track-social-days">0</span> <span class="text-xs font-bold text-rose-500">回完成</span></div>
+            <p class="text-[11px] text-rose-600/80 font-medium">均分：<span id="track-social-score">0</span> 分 | 已掌握：<span id="track-social-mastered">0</span> 題</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 成長記錄面板 -->
+      <div id="guardian-panel-growth" class="hidden space-y-5">
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-700">選擇子女：</label>
+            <select id="growth-child-select" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white">
+            </select>
+          </div>
+          <span class="text-xs text-slate-500">錯題精熟率與自主學習歷程</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-bullseye text-rose-500"></i> 錯題本精熟掌握率
+            </h4>
+            
+            <div>
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                <span>數學錯題掌握</span>
+                <span id="growth-math-rate">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="growth-math-bar" class="bg-emerald-500 h-3 rounded-full transition-all" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                <span>自然錯題掌握</span>
+                <span id="growth-nature-rate">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="growth-nature-bar" class="bg-amber-500 h-3 rounded-full transition-all" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                <span>社會錯題掌握</span>
+                <span id="growth-social-rate">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="growth-social-bar" class="bg-orange-500 h-3 rounded-full transition-all" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-medal text-amber-500"></i> 自主激勵指標
+              </h4>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                系統針對國小六年級課綱設計防挫折機制，做錯題目會先給予引導提示，二次答錯收錄至錯題本。孩子在後續複習答對後，將自動標記為「精熟掌握」。
+              </p>
+            </div>
+            <div class="mt-4 p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-xs text-amber-800 font-medium">
+              💡 家長小建議：每天維持 15-20 分鐘微學習，持續點亮日曆打卡，成效最佳！
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 聯絡客服面板 -->
+      <div id="guardian-panel-support" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2 mb-3">
+              <i class="fa-solid fa-headset text-teal-600"></i> 官方客服支援
+            </h4>
+            <div class="space-y-3 text-xs text-slate-600">
+              <p class="flex items-center gap-2">
+                <i class="fa-solid fa-envelope text-slate-400"></i>
+                <span>客服信箱：support@coollearning.tw</span>
+              </p>
+              <p class="flex items-center gap-2">
+                <i class="fa-solid fa-clock text-slate-400"></i>
+                <span>服務時間：週一至週五 09:00 ~ 18:00</span>
+              </p>
+              <p class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-slate-400"></i>
+                <span>系統版本：酷學習 2026.09 (正式穩定版)</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-circle-question text-blue-500"></i> 常見問題 FAQ
+            </h4>
+            <details class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl cursor-pointer">
+              <summary class="font-bold text-slate-700">孩子換了平板或電腦，學習紀錄會保留嗎？</summary>
+              <p class="mt-2 text-slate-500">會的！所有題庫作答、進度與錯題本均與 5 碼虛擬座號雲端同步，登入即可無縫接續。</p>
+            </details>
+            <details class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl cursor-pointer">
+              <summary class="font-bold text-slate-700">如何讓孩子自己在他的設備上登入？</summary>
+              <p class="mt-2 text-slate-500">在家長「子女管理」點擊【修改/設密碼】為孩子設定一組密碼，孩子在首頁切換到「學生模式」，輸入暱稱、5碼座號與密碼即可自主登入。</p>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. LINE 社群面板 -->
+      <div id="guardian-panel-community" class="hidden">
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-6 rounded-2xl border border-emerald-200 text-center max-w-xl mx-auto space-y-4">
+          <div class="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center text-3xl mx-auto shadow-md">
+            <i class="fa-brands fa-line"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-black text-slate-800">加入「酷學習」官方 LINE 與家長共學社群</h3>
+            <p class="text-xs text-slate-600 mt-1">獲取第一手升學資訊、國小六年級課綱題庫更新與專屬家庭共學資源</p>
+          </div>
+          <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <a href="https://line.me" target="_blank" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full shadow-md flex items-center gap-2 active:scale-95 transition-all">
+              <i class="fa-brands fa-line text-base"></i> 加入官方 LINE 帳號
+            </a>
+            <button onclick="window.showToast('家長專屬交流群連結已複製或即將開通！', 'fa-line')" class="px-6 py-3 bg-white hover:bg-slate-50 text-emerald-700 font-bold text-xs rounded-full border border-emerald-300 shadow-sm flex items-center gap-2 active:scale-95 transition-all">
+              <i class="fa-solid fa-users"></i> 家長交流社群
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- 新增/修改子女檔案 Modal -->
+  <div id="modal-child-form" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-white/80 card-flip-enter">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+        <h3 id="modal-child-form-title" class="text-base font-black text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-teal-600"></i> 新增子女檔案
+        </h3>
+        <button id="btn-close-child-modal" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="form-child-profile" class="space-y-3.5">
+        <input type="hidden" id="input-child-id" value="">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">子女暱稱 (必填)</label>
+          <input type="text" id="input-child-nickname" required placeholder="例如：小明、翔翔" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">年級 (選填)</label>
+          <select id="input-child-grade" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800 bg-white">
+            <option value="國小六年級">國小六年級</option>
+            <option value="國小五年級">國小五年級</option>
+            <option value="國小四年級">國小四年級</option>
+            <option value="國中七年級">國中七年級</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">孩子獨立登入密碼 (可選)</label>
+          <input type="password" id="input-child-password" placeholder="留空則僅由家長代登；填寫可供孩子自行登入" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-medium text-slate-800">
+          <p class="text-[10px] text-slate-400 mt-1 ml-1">若設定密碼，孩子可在任何設備以「暱稱 + 5碼座號 + 密碼」自主登入</p>
+        </div>
+
+        <div class="pt-3 flex gap-2">
+          <button type="button" id="btn-cancel-child-modal" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50">取消</button>
+          <button type="submit" id="btn-submit-child-form" class="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md">確認儲存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260809-word-management-phonetic"></script>
-  <script src="assets/js/quiz.js"></script> 
-  <script src="assets/js/admin.js?v=20260809-word-management-phonetic"></script>
+  <script src="assets/js/app.js?v=20260904-guardian-flow"></script>
+  <script src="assets/js/quiz.js"></script>
+
   
   <script>
     // 確保 showToast 函式在全域環境中可用

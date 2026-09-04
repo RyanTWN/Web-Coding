@@ -163,6 +163,7 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
   const nickname = String(req.body?.nickname || '').trim().slice(0, 50);
   const gradeLevel = req.body?.gradeLevel ? String(req.body.gradeLevel).trim().slice(0, 20) : null;
   const avatarKey = req.body?.avatarKey ? String(req.body.avatarKey).trim().slice(0, 50) : null;
+  const childPassword = req.body?.childPassword ? String(req.body.childPassword).trim() : null;
   if (!nickname) return res.status(400).json({ success: false, error: '請輸入子女的暱稱' });
 
   let connection;
@@ -170,20 +171,57 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     connection = await pool.getConnection();
     await connection.beginTransaction();
     const seatNo = await generateUniqueChildSeatNo(connection);
-    // 沿用既有 students 表以重用整套學習進度/測驗系統；password_hash 留空，
-    // 因為子女檔案的存取控制交給「家長登入」把關，不走學生自訂密碼那條路。
-    await connection.query('INSERT INTO students (seat_no, name) VALUES (?, ?)', [seatNo, nickname]);
+    
+    // 若家長有設定子女密碼，存入 password_hash；否則為 NULL，允許家長在儀表板一鍵免密代登
+    const passwordHash = childPassword ? hashPassword(childPassword) : null;
+    await connection.query('INSERT INTO students (seat_no, name, password_hash) VALUES (?, ?, ?)', [seatNo, nickname, passwordHash]);
     const [result] = await connection.query(
       'INSERT INTO child_profiles (guardian_id, nickname, avatar_key, grade_level, linked_seat_no) VALUES (?, ?, ?, ?, ?)',
       [req.auth.sub, nickname, avatarKey, gradeLevel, seatNo]
     );
     await connection.commit();
-    res.json({ success: true, data: { id: result.insertId, nickname, avatarKey, gradeLevel, linkedSeatNo: seatNo } });
+    res.json({ success: true, data: { id: result.insertId, nickname, avatarKey, gradeLevel, linkedSeatNo: seatNo, hasPassword: !!passwordHash } });
   } catch (err) {
     if (connection) await connection.rollback();
     res.status(500).json({ success: false, error: err.message });
   } finally {
     if (connection) connection.release();
+  }
+});
+
+// [API] 修改子女檔案 (暱稱、年級、密碼)
+  router.put('/guardian/children/:childId', requireAuth, requireGuardianRole, async (req, res) => {
+  const childId = Number(req.params.childId);
+  const nickname = String(req.body?.nickname || '').trim().slice(0, 50);
+  const gradeLevel = req.body?.gradeLevel ? String(req.body.gradeLevel).trim().slice(0, 20) : null;
+  const childPassword = req.body?.childPassword ? String(req.body.childPassword).trim() : null;
+  if (!Number.isInteger(childId)) return res.status(400).json({ success: false, error: '無效的子女檔案 ID' });
+  if (!nickname) return res.status(400).json({ success: false, error: '暱稱不能為空' });
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT linked_seat_no FROM child_profiles WHERE id = ? AND guardian_id = ?',
+      [childId, req.auth.sub]
+    );
+    if (rows.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
+    const seatNo = rows[0].linked_seat_no;
+
+    await pool.query(
+      'UPDATE child_profiles SET nickname = ?, grade_level = ? WHERE id = ?',
+      [nickname, gradeLevel, childId]
+    );
+
+    if (seatNo) {
+      if (childPassword) {
+        const passwordHash = hashPassword(childPassword);
+        await pool.query('UPDATE students SET name = ?, password_hash = ? WHERE seat_no = ?', [nickname, passwordHash, seatNo]);
+      } else {
+        await pool.query('UPDATE students SET name = ? WHERE seat_no = ?', [nickname, seatNo]);
+      }
+    }
+    res.json({ success: true, message: '子女資訊已更新' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -237,6 +275,74 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     if (!child.linked_seat_no) return res.status(500).json({ success: false, error: '子女檔案缺少對應的學習帳號，請聯絡客服' });
     const token = issueToken(child.linked_seat_no, 'student');
     res.json({ success: true, token, data: { seatNo: child.linked_seat_no, nickname: child.nickname } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// [API] 獲取子女學習總覽與成長記錄
+  router.get('/guardian/children/:childId/summary', requireAuth, requireGuardianRole, async (req, res) => {
+  const childId = Number(req.params.childId);
+  if (!Number.isInteger(childId)) return res.status(400).json({ success: false, error: '無效的子女檔案 ID' });
+  try {
+    const [children] = await pool.query(
+      'SELECT id, nickname, grade_level, linked_seat_no FROM child_profiles WHERE id = ? AND guardian_id = ?',
+      [childId, req.auth.sub]
+    );
+    if (children.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
+    const child = children[0];
+    const seatNo = child.linked_seat_no;
+
+    // 1. 英文學習統計
+    const [engProgress] = await pool.query('SELECT COUNT(*) AS days_count FROM english_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+    const [engQuizzes] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM quiz_logs WHERE seat_no = ?', [seatNo]);
+    
+    // 2. 數學學習統計
+    const [mathLogs] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM math_quiz_logs WHERE seat_no = ?', [seatNo]);
+    const [mathWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM math_wrong_questions WHERE seat_no = ?', [seatNo]);
+
+    // 3. 自然學習統計
+    const [natureProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM nature_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+    const [natureWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM nature_wrong_questions WHERE seat_no = ?', [seatNo]);
+
+    // 4. 社會學習統計
+    const [socialProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM social_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+    const [socialWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM social_wrong_questions WHERE seat_no = ?', [seatNo]);
+
+    res.json({
+      success: true,
+      data: {
+        childId: child.id,
+        nickname: child.nickname,
+        gradeLevel: child.grade_level,
+        seatNo: child.linked_seat_no,
+        stats: {
+          english: {
+            daysCompleted: Number(engProgress[0]?.days_count || 0),
+            totalQuizzes: Number(engQuizzes[0]?.total_quizzes || 0),
+            avgScore: Math.round(Number(engQuizzes[0]?.avg_score || 0))
+          },
+          math: {
+            totalQuizzes: Number(mathLogs[0]?.total_quizzes || 0),
+            avgScore: Math.round(Number(mathLogs[0]?.avg_score || 0)),
+            wrongCount: Number(mathWrong[0]?.wrong_count || 0),
+            masteredCount: Number(mathWrong[0]?.mastered_count || 0)
+          },
+          nature: {
+            daysCompleted: Number(natureProgress[0]?.days_count || 0),
+            avgScore: Math.round(Number(natureProgress[0]?.avg_score || 0)),
+            wrongCount: Number(natureWrong[0]?.wrong_count || 0),
+            masteredCount: Number(natureWrong[0]?.mastered_count || 0)
+          },
+          social: {
+            daysCompleted: Number(socialProgress[0]?.days_count || 0),
+            avgScore: Math.round(Number(socialProgress[0]?.avg_score || 0)),
+            wrongCount: Number(socialWrong[0]?.wrong_count || 0),
+            masteredCount: Number(socialWrong[0]?.mastered_count || 0)
+          }
+        }
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -16,6 +16,8 @@ const WORD_FIELDS = Object.freeze(['vocabulary', 'phonetic', 'chinese', 'sentenc
 const app = express();
 const allowedOrigins = new Set([
   'https://learning.ifit.myds.me',
+  'http://localhost:8085',
+  'http://localhost:5500',
   ...(process.env.CORS_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean)
 ]);
 app.use(cors({

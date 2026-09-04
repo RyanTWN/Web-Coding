@@ -1,5 +1,9 @@
 // 全局狀態管理
 let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user')) || null;
+let currentGuardian = JSON.parse(sessionStorage.getItem('g6_guardian_user')) || null;
+let guardianToken = sessionStorage.getItem('g6_guardian_token') || null;
+let guardianChildren = [];
+
 // 管理後台用；一律由 /api/admin/analytics 的真實資料覆蓋（見 admin.js），這裡只需要空陣列起始值。
 let studentsList = [];
 
@@ -36,7 +40,7 @@ function resetStudentLoginForm() {
   const confirmInput = document.getElementById('input-student-new-password-confirm');
   if (confirmInput) confirmInput.value = '';
   const submitBtn = document.getElementById('btn-student-login-submit');
-  if (submitBtn) submitBtn.innerHTML = '開始學習 GO! <i class="fa-solid fa-arrow-right"></i>';
+  if (submitBtn) submitBtn.innerHTML = '探索開始！';
 }
 
 // 切換到第二階段：{ setup: true } 顯示「首次登入設定密碼」欄位，否則顯示一般密碼欄位。
@@ -65,13 +69,28 @@ function updateSyncStatus(text, className = 'text-slate-400') {
 
 async function apiFetch(path, options = {}) {
   const headers = new Headers(options.headers || {});
-  if (currentUser?.token) headers.set('Authorization', `Bearer ${currentUser.token}`);
+  if (!headers.has('Authorization')) {
+    if (currentUser?.token) {
+      headers.set('Authorization', `Bearer ${currentUser.token}`);
+    } else if (guardianToken) {
+      headers.set('Authorization', `Bearer ${guardianToken}`);
+    }
+  }
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  if (response.status === 401 && !path.endsWith('/login')) {
-    currentUser = null;
-    sessionStorage.removeItem('g6_portal_user');
-    if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/') {
-      window.location.assign('index.html?session=expired');
+  if (response.status === 401 && !path.endsWith('/login') && !path.endsWith('/register')) {
+    if (path.startsWith('/guardian')) {
+      currentGuardian = null;
+      guardianToken = null;
+      sessionStorage.removeItem('g6_guardian_user');
+      sessionStorage.removeItem('g6_guardian_token');
+      showToast('家長登入憑證已過期，請重新登入', 'fa-lock');
+      showView('view-login');
+    } else {
+      currentUser = null;
+      sessionStorage.removeItem('g6_portal_user');
+      if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/') {
+        window.location.assign('index.html?session=expired');
+      }
     }
   }
   return response;
@@ -289,9 +308,18 @@ function showView(viewId) {
   const targetView = document.getElementById(viewId);
   if (targetView) targetView.classList.remove('hidden');
 
+  const globalHeader = document.getElementById('global-header');
+  if (viewId === 'view-login') {
+    document.body.classList.add('is-login-state');
+    if (globalHeader) globalHeader.classList.add('hidden');
+  } else {
+    document.body.classList.remove('is-login-state');
+    if (globalHeader) globalHeader.classList.remove('hidden');
+  }
+
   const badge = document.getElementById('user-profile-badge');
   if (badge) {
-      if (currentUser && viewId !== 'view-login') {
+      if (currentUser && viewId !== 'view-login' && viewId !== 'view-guardian-dashboard') {
         badge.classList.remove('hidden');
         badge.classList.add('flex');
         const nameEl = document.getElementById('header-user-name');
@@ -622,33 +650,42 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser = null;
     sessionStorage.removeItem('g6_portal_user');
     resetStudentLoginForm();
-    showView('view-login');
+    if (currentGuardian && guardianToken) {
+      showView('view-guardian-dashboard');
+      loadGuardianDashboard();
+    } else {
+      showView('view-login');
+    }
   });
 
   document.getElementById('btn-go-home')?.addEventListener('click', () => {
-    if (!currentUser) showView('view-login');
-    else if (currentUser.isAdmin) showView('view-admin');
-    else showView('view-subjects');
+    if (currentUser) {
+      showView('view-subjects');
+    } else if (currentGuardian && guardianToken) {
+      showView('view-guardian-dashboard');
+    } else {
+      showView('view-login');
+    }
   });
 
-  // 登入頁籤切換
+  // 登入模式切換籤 (學生模式 vs 家長模式)
   document.getElementById('login-tab-student')?.addEventListener('click', () => {
     resetStudentLoginForm();
     document.getElementById('form-student-login')?.classList.remove('hidden');
-    document.getElementById('form-admin-login')?.classList.add('hidden');
-    document.getElementById('login-tab-student')?.classList.add('bg-white', 'text-brand-600', 'shadow-sm');
+    document.getElementById('guardian-auth-container')?.classList.add('hidden');
+    document.getElementById('login-tab-student')?.classList.add('bg-white', 'text-[#173852]', 'shadow-sm');
     document.getElementById('login-tab-student')?.classList.remove('text-slate-500', 'hover:text-slate-700');
-    document.getElementById('login-tab-admin')?.classList.add('text-slate-500', 'hover:text-slate-700');
-    document.getElementById('login-tab-admin')?.classList.remove('bg-white', 'text-brand-600', 'shadow-sm');
+    document.getElementById('login-tab-guardian')?.classList.add('text-slate-500', 'hover:text-slate-700');
+    document.getElementById('login-tab-guardian')?.classList.remove('bg-white', 'text-[#173852]', 'shadow-sm');
   });
 
-  document.getElementById('login-tab-admin')?.addEventListener('click', () => {
-    document.getElementById('form-admin-login')?.classList.remove('hidden');
+  document.getElementById('login-tab-guardian')?.addEventListener('click', () => {
+    document.getElementById('guardian-auth-container')?.classList.remove('hidden');
     document.getElementById('form-student-login')?.classList.add('hidden');
-    document.getElementById('login-tab-admin')?.classList.add('bg-white', 'text-brand-600', 'shadow-sm');
-    document.getElementById('login-tab-admin')?.classList.remove('text-slate-500', 'hover:text-slate-700');
+    document.getElementById('login-tab-guardian')?.classList.add('bg-white', 'text-[#173852]', 'shadow-sm');
+    document.getElementById('login-tab-guardian')?.classList.remove('text-slate-500', 'hover:text-slate-700');
     document.getElementById('login-tab-student')?.classList.add('text-slate-500', 'hover:text-slate-700');
-    document.getElementById('login-tab-student')?.classList.remove('bg-white', 'text-brand-600', 'shadow-sm');
+    document.getElementById('login-tab-student')?.classList.remove('bg-white', 'text-[#173852]', 'shadow-sm');
   });
 
   // 學生登入處理：分兩階段。第一階段只送姓名+座號探測狀態，
@@ -738,26 +775,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('form-admin-login')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('input-admin-id').value.trim();
-    const password = document.getElementById('input-admin-pwd').value;
-    try {
-      const response = await apiFetch('/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || '登入失敗');
-      currentUser = { name: '系統管理員', seatNo: 'ADMIN', token: data.token, isAdmin: true };
-      sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
-      showView('view-admin');
-      if (typeof renderAdminTables === 'function') await renderAdminTables();
-    } catch (error) {
-      showToast(error.message || '管理員登入失敗', 'fa-triangle-exclamation');
-    }
-  });
+  // 初始化家長專區模組
+  initGuardianModule();
 
   // 科目大廳按鈕
   document.getElementById('btn-open-english')?.addEventListener('click', () => {
@@ -828,13 +847,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loginView) {
     if (currentUser) {
       if (currentUser.isAdmin) {
-          showView('view-admin');
-          if (typeof renderAdminTables === 'function') renderAdminTables();
+        window.location.href = 'admin.html';
       } else {
         const subjectUserEl = document.getElementById('subject-user-name');
         if (subjectUserEl) subjectUserEl.textContent = currentUser.name;
         showView('view-subjects');
       }
+    } else if (currentGuardian && guardianToken) {
+      showView('view-guardian-dashboard');
+      loadGuardianDashboard();
     } else {
       showView('view-login');
     }
@@ -846,3 +867,518 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+// ==========================================
+// 家長專區 (Guardian Module) 邏輯與互動實作
+// ==========================================
+function initGuardianModule() {
+  // 切換註冊 / 登入
+  document.getElementById('btn-switch-to-register')?.addEventListener('click', () => {
+    document.getElementById('form-guardian-login')?.classList.add('hidden');
+    document.getElementById('form-guardian-register')?.classList.remove('hidden');
+  });
+
+  document.getElementById('btn-switch-to-login')?.addEventListener('click', () => {
+    document.getElementById('form-guardian-register')?.classList.add('hidden');
+    document.getElementById('form-guardian-login')?.classList.remove('hidden');
+  });
+
+  // ==========================================
+  // Google OAuth 2.0 (Google Identity Services) 整合
+  // ==========================================
+  async function handleGoogleCredentialResponse(response) {
+    if (!response || !response.credential) {
+      showToast('未取得 Google 登入憑證，請重試', 'fa-triangle-exclamation');
+      return;
+    }
+    try {
+      showToast('正在驗證 Google 帳號...', 'fa-circle-notch fa-spin');
+      const res = await apiFetch('/guardian/oauth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: response.credential })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Google 登入驗證失敗');
+      }
+
+      guardianToken = data.token;
+      currentGuardian = data.guardian;
+      sessionStorage.setItem('g6_guardian_token', guardianToken);
+      sessionStorage.setItem('g6_guardian_user', JSON.stringify(currentGuardian));
+
+      showToast(`Google 登入成功！歡迎回來，${currentGuardian.displayName || currentGuardian.email}！`, 'fa-circle-check');
+      showView('view-guardian-dashboard');
+      loadGuardianDashboard();
+    } catch (err) {
+      console.error('Google login error:', err);
+      showToast(err.message || 'Google 登入失敗', 'fa-triangle-exclamation');
+    }
+  }
+
+  function initGoogleAuth() {
+    if (typeof GOOGLE_CLIENT_ID === 'undefined' || !GOOGLE_CLIENT_ID) return;
+
+    const tryInit = () => {
+      if (window.google?.accounts?.id) {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+
+        const btnContainer = document.getElementById('google-signin-btn-container');
+        if (btnContainer) {
+          google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            shape: 'pill',
+            width: 320,
+            text: 'signin_with',
+            locale: 'zh_TW'
+          });
+          // 當官方標準按鈕渲染後，備用按鈕可設為隱藏以維持簡潔外觀
+          const fallbackBtn = document.getElementById('btn-guardian-google-login');
+          if (fallbackBtn) fallbackBtn.classList.add('hidden');
+        }
+      } else {
+        setTimeout(tryInit, 250);
+      }
+    };
+    tryInit();
+  }
+
+  initGoogleAuth();
+
+  // 自訂備用 Google 登入按鈕
+  document.getElementById('btn-guardian-google-login')?.addEventListener('click', () => {
+    if (window.google?.accounts?.id) {
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          showToast('請允許第三方 Cookie 或直接點擊上方 Google 登入按鈕', 'fa-circle-info');
+        }
+      });
+    } else {
+      showToast('Google 登入模組載入中，請稍候重試', 'fa-clock');
+    }
+  });
+
+  // 家長登入
+  document.getElementById('form-guardian-login')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('guardian-login-email').value.trim();
+    const password = document.getElementById('guardian-login-password').value;
+
+    try {
+      const response = await apiFetch('/guardian/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '家長登入失敗，請檢查帳號密碼');
+      }
+
+      guardianToken = data.token;
+      currentGuardian = data.guardian;
+      sessionStorage.setItem('g6_guardian_token', guardianToken);
+      sessionStorage.setItem('g6_guardian_user', JSON.stringify(currentGuardian));
+
+      showToast(`歡迎回來，${currentGuardian.displayName || currentGuardian.email}！`, 'fa-user-shield');
+      showView('view-guardian-dashboard');
+      loadGuardianDashboard();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || '登入失敗', 'fa-triangle-exclamation');
+    }
+  });
+
+  // 家長註冊
+  document.getElementById('form-guardian-register')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const displayName = document.getElementById('guardian-register-name').value.trim();
+    const email = document.getElementById('guardian-register-email').value.trim();
+    const password = document.getElementById('guardian-register-password').value;
+    const confirmPassword = document.getElementById('guardian-register-confirm').value;
+
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      showToast('家長密碼至少需 8 碼，且同時包含英文字母與數字', 'fa-triangle-exclamation');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showToast('兩次輸入的密碼不一致，請確認', 'fa-triangle-exclamation');
+      return;
+    }
+
+    try {
+      const response = await apiFetch('/guardian/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '註冊失敗');
+      }
+
+      guardianToken = data.token;
+      currentGuardian = data.guardian;
+      sessionStorage.setItem('g6_guardian_token', guardianToken);
+      sessionStorage.setItem('g6_guardian_user', JSON.stringify(currentGuardian));
+
+      showToast('家長帳號註冊成功！歡迎進入專區', 'fa-circle-check');
+      showView('view-guardian-dashboard');
+      loadGuardianDashboard();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || '註冊失敗', 'fa-triangle-exclamation');
+    }
+  });
+
+  // 家長登出
+  document.getElementById('btn-guardian-logout')?.addEventListener('click', () => {
+    currentGuardian = null;
+    guardianToken = null;
+    guardianChildren = [];
+    sessionStorage.removeItem('g6_guardian_token');
+    sessionStorage.removeItem('g6_guardian_user');
+    showToast('已安全登出家長帳號', 'fa-right-from-bracket');
+    showView('view-login');
+  });
+
+  // 家長儀表板分頁籤
+  const guardianTabs = ['children', 'tracking', 'growth', 'support', 'community'];
+  guardianTabs.forEach(tab => {
+    document.getElementById(`guardian-tab-${tab}`)?.addEventListener('click', () => {
+      switchGuardianTab(tab);
+    });
+  });
+
+  // 新增/修改子女彈窗
+  document.getElementById('btn-open-add-child-modal')?.addEventListener('click', () => {
+    document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-user-plus text-teal-600"></i> 新增子女檔案';
+    document.getElementById('input-child-id').value = '';
+    document.getElementById('input-child-nickname').value = '';
+    document.getElementById('input-child-grade').value = '國小六年級';
+    document.getElementById('input-child-password').value = '';
+    document.getElementById('modal-child-form')?.classList.remove('hidden');
+  });
+
+  document.getElementById('btn-close-child-modal')?.addEventListener('click', () => {
+    document.getElementById('modal-child-form')?.classList.add('hidden');
+  });
+  document.getElementById('btn-cancel-child-modal')?.addEventListener('click', () => {
+    document.getElementById('modal-child-form')?.classList.add('hidden');
+  });
+
+  document.getElementById('form-child-profile')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const childId = document.getElementById('input-child-id').value;
+    const nickname = document.getElementById('input-child-nickname').value.trim();
+    const gradeLevel = document.getElementById('input-child-grade').value;
+    const childPassword = document.getElementById('input-child-password').value;
+
+    if (childPassword && (childPassword.length < 6 || !/[A-Za-z]/.test(childPassword) || !/[0-9]/.test(childPassword))) {
+      showToast('子女登入密碼需至少 6 碼英數組合', 'fa-triangle-exclamation');
+      return;
+    }
+
+    try {
+      const url = childId ? `/guardian/children/${childId}` : '/guardian/children';
+      const method = childId ? 'PUT' : 'POST';
+      const payload = { nickname, gradeLevel };
+      if (childPassword) payload.childPassword = childPassword;
+
+      const response = await apiFetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || '儲存子女資訊失敗');
+
+      showToast(childId ? '子女資料修改成功！' : '子女檔案新增成功！', 'fa-circle-check');
+      document.getElementById('modal-child-form')?.classList.add('hidden');
+      loadGuardianDashboard();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || '儲存失敗', 'fa-triangle-exclamation');
+    }
+  });
+
+  // 學習追蹤與成長記錄之子女下拉選單連動
+  document.getElementById('tracking-child-select')?.addEventListener('change', (e) => {
+    const childId = e.target.value;
+    if (childId) {
+      const syncOther = document.getElementById('growth-child-select');
+      if (syncOther) syncOther.value = childId;
+      loadChildSummary(childId);
+    }
+  });
+
+  document.getElementById('growth-child-select')?.addEventListener('change', (e) => {
+    const childId = e.target.value;
+    if (childId) {
+      const syncOther = document.getElementById('tracking-child-select');
+      if (syncOther) syncOther.value = childId;
+      loadChildSummary(childId);
+    }
+  });
+}
+
+function switchGuardianTab(activeTab) {
+  const tabs = ['children', 'tracking', 'growth', 'support', 'community'];
+  tabs.forEach(tab => {
+    const btn = document.getElementById(`guardian-tab-${tab}`);
+    const panel = document.getElementById(`guardian-panel-${tab}`);
+    if (tab === activeTab) {
+      btn?.classList.add('bg-[#173852]', 'text-white', 'shadow-md');
+      btn?.classList.remove('text-slate-500', 'hover:text-slate-800');
+      panel?.classList.remove('hidden');
+    } else {
+      btn?.classList.remove('bg-[#173852]', 'text-white', 'shadow-md');
+      btn?.classList.add('text-slate-500', 'hover:text-slate-800');
+      panel?.classList.add('hidden');
+    }
+  });
+}
+
+async function loadGuardianDashboard() {
+  if (!guardianToken) return;
+
+  const emailBadge = document.getElementById('guardian-email-badge');
+  const userDisplay = document.getElementById('guardian-user-display');
+  if (currentGuardian) {
+    if (emailBadge) emailBadge.textContent = currentGuardian.email;
+    if (userDisplay) userDisplay.innerHTML = `歡迎，<span class="font-bold text-slate-700">${currentGuardian.displayName || currentGuardian.email}</span>`;
+  }
+
+  try {
+    const response = await apiFetch('/guardian/children');
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || '無法取得子女檔案');
+
+    guardianChildren = data.data || [];
+    renderGuardianChildren(guardianChildren);
+
+    // 填充追蹤與成長選單
+    const trackingSelect = document.getElementById('tracking-child-select');
+    const growthSelect = document.getElementById('growth-child-select');
+    if (trackingSelect && growthSelect) {
+      if (guardianChildren.length === 0) {
+        trackingSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
+        growthSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
+      } else {
+        const optionsHtml = guardianChildren.map(c => `<option value="${c.id}">${c.nickname} (${c.linked_seat_no})</option>`).join('');
+        trackingSelect.innerHTML = optionsHtml;
+        growthSelect.innerHTML = optionsHtml;
+        loadChildSummary(guardianChildren[0].id);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('載入家長專區資料失敗', 'fa-triangle-exclamation');
+  }
+}
+
+function renderGuardianChildren(children) {
+  const container = document.getElementById('guardian-children-container');
+  if (!container) return;
+
+  if (!children || children.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 px-4 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+        <div class="w-14 h-14 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
+          <i class="fa-solid fa-child-reaching"></i>
+        </div>
+        <h4 class="font-bold text-slate-700 text-sm mb-1">尚未建立任何子女檔案</h4>
+        <p class="text-xs text-slate-400 mb-4">點擊右上角「+ 新增子女檔案」，系統將自動產生 5 碼專屬虛擬座號，隨時一鍵進入學習！</p>
+        <button onclick="document.getElementById('btn-open-add-child-modal').click()" class="px-5 py-2.5 bg-[#173852] hover:bg-[#112a3e] text-white font-bold text-xs rounded-xl shadow-md">
+          立即新增第一位子女
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = children.map(child => {
+    const hasPwd = Boolean(child.has_password);
+    const pwdBadge = hasPwd
+      ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-key mr-1"></i>自主密碼已啟用</span>`
+      : `<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-shield-cat mr-1"></i>限家長代登模式</span>`;
+
+    return `
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-4">
+        <div>
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center text-lg font-black shadow-md">
+                ${child.nickname.slice(0, 1)}
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-black text-base text-slate-800">${child.nickname}</h4>
+                  <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-lg">${child.grade_level || '國小六年級'}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                    座號: ${child.linked_seat_no}
+                  </span>
+                  ${pwdBadge}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+          <button onclick="startChildStudy(${child.id}, '${child.nickname}', '${child.linked_seat_no}')" class="flex-1 py-2.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+            <i class="fa-solid fa-rocket text-amber-400"></i> 開始學習
+          </button>
+          <button onclick="openEditChildModal(${child.id}, '${child.nickname}', '${child.grade_level || '國小六年級'}')" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-colors" title="修改資訊或重設密碼">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button onclick="deleteChildProfile(${child.id}, '${child.nickname}')" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-colors" title="刪除檔案">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.startChildStudy = async function(childId, nickname, seatNo) {
+  try {
+    const response = await apiFetch(`/guardian/children/${childId}/select`, {
+      method: 'POST'
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || '代登失敗');
+
+    currentUser = {
+      name: nickname,
+      seatNo: seatNo,
+      token: data.token,
+      isChild: true,
+      guardianLinked: true
+    };
+    sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+
+    const subjectUserEl = document.getElementById('subject-user-name');
+    if (subjectUserEl) subjectUserEl.textContent = nickname;
+
+    showToast(`正在以 ${nickname} (座號: ${seatNo}) 開始自主學習！`, 'fa-rocket');
+    showView('view-subjects');
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || '無法進入學生學習大廳', 'fa-triangle-exclamation');
+  }
+};
+
+window.openEditChildModal = function(childId, nickname, gradeLevel) {
+  document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-pen text-teal-600"></i> 修改子女資訊 / 密碼';
+  document.getElementById('input-child-id').value = childId;
+  document.getElementById('input-child-nickname').value = nickname;
+  document.getElementById('input-child-grade').value = gradeLevel;
+  document.getElementById('input-child-password').value = '';
+  document.getElementById('modal-child-form')?.classList.remove('hidden');
+};
+
+window.deleteChildProfile = function(childId, nickname) {
+  openCustomModal(`確定刪除子女【${nickname}】？`, '刪除後，相關學習歷程與座號綁定將一併移除且無法復原。', async () => {
+    try {
+      const response = await apiFetch(`/guardian/children/${childId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || '刪除失敗');
+
+      showToast(`已成功刪除子女檔案【${nickname}】`, 'fa-trash-can');
+      loadGuardianDashboard();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || '刪除失敗', 'fa-triangle-exclamation');
+    }
+  });
+};
+
+async function loadChildSummary(childId) {
+  if (!childId) return;
+
+  try {
+    const response = await apiFetch(`/guardian/children/${childId}/summary`);
+    const data = await response.json();
+    if (!response.ok || !data.success) return;
+
+    const summary = data.summary;
+
+    // 英文追蹤
+    document.getElementById('track-eng-days').textContent = summary.english.completedDays;
+    document.getElementById('track-eng-score').textContent = summary.english.avgScore;
+    document.getElementById('track-eng-quizzes').textContent = summary.english.quizCount;
+
+    // 數學追蹤
+    document.getElementById('track-math-quizzes').textContent = summary.math.quizCount;
+    document.getElementById('track-math-score').textContent = summary.math.avgScore;
+    document.getElementById('track-math-mastered').textContent = summary.math.masteredWrong;
+
+    // 自然追蹤
+    document.getElementById('track-nature-days').textContent = summary.nature.quizCount;
+    document.getElementById('track-nature-score').textContent = summary.nature.avgScore;
+    document.getElementById('track-nature-mastered').textContent = summary.nature.masteredWrong;
+
+    // 社會追蹤
+    document.getElementById('track-social-days').textContent = summary.social.quizCount;
+    document.getElementById('track-social-score').textContent = summary.social.avgScore;
+    document.getElementById('track-social-mastered').textContent = summary.social.masteredWrong;
+
+    // 成長記錄精熟率進度條
+    const mathTotal = summary.math.totalWrong;
+    const mathMastered = summary.math.masteredWrong;
+    const mathRate = mathTotal > 0 ? Math.round((mathMastered / mathTotal) * 100) : (summary.math.quizCount > 0 ? 100 : 0);
+    document.getElementById('growth-math-rate').textContent = `${mathRate}%`;
+    document.getElementById('growth-math-bar').style.width = `${mathRate}%`;
+
+    const natureTotal = summary.nature.totalWrong;
+    const natureMastered = summary.nature.masteredWrong;
+    const natureRate = natureTotal > 0 ? Math.round((natureMastered / natureTotal) * 100) : (summary.nature.quizCount > 0 ? 100 : 0);
+    document.getElementById('growth-nature-rate').textContent = `${natureRate}%`;
+    document.getElementById('growth-nature-bar').style.width = `${natureRate}%`;
+
+    const socialTotal = summary.social.totalWrong;
+    const socialMastered = summary.social.masteredWrong;
+    const socialRate = socialTotal > 0 ? Math.round((socialMastered / socialTotal) * 100) : (summary.social.quizCount > 0 ? 100 : 0);
+    document.getElementById('growth-social-rate').textContent = `${socialRate}%`;
+    document.getElementById('growth-social-bar').style.width = `${socialRate}%`;
+  } catch (err) {
+    console.error('loadChildSummary error:', err);
+  }
+}
+
+// 登入輔助互動彈窗提示 (依據設計稿連結)
+window.showRegisterInfoModal = function() {
+  if (typeof showToast === 'function') {
+    showToast('課堂學生由學校統一建立名冊；家長自學方案請使用行動端 App 註冊！', 'fa-circle-info');
+  } else {
+    alert('課堂學生由學校統一建立名冊；家長自學方案請使用行動端 App 註冊！');
+  }
+};
+
+window.showForgotPasswordInfoModal = function() {
+  if (typeof showToast === 'function') {
+    showToast('學生若忘記密碼，請洽任課老師或管理員於後台點選【重設密碼】即可！', 'fa-key');
+  } else {
+    alert('學生若忘記密碼，請洽任課老師或管理員於後台點選【重設密碼】即可！');
+  }
+};
+
+window.showOauthGuidance = function(platform) {
+  if (typeof showToast === 'function') {
+    showToast(`此 ${platform} 連動為家長端 App 專屬；學生課堂登入請使用上方姓名與座號。`, 'fa-mobile-screen');
+  } else {
+    alert(`此 ${platform} 連動為家長端 App 專屬；學生課堂登入請使用上方姓名與座號。`);
+  }
+};

@@ -25,7 +25,7 @@ RUN rm -f /usr/share/nginx/html/nginx.conf \
            /usr/share/nginx/html/assets/css/tailwind-input.css && \
     rm -rf /usr/share/nginx/html/node_modules && \
     sed -i -E "s|assets/js/app.js(\?v=[^\"']*)?|assets/js/app.js?v=${APP_VERSION}|g; s|assets/js/quiz.js(\?v=[^\"']*)?|assets/js/quiz.js?v=${APP_VERSION}|g; s|assets/js/admin.js(\?v=[^\"']*)?|assets/js/admin.js?v=${APP_VERSION}|g" \
-      /usr/share/nginx/html/index.html /usr/share/nginx/html/english.html
+      /usr/share/nginx/html/index.html /usr/share/nginx/html/english.html /usr/share/nginx/html/admin.html
 
 EXPOSE 80
 

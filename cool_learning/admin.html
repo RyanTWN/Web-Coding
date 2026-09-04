@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#d97706">
+  <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
+  <title>酷學習 Cool Learning - 管理員後台</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="assets/css/tailwind.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen bg-slate-100">
+
+  <!-- Toast 訊息通知 -->
+  <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
+    <div class="bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-sm">
+      <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 text-lg"></i>
+      <span id="toast-text">訊息通知</span>
+    </div>
+  </div>
+
+  <!-- 確認對話框 -->
+  <div id="custom-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
+      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">
+        <i id="modal-icon" class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2">確定要執行嗎？</h3>
+      <p id="modal-desc" class="text-xs text-slate-500 mb-6">此動作無法復原，請確認是否繼續。</p>
+      <div class="flex gap-3">
+        <button id="modal-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50">取消</button>
+        <button id="modal-confirm-btn" class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 學生詳細數據 Modal -->
+  <div id="student-detail-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-white/80 card-flip-enter flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center text-lg font-black">
+            <i class="fa-solid fa-id-card"></i>
+          </div>
+          <div>
+            <h3 id="detail-student-title" class="text-base font-black text-slate-800">學生詳細學習檔案</h3>
+            <p id="detail-student-subtitle" class="text-xs text-slate-400 font-bold mt-0.5">座號: -</p>
+          </div>
+        </div>
+        <button id="close-detail-modal-btn" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <div class="bg-brand-50/50 p-2.5 rounded-2xl border border-brand-100/60 text-center">
+          <span class="text-[10px] text-brand-700 font-bold block">2000字學習率</span>
+          <span id="detail-stat-percent" class="text-base font-black text-brand-600">0.0%</span>
+        </div>
+        <div class="bg-purple-50/50 p-2.5 rounded-2xl border border-purple-100/60 text-center">
+          <span class="text-[10px] text-purple-700 font-bold block">標記難字</span>
+          <span id="detail-stat-starred" class="text-base font-black text-purple-600">0 個</span>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 pr-1">
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> 測驗歷程紀錄
+          </h4>
+          <div class="max-h-[140px] overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-100">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-100 text-[10px] text-slate-500 font-bold uppercase sticky top-0">
+                <tr>
+                  <th class="p-2">測驗時間</th>
+                  <th class="p-2">測驗類別</th>
+                  <th class="p-2 text-right">得分結果</th>
+                </tr>
+              </thead>
+              <tbody id="detail-quiz-tbody" class="divide-y divide-slate-100 text-[11px]"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-star text-amber-400"></i> 目前收藏之難字本
+          </h4>
+          <div id="detail-starred-chips" class="flex flex-wrap gap-1.5 max-h-[90px] overflow-y-auto custom-scrollbar"></div>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+        <button id="close-detail-modal-footer-btn" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md">
+          關閉視窗
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理員頂部導覽列 -->
+  <header class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-slate-200 shadow-sm mb-4">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+      <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-black text-slate-800 leading-tight">酷學習 系統管理後台</h1>
+        <p class="text-[11px] text-slate-500 font-medium">學生名冊與題庫管理系統</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="index.html" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors">
+        <i class="fa-solid fa-house mr-1"></i>回前台
+      </a>
+      <button id="btn-admin-logout" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-colors border border-rose-200 hidden">
+        <i class="fa-solid fa-right-from-bracket mr-1"></i>登出後台
+      </button>
+    </div>
+  </header>
+
+  <!-- 管理員登入視圖 -->
+  <section id="view-admin-login" class="w-full max-w-md mx-auto my-auto py-8">
+    <div class="bg-white rounded-3xl p-8 shadow-xl border border-slate-200 text-center card-flip-enter">
+      <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h2 class="text-2xl font-black text-slate-800 tracking-wide mb-1">管理員登入</h2>
+      <p class="text-xs text-slate-500 mb-6">請輸入系統管理者帳號與密碼</p>
+
+      <form id="form-admin-login-standalone" class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">帳號 Account</label>
+          <input type="text" id="admin-login-username" required placeholder="管理員帳號" class="w-full py-3 px-4 rounded-xl border border-slate-300 focus:border-amber-500 focus:outline-none font-bold text-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">密碼 Password</label>
+          <input type="password" id="admin-login-password" required placeholder="••••••••" class="w-full py-3 px-4 rounded-xl border border-slate-300 focus:border-amber-500 focus:outline-none font-bold text-slate-800 text-sm">
+        </div>
+        <button type="submit" id="btn-admin-login-submit" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-base mt-2">
+          登入後台 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 管理員主後台面板 (登入後顯示) -->
+  <section id="view-admin" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-xl shadow-md"><i class="fa-solid fa-user-shield"></i></div>
+          <div>
+            <h2 class="text-2xl font-black text-slate-800">學習管理後台</h2>
+            <p class="text-xs text-slate-500 font-medium">學生帳號管理、密碼重設與 2000 字學習數據稽核</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-100 pb-3">
+        <button id="admin-tab-users" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white shadow-md"><i class="fa-solid fa-users mr-1.5"></i>帳號管理 (CSV匯入/重設密碼)</button>
+        <button id="admin-tab-analytics" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"><i class="fa-solid fa-chart-line mr-1.5"></i>全班學習成效追蹤 (2000字稽核)</button>
+        <button id="admin-tab-words" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"><i class="fa-solid fa-spell-check mr-1.5"></i>單字庫管理</button>
+      </div>
+
+      <!-- 學生帳號管理面板 -->
+      <div id="admin-panel-users">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h4 class="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-user-plus text-amber-500"></i> 手動新增單一學生</h4>
+            <form id="form-add-student" class="space-y-2.5">
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="add-student-name" required placeholder="姓名 (如: 張小明)" class="w-full py-2 px-3 text-xs font-bold rounded-xl border">
+                <input type="text" id="add-student-seat" required maxlength="5" pattern="[0-9]{5}" placeholder="5碼座號 (如: 60101)" class="w-full py-2 px-3 text-xs font-bold rounded-xl border">
+              </div>
+              <button type="submit" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm">新增學生</button>
+            </form>
+          </div>
+
+          <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-bold text-sm text-amber-900 flex items-center gap-2"><i class="fa-solid fa-file-csv text-amber-600"></i> CSV 檔批次匯入帳號</h4>
+                <button id="btn-download-csv-template" class="text-[11px] font-bold text-amber-700 hover:underline flex items-center gap-1"><i class="fa-solid fa-download"></i> 下載 CSV 範本</button>
+              </div>
+              <p class="text-[11px] text-amber-700/80 mb-3">請選擇格式為 `姓名,座號` 的 CSV 檔案匯入帳號。</p>
+            </div>
+            <div>
+              <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+              <button id="btn-trigger-csv-upload" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-upload"></i> 選擇 CSV 檔案並匯入</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><i class="fa-solid fa-list-check text-slate-500"></i> 學生帳號清單 (<span id="admin-user-count">0</span> 人)</span>
+            <button id="btn-clear-all-students" class="text-xs text-rose-500 font-bold"><i class="fa-solid fa-trash-can mr-1"></i>清空學生名單</button>
+          </div>
+          <div class="max-h-[300px] overflow-y-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
+                <tr><th class="p-3">5碼座號</th><th class="p-3">學生姓名</th><th class="p-3">密碼狀態</th><th class="p-3 text-right">操作</th></tr>
+              </thead>
+              <tbody id="admin-students-tbody" class="text-xs divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全班成效統計面板 -->
+      <div id="admin-panel-analytics" class="hidden">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-amber-700 block">學生總數</span><span id="stat-total-students" class="text-xl font-black text-amber-600">0 人</span></div>
+          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-emerald-700 block">今日學習完成</span><span id="stat-completed-today" class="text-xl font-black text-emerald-600">0 人</span></div>
+          <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-amber-700 block">平均打卡天數</span><span id="stat-avg-days" class="text-xl font-black text-amber-600">0 天</span></div>
+          <div class="bg-purple-50 border border-purple-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-purple-700 block">平均標記難字</span><span id="stat-avg-starred" class="text-xl font-black text-purple-600">0 個</span></div>
+        </div>
+
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-chart-simple text-amber-500"></i> 全班學生學習進度與 2000 字稽核一覽表</h4>
+          <button id="btn-export-performance-csv" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-file-export"></i> 匯出學習成效 CSV 報表</button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="max-h-[320px] overflow-y-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
+                <tr>
+                  <th class="p-3">座號</th>
+                  <th class="p-3">姓名</th>
+                  <th class="p-3">今日打卡</th>
+                  <th class="p-3">累積打卡</th>
+                  <th class="p-3">2000字進度</th>
+                  <th class="p-3">測驗次數</th>
+                  <th class="p-3">平均測驗分數</th>
+                  <th class="p-3">難字數</th>
+                  <th class="p-3 text-right">詳情</th>
+                </tr>
+              </thead>
+              <tbody id="admin-performance-tbody" class="text-xs divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 單字庫管理面板 -->
+      <div id="admin-panel-words" class="hidden space-y-5">
+        <form id="form-add-word" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+          <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-amber-500"></i>新增英文單字</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input id="add-word-vocabulary" required maxlength="255" placeholder="英文單字，例如 abandon" class="py-2 px-3 text-xs font-bold rounded-xl border">
+            <input id="add-word-phonetic" required maxlength="255" placeholder="音標，例如 /əˈbændən/" class="py-2 px-3 text-xs font-bold rounded-xl border">
+            <input id="add-word-chinese" required maxlength="255" placeholder="中文解釋" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2">
+            <textarea id="add-word-sentence" required maxlength="2000" placeholder="英文例句" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
+            <textarea id="add-word-translate" required maxlength="2000" placeholder="例句中文翻譯" class="py-2 px-3 text-xs font-bold rounded-xl border md:col-span-2"></textarea>
+            <select id="add-word-level" required class="py-2 px-3 text-xs font-bold rounded-xl border">
+              <option value="1">Level 1 (基礎常用)</option>
+              <option value="2">Level 2 (中階應用)</option>
+              <option value="3">Level 3 (進階挑戰)</option>
+            </select>
+          </div>
+          <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm">加入單字庫</button>
+        </form>
+
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2 items-center justify-between">
+            <input id="word-search" type="text" placeholder="搜尋單字、音標、中文..." class="py-2 px-3 text-xs rounded-xl border w-full sm:w-64">
+            <div class="flex gap-2">
+              <select id="word-filter-level" class="py-2 px-3 text-xs rounded-xl border"><option value="">全部 Level</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option></select>
+              <select id="word-filter-enabled" class="py-2 px-3 text-xs rounded-xl border"><option value="">全部狀態</option><option value="1">已啟用</option><option value="0">已停用</option></select>
+            </div>
+          </div>
+          <div class="max-h-[420px] overflow-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse min-w-[760px]">
+              <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 sticky top-0"><tr><th class="p-3">單字</th><th class="p-3">中文</th><th class="p-3">例句 / 翻譯</th><th class="p-3">Level</th><th class="p-3">學習狀態</th></tr></thead>
+              <tbody id="admin-words-tbody" class="text-xs divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+          <div class="p-3 bg-slate-50 border-t flex items-center justify-between text-xs font-bold text-slate-600"><span id="word-pagination-summary">0 個單字</span><div class="flex gap-2"><button id="word-prev-page" type="button" class="px-3 py-1.5 bg-white border rounded-lg disabled:opacity-40">上一頁</button><button id="word-next-page" type="button" class="px-3 py-1.5 bg-white border rounded-lg disabled:opacity-40">下一頁</button></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="w-full text-center py-4 text-xs text-slate-400 font-medium">
+    酷學習 Cool Learning 系統管理平台 &copy; 2026
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script>
+    // 獨立 admin.html 的登入與初始化流程
+    window.showToast = function(text, iconClass = "fa-circle-info") {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      document.getElementById('toast-text').textContent = text;
+      document.getElementById('toast-icon').className = `fa-solid ${iconClass} text-amber-400 text-lg`;
+      container.classList.remove('-translate-y-12', 'opacity-0', 'pointer-events-none');
+      container.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        container.classList.remove('translate-y-0', 'opacity-100');
+        container.classList.add('-translate-y-12', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    };
+
+    window.openCustomModal = function(title, desc, onConfirm) {
+      const modal = document.getElementById('custom-modal');
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-desc').textContent = desc;
+      modal.classList.remove('hidden');
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+      const cancelBtn = document.getElementById('modal-cancel-btn');
+      
+      const handleConfirm = () => {
+        modal.classList.add('hidden');
+        confirmBtn.removeEventListener('click', handleConfirm);
+        if (onConfirm) onConfirm();
+      };
+      const handleCancel = () => {
+        modal.classList.add('hidden');
+        cancelBtn.removeEventListener('click', handleCancel);
+      };
+      confirmBtn.onclick = handleConfirm;
+      cancelBtn.onclick = handleCancel;
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const sessionUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || 'null');
+      const viewLogin = document.getElementById('view-admin-login');
+      const viewAdmin = document.getElementById('view-admin');
+      const btnLogout = document.getElementById('btn-admin-logout');
+
+      if (sessionUser && sessionUser.isAdmin) {
+        viewLogin.classList.add('hidden');
+        viewAdmin.classList.remove('hidden');
+        btnLogout.classList.remove('hidden');
+        initAdminModule();
+        renderAdminTables();
+      } else {
+        viewLogin.classList.remove('hidden');
+        viewAdmin.classList.add('hidden');
+        btnLogout.classList.add('hidden');
+      }
+
+      document.getElementById('form-admin-login-standalone')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('admin-login-username').value.trim();
+        const password = document.getElementById('admin-login-password').value;
+        const submitBtn = document.getElementById('btn-admin-login-submit');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 驗證中...';
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+          if (!data.success) {
+            showToast(data.error || '帳號或密碼錯誤', 'fa-triangle-exclamation');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '登入後台 <i class="fa-solid fa-arrow-right"></i>';
+            return;
+          }
+          const adminUser = { name: '系統管理員', seatNo: 'admin', isAdmin: true, token: data.token };
+          sessionStorage.setItem('g6_portal_user', JSON.stringify(adminUser));
+          viewLogin.classList.add('hidden');
+          viewAdmin.classList.remove('hidden');
+          btnLogout.classList.remove('hidden');
+          initAdminModule();
+          renderAdminTables();
+          showToast('管理員登入成功', 'fa-shield-halved');
+        } catch (err) {
+          showToast('無法連線至伺服器', 'fa-triangle-exclamation');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '登入後台 <i class="fa-solid fa-arrow-right"></i>';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

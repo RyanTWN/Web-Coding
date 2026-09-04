@@ -3,3 +3,6 @@
 // 這幾支檔案都會直接使用這裡定義的全域常數，不再各自宣告一份。
 // 之後如果要切換環境（例如本機開發用 http://localhost:4060/api），只需要改這一個地方。
 const API_BASE_URL = 'https://learning.ifit.myds.me:4061/api';
+
+// Google OAuth 2.0 Web Client ID (家長登入使用)
+const GOOGLE_CLIENT_ID = '348668007512-mosn8igdq98m4ogop7q1vtb4jjoe1fla.apps.googleusercontent.com';
