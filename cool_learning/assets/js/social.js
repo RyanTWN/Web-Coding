@@ -1118,6 +1118,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSpeedFinish = document.getElementById('btn-speed-finish');
   if (btnSpeedFinish) btnSpeedFinish.onclick = () => showView('view-setup');
 
+  const btnHome = document.getElementById('btn-home');
+  if (btnHome) {
+    btnHome.onclick = () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.assign('index.html');
+      }
+    };
+  }
+
   loadProgress().catch(error => showToast(error.message, 'rose'));
 });
 

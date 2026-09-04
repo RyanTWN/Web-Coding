@@ -28,17 +28,53 @@
       background-size: 24px 24px;
     }
     
-    /* 3D 翻轉卡片的核心 CSS 設定 */
-    .perspective-1000 { perspective: 1000px; }
-    .transform-style-3d { transform-style: preserve-3d; }
-    .backface-hidden { backface-visibility: hidden; }
-    .rotate-y-180 { transform: rotateY(180deg); }
+    /* 3D 翻轉卡片的核心 CSS 設定 (跨平台與 iOS Safari 專屬硬體加速支援) */
+    .perspective-1000 {
+      perspective: 1000px;
+      -webkit-perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden !important;
+      -webkit-backface-visibility: hidden !important;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg) translateZ(1px);
+      -webkit-transform: rotateY(180deg) translateZ(1px);
+    }
     .flip-card-inner { 
-      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); 
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
     }
     /* 當外層加上 is-flipped 類別時，內層旋轉 180 度 */
     .is-flipped .flip-card-inner { 
-      transform: rotateY(180deg); 
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
+    }
+    #flashcard .flip-card-front,
+    #flashcard .flip-card-back {
+      -webkit-backface-visibility: hidden !important;
+      backface-visibility: hidden !important;
+      -webkit-transform-style: preserve-3d;
+      transform-style: preserve-3d;
+      -webkit-font-smoothing: antialiased;
+    }
+    #flashcard .flip-card-front {
+      transform: rotateY(0deg) translateZ(1px);
+      -webkit-transform: rotateY(0deg) translateZ(1px);
+    }
+    #flashcard .flip-card-back {
+      transform: rotateY(180deg) translateZ(1px);
+      -webkit-transform: rotateY(180deg) translateZ(1px);
+      box-sizing: border-box;
+    }
+    #flashcard .flip-card-back .dialogue-box {
+      max-height: clamp(120px, 20dvh, 180px);
     }
 
     /* 英文學習頁：保留活潑感，同時降低粗框與陰影造成的視覺負擔。 */
@@ -327,8 +363,10 @@
     }
     #star-btn { color: #c7d2fe; filter: none; }
     #star-btn:hover { color: #f472b6; }
+    #star-btn.is-starred { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245,158,11,.45)) !important; }
+    #star-btn.is-starred i { color: #f59e0b !important; }
     #flashcard .flip-card-back { background: linear-gradient(145deg, #eef2ff, #fdf2f8); }
-    #flashcard .flip-card-back > div,
+    #flashcard .flip-card-back > div:not(.dialogue-box),
     #flashcard .flip-card-back h3,
     #flashcard .flip-card-back button { border-width: 1px !important; box-shadow: none !important; }
     .learn-actions {
@@ -630,6 +668,8 @@
     #card-chinese { color: #755f5d; background: #eadbd7; }
     #star-btn { color: #c7b8a7; }
     #star-btn:hover { color: #a78672; }
+    #star-btn.is-starred { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245,158,11,.45)) !important; }
+    #star-btn.is-starred i { color: #f59e0b !important; }
     #btn-next-word { background: linear-gradient(135deg, var(--morandi-blue-deep), #879b91); }
     .anime-decor {
       position: absolute;
@@ -1025,29 +1065,31 @@
             </div>
 
             <!-- 【背面】實用例句漫畫對話框 -->
-            <div class="flip-card-back absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-brand-100 border-4 border-slate-800 rounded-3xl shadow-comic-lg flex flex-col items-center justify-center p-5 text-center">
+            <div class="flip-card-back absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-brand-100 border-4 border-slate-800 rounded-3xl shadow-comic-lg flex flex-col items-center justify-center p-3 sm:p-5 text-center overflow-hidden">
               
-              <div class="w-12 h-12 bg-white border-4 border-slate-800 text-amber-500 rounded-full flex items-center justify-center text-xl mb-3 shadow-comic">
-                <i class="fa-solid fa-lightbulb"></i>
+              <!-- 頂部精簡標題列：燈泡圖示 + Example 標籤橫向整併，節省垂直空間避免 iOS 擠壓破版 -->
+              <div class="flex items-center justify-center gap-2 mb-2 sm:mb-3">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 bg-white border-2 border-slate-800 text-amber-500 rounded-full flex items-center justify-center text-xs sm:text-sm shadow-comic">
+                  <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <h3 class="text-xs sm:text-sm font-black text-slate-800 bg-white px-3 py-0.5 rounded-full border-2 border-slate-800 shadow-comic uppercase tracking-wider">Example 例句</h3>
               </div>
               
-              <h3 class="text-sm font-black text-slate-800 mb-4 bg-white px-4 py-1 rounded-full border-2 border-slate-800 shadow-comic uppercase tracking-wider">Example 例句</h3>
-              
-              <!-- 漫畫對話框設計 -->
-              <div class="relative bg-white border-4 border-slate-800 rounded-2xl p-4 w-full mb-6 shadow-comic flex-shrink-0">
-                <p id="card-sentence" class="text-lg sm:text-xl text-slate-800 font-black leading-relaxed mb-3">Example sentence here.</p>
-                <div class="w-full h-1 bg-slate-200 rounded-full mb-3"></div>
-                <p id="card-translate" class="text-sm sm:text-base text-slate-600 font-bold leading-relaxed">Example translate here.</p>
-                <!-- 對話框的尖角尾巴 -->
-                <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-5 h-5 bg-white border-b-4 border-r-4 border-slate-800 transform rotate-45"></div>
+              <!-- 漫畫對話框設計：支援內部彈性滾動，字級調優防溢出 -->
+              <div class="dialogue-box relative bg-white border-2 sm:border-4 border-slate-800 rounded-2xl p-3 sm:p-4 w-full max-w-[95%] sm:max-w-[90%] mb-3 sm:mb-4 shadow-comic flex-shrink min-h-0 overflow-y-auto custom-scrollbar">
+                <p id="card-sentence" class="text-sm sm:text-base md:text-lg text-slate-800 font-black leading-snug sm:leading-relaxed mb-2">Example sentence here.</p>
+                <div class="w-full h-0.5 sm:h-1 bg-slate-200 rounded-full mb-2"></div>
+                <p id="card-translate" class="text-xs sm:text-sm text-slate-600 font-bold leading-snug">Example translate here.</p>
+                <!-- 對話框的尖角尾巴 (微縮尺寸避免遮擋按鈕) -->
+                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-b-2 sm:border-b-3 border-r-2 sm:border-r-3 border-slate-800 transform rotate-45 pointer-events-none"></div>
               </div>
 
               <!-- 背面朗讀按鈕 -->
-              <button id="btn-speak-sentence" class="mt-2 px-6 py-3 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-black border-4 border-slate-800 shadow-comic transition-all transform hover:-translate-y-1 active:translate-y-0 active:shadow-comic-active flex items-center gap-2" onclick="event.stopPropagation();">
-                <i class="fa-solid fa-volume-low text-lg"></i> 朗讀例句
+              <button id="btn-speak-sentence" class="px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-black border-2 sm:border-4 border-slate-800 shadow-comic text-xs sm:text-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-comic-active flex items-center gap-2 cursor-pointer" onclick="event.stopPropagation();">
+                <i class="fa-solid fa-volume-low text-sm sm:text-base"></i> 朗讀例句
               </button>
 
-              <div class="absolute bottom-3 text-brand-600 text-xs font-black flex items-center gap-1">
+              <div class="mt-2 text-brand-600 text-[10px] sm:text-xs font-black flex items-center gap-1 select-none">
                 <i class="fa-solid fa-rotate-left"></i> 點擊翻回正面
               </div>
             </div>

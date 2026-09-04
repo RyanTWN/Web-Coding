@@ -574,7 +574,12 @@ function renderCard() {
 
   const starBtn = document.getElementById('star-btn');
   if (starBtn) {
-      starBtn.className = starredIds.has(item.id) ? "absolute top-4 right-4 text-2xl text-amber-400 p-2 z-10" : "absolute top-4 right-4 text-2xl text-slate-300 p-2 z-10";
+    const isStarred = starredIds.has(item.id);
+    starBtn.className = isStarred
+      ? "absolute top-3 right-3 text-3xl text-amber-400 p-2 z-30 transition-transform transform hover:scale-110 active:scale-95 drop-shadow-md is-starred"
+      : "absolute top-3 right-3 text-3xl text-slate-300 hover:text-amber-400 p-2 z-30 transition-transform transform hover:scale-110 active:scale-95 drop-shadow-md";
+    starBtn.style.color = isStarred ? '#f59e0b' : '';
+    starBtn.title = isStarred ? '已加入難字本（需在「難字本拼字特訓」連續拼對 3 次方可移除）' : '點擊加入難字本';
   }
 
   const nextBtn = document.getElementById('btn-next-word');
@@ -622,10 +627,7 @@ function renderStarredList() {
       <button class="text-amber-400 p-1" data-id="${item.id}"><i class="fa-solid fa-star"></i></button>
     `;
     div.querySelector('button').onclick = () => {
-      starredIds.delete(item.id);
-      starredWordsMap.delete(item.id); 
-      saveStudentAppData();
-      renderStarredList();
+      showToast('難字需在「難字本拼字特訓」連續拼對 3 次才能移除喔！', 'fa-info-circle');
     };
     container.appendChild(div);
   });
@@ -895,18 +897,23 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nav-calendar')?.addEventListener('click', () => switchAppTab('calendar'));
 
   // 單字卡互動按鈕
-  document.getElementById('star-btn')?.addEventListener('click', () => {
+  document.getElementById('star-btn')?.addEventListener('click', (e) => {
+    e?.stopPropagation();
     if (today30Words.length === 0) return;
     const item = today30Words[currentIndex];
+    if (!item) return;
+
     if (starredIds.has(item.id)) {
-      starredIds.delete(item.id);
-      starredWordsMap.delete(item.id);
-    } else {
-      starredIds.add(item.id);
-      starredWordsMap.set(item.id, item); 
+      // 依規定：難字一旦加入即常亮，除非透過難字拼字測驗答對三次外，不得手動取消
+      showToast('已在難字本中，需在「難字本拼字特訓」連續拼對 3 次方可移除！', 'fa-info-circle');
+      return;
     }
+
+    starredIds.add(item.id);
+    starredWordsMap.set(item.id, item);
     saveStudentAppData();
     renderCard();
+    showToast(`已將「${item.vocabulary || item.word}」加入難字本！`, 'fa-star');
   });
 
   document.getElementById('btn-speak-word')?.addEventListener('click', () => {
