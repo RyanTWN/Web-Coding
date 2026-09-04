@@ -153,17 +153,104 @@ async function renderAdminTables() {
   });
 }
 
-function openStudentDetailModal(student) {
-  document.getElementById('modal-student-name').textContent = `${student.name} 的學習歷程`;
-  document.getElementById('detail-stat-completed').textContent = `${Number(student.total_days || 0)} 天`;
-  document.getElementById('detail-stat-learned-count').textContent = `${Number(student.learned_count || 0)} 字`;
-  document.getElementById('detail-stat-quizzes').textContent = `英文 ${Number(student.total_quizzes || 0)} 次／數學 ${Number(student.math_quizzes || 0)} 次`;
-  document.getElementById('detail-stat-starred').textContent = `${Number(student.starred_count || 0)} 個`;
-  document.getElementById('student-detail-modal').classList.remove('hidden');
+async function openStudentDetailModal(student) {
+  const modal = document.getElementById('student-detail-modal');
+  if (!modal) return;
+
+  const learnedCount = Number(student.learned_count || 0);
+  const percent = ((learnedCount / 2000) * 100).toFixed(1);
+
+  // 1. 同步填入摘要指標
+  const titleEl = document.getElementById('detail-student-title');
+  if (titleEl) titleEl.textContent = `${student.name} 的學習歷程`;
+  const subEl = document.getElementById('detail-student-subtitle');
+  if (subEl) subEl.textContent = `座號: ${student.seat_no}`;
+  const compEl = document.getElementById('detail-stat-completed');
+  if (compEl) compEl.textContent = `${Number(student.total_days || 0)} 天`;
+  const pctEl = document.getElementById('detail-stat-percent');
+  if (pctEl) pctEl.textContent = `${percent}%`;
+  const lcEl = document.getElementById('detail-stat-learned-count');
+  if (lcEl) lcEl.textContent = `${learnedCount} / 2000 字`;
+  const starEl = document.getElementById('detail-stat-starred');
+  if (starEl) starEl.textContent = `${Number(student.starred_count || 0)} 個`;
+  const quizEl = document.getElementById('detail-stat-quizzes');
+  if (quizEl) quizEl.textContent = `英 ${Number(student.total_quizzes || 0)} 次 / 數 ${Number(student.math_quizzes || 0)} 次`;
+
+  // 初始 Loading 狀態
+  const quizTbody = document.getElementById('detail-quiz-tbody');
+  if (quizTbody) {
+    quizTbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400 font-medium"><i class="fa-solid fa-spinner fa-spin mr-1.5 text-amber-500"></i>正在載入測驗歷程...</td></tr>`;
+  }
+  const chipsContainer = document.getElementById('detail-starred-chips');
+  if (chipsContainer) {
+    chipsContainer.innerHTML = `<span class="text-xs text-slate-400 font-medium py-1"><i class="fa-solid fa-spinner fa-spin mr-1.5 text-purple-500"></i>載入難字清單...</span>`;
+  }
+
+  modal.classList.remove('hidden');
+
+  // 2. 非同步載入詳細學習狀態（測驗紀錄與收藏難字）
+  try {
+    const response = await apiFetch(`/student-progress?seatNo=${encodeURIComponent(student.seat_no)}`);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || '無法取得學習歷程');
+
+    const progressData = result.data || {};
+    const quizHistory = progressData.quizHistory || [];
+    const starredWords = progressData.starredWords || [];
+
+    // 更新筆數標籤
+    const quizBadge = document.getElementById('detail-quiz-count-badge');
+    if (quizBadge) quizBadge.textContent = `共 ${quizHistory.length} 筆`;
+    const starredBadge = document.getElementById('detail-starred-count-badge');
+    if (starredBadge) starredBadge.textContent = `共 ${starredWords.length} 字`;
+
+    // 渲染測驗紀錄
+    if (quizTbody) {
+      if (quizHistory.length === 0) {
+        quizTbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400 font-medium">尚無測驗歷程紀錄</td></tr>`;
+      } else {
+        quizTbody.innerHTML = quizHistory.slice(0, 50).map(q => {
+          const dateStr = q.timestamp
+            ? new Date(q.timestamp).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            : '-';
+          const modeLabel = q.mode === 'challenge' ? '自我挑戰測驗' : '每日學習測驗';
+          const score = Number(q.score || 0);
+          const scoreColor = score >= 80 ? 'text-emerald-600' : (score >= 60 ? 'text-amber-600' : 'text-rose-600');
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 font-mono text-slate-600">${dateStr}</td>
+              <td class="p-2 font-medium text-slate-700">${escapeHtml(modeLabel)}</td>
+              <td class="p-2 text-right font-black ${scoreColor}">${score} 分</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 渲染難字列表
+    if (chipsContainer) {
+      if (starredWords.length === 0) {
+        chipsContainer.innerHTML = `<span class="text-xs text-slate-400 font-medium py-1">目前尚未收藏任何難字</span>`;
+      } else {
+        chipsContainer.innerHTML = starredWords.map(w => {
+          const wordText = typeof w === 'string' ? w : (w.vocabulary || w.word || JSON.stringify(w));
+          return `<span class="px-2.5 py-1 bg-purple-50 text-purple-700 font-bold rounded-lg border border-purple-200/80 text-xs">${escapeHtml(wordText)}</span>`;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    if (quizTbody) {
+      quizTbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-rose-500 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i>無法讀取詳細紀錄</td></tr>`;
+    }
+    if (chipsContainer) {
+      chipsContainer.innerHTML = `<span class="text-xs text-rose-500 font-medium py-1">無法載入難字清單</span>`;
+    }
+  }
 }
 
 function closeStudentDetailModal() {
-  document.getElementById('student-detail-modal').classList.add('hidden');
+  const modal = document.getElementById('student-detail-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 async function handleAddSingleStudent(e) {

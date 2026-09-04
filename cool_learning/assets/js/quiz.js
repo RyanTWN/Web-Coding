@@ -26,6 +26,22 @@ function initQuizModule() {
 
   let btnSubmitSpelling = document.getElementById('quiz-submit-spelling-btn');
   if (btnSubmitSpelling) btnSubmitSpelling.onclick = submitSpellingAnswer;
+
+  let spellingInput = document.getElementById('quiz-spelling-input');
+  if (spellingInput && !spellingInput._hasEnterListener) {
+    spellingInput._hasEnterListener = true;
+    spellingInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const submitBtn = document.getElementById('quiz-submit-spelling-btn');
+        const nextBtn = document.getElementById('quiz-next-btn');
+        if (submitBtn && !submitBtn.classList.contains('hidden')) {
+          submitSpellingAnswer();
+        } else if (nextBtn && !nextBtn.classList.contains('hidden')) {
+          nextQuizQuestion();
+        }
+      }
+    });
+  }
 }
 
 function resetQuizMenu() {
@@ -74,6 +90,17 @@ function startQuiz(mode) {
   quizQuestions = shuffleArray(pool).slice(0, Math.min(10, pool.length));
   currentQuizIndex = 0;
   quizScore = 0;
+
+  const badge = document.getElementById('quiz-mode-badge');
+  if (badge) {
+    const modeMap = {
+      'choice': '基礎選擇題',
+      'spelling': '進階拼字特訓',
+      'starred': '難字本選擇題',
+      'starred_spelling': '難字本拼字特訓'
+    };
+    badge.textContent = modeMap[mode] || '測驗進行中';
+  }
 
   document.getElementById('quiz-screen-start').classList.add('hidden');
   document.getElementById('quiz-screen-active').classList.remove('hidden');
@@ -149,19 +176,29 @@ function submitSpellingAnswer() {
 
   if (input.value.trim().toLowerCase() === correctWord.toLowerCase()) {
     quizScore++;
+    let extraFeedback = '';
     if (currentQuizMode === 'starred_spelling') {
-      starredSpellingCounts[q.id] = (starredSpellingCounts[q.id] || 0) + 1;
-      if (starredSpellingCounts[q.id] >= 3) {
+      const currentCount = (starredSpellingCounts[q.id] || 0) + 1;
+      starredSpellingCounts[q.id] = currentCount;
+      if (currentCount >= 3) {
         starredIds.delete(q.id);
-        if (typeof starredWordsMap !== 'undefined') starredWordsMap.delete(q.id); // 新增這行：同步消除
+        if (typeof starredWordsMap !== 'undefined') starredWordsMap.delete(q.id); // 同步消除
         delete starredSpellingCounts[q.id];
+        extraFeedback = ' 🎉 太棒了！已連續拼對 3 次，成功消除此難字！';
+      } else {
+        extraFeedback = `（已連續拼對 ${currentCount}/3 次）`;
       }
       saveStudentAppData();
+      if (typeof updateStarredCounter === 'function') updateStarredCounter();
     }
     speakText(correctWord);
-    document.getElementById('quiz-feedback').textContent = '✅ 答對了！';
+    document.getElementById('quiz-feedback').textContent = `✅ 答對了！${extraFeedback}`;
     document.getElementById('quiz-feedback').className = 'text-center font-bold text-sm min-h-[24px] my-2 text-emerald-600';
   } else {
+    if (currentQuizMode === 'starred_spelling') {
+      starredSpellingCounts[q.id] = 0; // 答錯則歸零，需重新連續拼對 3 次
+      saveStudentAppData();
+    }
     document.getElementById('quiz-feedback').textContent = `❌ 答錯了，正確答案是：${correctWord}`;
     document.getElementById('quiz-feedback').className = 'text-center font-bold text-sm min-h-[24px] my-2 text-rose-600';
   }

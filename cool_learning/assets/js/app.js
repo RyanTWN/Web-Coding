@@ -1389,6 +1389,10 @@ function switchGuardianTab(activeTab) {
       panel?.classList.add('hidden');
     }
   });
+  if (['tracking', 'growth'].includes(activeTab)) {
+    const activeChildId = document.getElementById('tracking-child-select')?.value || document.getElementById('growth-child-select')?.value;
+    if (activeChildId) loadChildSummary(activeChildId);
+  }
 }
 
 async function loadGuardianDashboard() {
@@ -1561,46 +1565,79 @@ async function loadChildSummary(childId) {
     const data = await response.json();
     if (!response.ok || !data.success) return;
 
-    const summary = data.summary;
+    // 同步相容 summary 或 data.stats 或 data.summary
+    const summary = data.summary || data.data?.stats || data.data?.summary || {};
+    const english = summary.english || {};
+    const math = summary.math || {};
+    const nature = summary.nature || {};
+    const social = summary.social || {};
 
     // 英文追蹤
-    document.getElementById('track-eng-days').textContent = summary.english.completedDays;
-    document.getElementById('track-eng-score').textContent = summary.english.avgScore;
-    document.getElementById('track-eng-quizzes').textContent = summary.english.quizCount;
+    const engDays = english.completedDays ?? english.daysCompleted ?? 0;
+    const engScore = english.avgScore ?? 0;
+    const engQuizzes = english.quizCount ?? english.totalQuizzes ?? 0;
+    const engWords = english.learnedWords ?? 0;
+    const engStarred = english.starredCount ?? 0;
+
+    const elEngDays = document.getElementById('track-eng-days');
+    if (elEngDays) elEngDays.textContent = engDays;
+    const elEngScore = document.getElementById('track-eng-score');
+    if (elEngScore) elEngScore.textContent = engScore;
+    const elEngQuizzes = document.getElementById('track-eng-quizzes');
+    if (elEngQuizzes) elEngQuizzes.textContent = engQuizzes;
+    const elEngWords = document.getElementById('track-eng-words');
+    if (elEngWords) elEngWords.textContent = engWords;
+    const elEngStarred = document.getElementById('track-eng-starred');
+    if (elEngStarred) elEngStarred.textContent = engStarred;
 
     // 數學追蹤
-    document.getElementById('track-math-quizzes').textContent = summary.math.quizCount;
-    document.getElementById('track-math-score').textContent = summary.math.avgScore;
-    document.getElementById('track-math-mastered').textContent = summary.math.masteredWrong;
+    const elMathQuizzes = document.getElementById('track-math-quizzes');
+    if (elMathQuizzes) elMathQuizzes.textContent = math.quizCount ?? math.totalQuizzes ?? 0;
+    const elMathScore = document.getElementById('track-math-score');
+    if (elMathScore) elMathScore.textContent = math.avgScore ?? 0;
+    const elMathMastered = document.getElementById('track-math-mastered');
+    if (elMathMastered) elMathMastered.textContent = math.masteredWrong ?? math.masteredCount ?? 0;
 
     // 自然追蹤
-    document.getElementById('track-nature-days').textContent = summary.nature.quizCount;
-    document.getElementById('track-nature-score').textContent = summary.nature.avgScore;
-    document.getElementById('track-nature-mastered').textContent = summary.nature.masteredWrong;
+    const elNatureDays = document.getElementById('track-nature-days');
+    if (elNatureDays) elNatureDays.textContent = nature.completedDays ?? nature.daysCompleted ?? nature.quizCount ?? 0;
+    const elNatureScore = document.getElementById('track-nature-score');
+    if (elNatureScore) elNatureScore.textContent = nature.avgScore ?? 0;
+    const elNatureMastered = document.getElementById('track-nature-mastered');
+    if (elNatureMastered) elNatureMastered.textContent = nature.masteredWrong ?? nature.masteredCount ?? 0;
 
     // 社會追蹤
-    document.getElementById('track-social-days').textContent = summary.social.quizCount;
-    document.getElementById('track-social-score').textContent = summary.social.avgScore;
-    document.getElementById('track-social-mastered').textContent = summary.social.masteredWrong;
+    const elSocialDays = document.getElementById('track-social-days');
+    if (elSocialDays) elSocialDays.textContent = social.completedDays ?? social.daysCompleted ?? social.quizCount ?? 0;
+    const elSocialScore = document.getElementById('track-social-score');
+    if (elSocialScore) elSocialScore.textContent = social.avgScore ?? 0;
+    const elSocialMastered = document.getElementById('track-social-mastered');
+    if (elSocialMastered) elSocialMastered.textContent = social.masteredWrong ?? social.masteredCount ?? 0;
 
     // 成長記錄精熟率進度條
-    const mathTotal = summary.math.totalWrong;
-    const mathMastered = summary.math.masteredWrong;
-    const mathRate = mathTotal > 0 ? Math.round((mathMastered / mathTotal) * 100) : (summary.math.quizCount > 0 ? 100 : 0);
-    document.getElementById('growth-math-rate').textContent = `${mathRate}%`;
-    document.getElementById('growth-math-bar').style.width = `${mathRate}%`;
+    const mathTotal = Number(math.totalWrong ?? math.wrongCount ?? 0);
+    const mathMastered = Number(math.masteredWrong ?? math.masteredCount ?? 0);
+    const mathRate = mathTotal > 0 ? Math.round((mathMastered / mathTotal) * 100) : ((math.quizCount ?? math.totalQuizzes ?? 0) > 0 ? 100 : 0);
+    const elGrowthMathRate = document.getElementById('growth-math-rate');
+    if (elGrowthMathRate) elGrowthMathRate.textContent = `${mathRate}%`;
+    const elGrowthMathBar = document.getElementById('growth-math-bar');
+    if (elGrowthMathBar) elGrowthMathBar.style.width = `${mathRate}%`;
 
-    const natureTotal = summary.nature.totalWrong;
-    const natureMastered = summary.nature.masteredWrong;
-    const natureRate = natureTotal > 0 ? Math.round((natureMastered / natureTotal) * 100) : (summary.nature.quizCount > 0 ? 100 : 0);
-    document.getElementById('growth-nature-rate').textContent = `${natureRate}%`;
-    document.getElementById('growth-nature-bar').style.width = `${natureRate}%`;
+    const natureTotal = Number(nature.totalWrong ?? nature.wrongCount ?? 0);
+    const natureMastered = Number(nature.masteredWrong ?? nature.masteredCount ?? 0);
+    const natureRate = natureTotal > 0 ? Math.round((natureMastered / natureTotal) * 100) : ((nature.quizCount ?? nature.completedDays ?? 0) > 0 ? 100 : 0);
+    const elGrowthNatureRate = document.getElementById('growth-nature-rate');
+    if (elGrowthNatureRate) elGrowthNatureRate.textContent = `${natureRate}%`;
+    const elGrowthNatureBar = document.getElementById('growth-nature-bar');
+    if (elGrowthNatureBar) elGrowthNatureBar.style.width = `${natureRate}%`;
 
-    const socialTotal = summary.social.totalWrong;
-    const socialMastered = summary.social.masteredWrong;
-    const socialRate = socialTotal > 0 ? Math.round((socialMastered / socialTotal) * 100) : (summary.social.quizCount > 0 ? 100 : 0);
-    document.getElementById('growth-social-rate').textContent = `${socialRate}%`;
-    document.getElementById('growth-social-bar').style.width = `${socialRate}%`;
+    const socialTotal = Number(social.totalWrong ?? social.wrongCount ?? 0);
+    const socialMastered = Number(social.masteredWrong ?? social.masteredCount ?? 0);
+    const socialRate = socialTotal > 0 ? Math.round((socialMastered / socialTotal) * 100) : ((social.quizCount ?? social.completedDays ?? 0) > 0 ? 100 : 0);
+    const elGrowthSocialRate = document.getElementById('growth-social-rate');
+    if (elGrowthSocialRate) elGrowthSocialRate.textContent = `${socialRate}%`;
+    const elGrowthSocialBar = document.getElementById('growth-social-bar');
+    if (elGrowthSocialBar) elGrowthSocialBar.style.width = `${socialRate}%`;
   } catch (err) {
     console.error('loadChildSummary error:', err);
   }

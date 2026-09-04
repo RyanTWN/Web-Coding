@@ -375,10 +375,44 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     const child = children[0];
     const seatNo = child.linked_seat_no;
 
-    // 1. 英文學習統計
-    const [engProgress] = await pool.query('SELECT COUNT(*) AS days_count FROM english_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+    // 1. 英文學習統計（整合 english_daily_progress 與 learning_progress 去重聯集，確保打卡天數精準）
+    const [engProgress] = await pool.query(
+      `SELECT COUNT(DISTINCT d) AS days_count FROM (
+         SELECT learning_date AS d FROM english_daily_progress WHERE seat_no = ? AND completed = 1
+         UNION
+         SELECT completed_date AS d FROM learning_progress WHERE seat_no = ?
+       ) AS dates`,
+      [seatNo, seatNo]
+    );
     const [engQuizzes] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM quiz_logs WHERE seat_no = ?', [seatNo]);
     
+    // 英文已掌握單字量與難字數
+    const [learningStateRows] = await pool.query(
+      'SELECT learned_word_ids, starred_ids FROM student_learning_state WHERE seat_no = ?',
+      [seatNo]
+    );
+    let learnedWordsCount = 0;
+    let starredWordsCount = 0;
+    if (learningStateRows.length > 0) {
+      try {
+        const lWords = typeof learningStateRows[0].learned_word_ids === 'string'
+          ? JSON.parse(learningStateRows[0].learned_word_ids || '[]')
+          : (learningStateRows[0].learned_word_ids || []);
+        learnedWordsCount = Array.isArray(lWords) ? lWords.length : 0;
+      } catch (_) { learnedWordsCount = 0; }
+
+      try {
+        const sWords = typeof learningStateRows[0].starred_ids === 'string'
+          ? JSON.parse(learningStateRows[0].starred_ids || '[]')
+          : (learningStateRows[0].starred_ids || []);
+        starredWordsCount = Array.isArray(sWords) ? sWords.length : 0;
+      } catch (_) { starredWordsCount = 0; }
+    }
+    const [[totalPoolRow]] = await pool.query(
+      'SELECT COUNT(*) AS total FROM words_pool WHERE learning_enabled = 1 AND level IN (1, 2, 3)'
+    );
+    const totalWordsCount = Number(totalPoolRow?.total || 2000);
+
     // 2. 數學學習統計
     const [mathLogs] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM math_quiz_logs WHERE seat_no = ?', [seatNo]);
     const [mathWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM math_wrong_questions WHERE seat_no = ?', [seatNo]);
@@ -391,38 +425,77 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     const [socialProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM social_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
     const [socialWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM social_wrong_questions WHERE seat_no = ?', [seatNo]);
 
+    const engDays = Number(engProgress[0]?.days_count || 0);
+    const engQuizTotal = Number(engQuizzes[0]?.total_quizzes || 0);
+    const engScoreAvg = Math.round(Number(engQuizzes[0]?.avg_score || 0));
+
+    const mathQuizTotal = Number(mathLogs[0]?.total_quizzes || 0);
+    const mathScoreAvg = Math.round(Number(mathLogs[0]?.avg_score || 0));
+    const mathWrongTotal = Number(mathWrong[0]?.wrong_count || 0);
+    const mathMastered = Number(mathWrong[0]?.mastered_count || 0);
+
+    const natureDays = Number(natureProgress[0]?.days_count || 0);
+    const natureScoreAvg = Math.round(Number(natureProgress[0]?.avg_score || 0));
+    const natureWrongTotal = Number(natureWrong[0]?.wrong_count || 0);
+    const natureMastered = Number(natureWrong[0]?.mastered_count || 0);
+
+    const socialDays = Number(socialProgress[0]?.days_count || 0);
+    const socialScoreAvg = Math.round(Number(socialProgress[0]?.avg_score || 0));
+    const socialWrongTotal = Number(socialWrong[0]?.wrong_count || 0);
+    const socialMastered = Number(socialWrong[0]?.mastered_count || 0);
+
+    const summaryPayload = {
+      english: {
+        completedDays: engDays,
+        daysCompleted: engDays,
+        learnedWords: learnedWordsCount,
+        totalWords: totalWordsCount,
+        starredCount: starredWordsCount,
+        quizCount: engQuizTotal,
+        totalQuizzes: engQuizTotal,
+        avgScore: engScoreAvg
+      },
+      math: {
+        quizCount: mathQuizTotal,
+        totalQuizzes: mathQuizTotal,
+        avgScore: mathScoreAvg,
+        totalWrong: mathWrongTotal,
+        wrongCount: mathWrongTotal,
+        masteredWrong: mathMastered,
+        masteredCount: mathMastered
+      },
+      nature: {
+        completedDays: natureDays,
+        daysCompleted: natureDays,
+        quizCount: natureDays,
+        avgScore: natureScoreAvg,
+        totalWrong: natureWrongTotal,
+        wrongCount: natureWrongTotal,
+        masteredWrong: natureMastered,
+        masteredCount: natureMastered
+      },
+      social: {
+        completedDays: socialDays,
+        daysCompleted: socialDays,
+        quizCount: socialDays,
+        avgScore: socialScoreAvg,
+        totalWrong: socialWrongTotal,
+        wrongCount: socialWrongTotal,
+        masteredWrong: socialMastered,
+        masteredCount: socialMastered
+      }
+    };
+
     res.json({
       success: true,
+      summary: summaryPayload,
       data: {
         childId: child.id,
         nickname: child.nickname,
         gradeLevel: child.grade_level,
         seatNo: child.linked_seat_no,
-        stats: {
-          english: {
-            daysCompleted: Number(engProgress[0]?.days_count || 0),
-            totalQuizzes: Number(engQuizzes[0]?.total_quizzes || 0),
-            avgScore: Math.round(Number(engQuizzes[0]?.avg_score || 0))
-          },
-          math: {
-            totalQuizzes: Number(mathLogs[0]?.total_quizzes || 0),
-            avgScore: Math.round(Number(mathLogs[0]?.avg_score || 0)),
-            wrongCount: Number(mathWrong[0]?.wrong_count || 0),
-            masteredCount: Number(mathWrong[0]?.mastered_count || 0)
-          },
-          nature: {
-            daysCompleted: Number(natureProgress[0]?.days_count || 0),
-            avgScore: Math.round(Number(natureProgress[0]?.avg_score || 0)),
-            wrongCount: Number(natureWrong[0]?.wrong_count || 0),
-            masteredCount: Number(natureWrong[0]?.mastered_count || 0)
-          },
-          social: {
-            daysCompleted: Number(socialProgress[0]?.days_count || 0),
-            avgScore: Math.round(Number(socialProgress[0]?.avg_score || 0)),
-            wrongCount: Number(socialWrong[0]?.wrong_count || 0),
-            masteredCount: Number(socialWrong[0]?.mastered_count || 0)
-          }
-        }
+        stats: summaryPayload,
+        summary: summaryPayload
       }
     });
   } catch (err) {
