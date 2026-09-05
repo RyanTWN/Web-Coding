@@ -465,8 +465,12 @@ function findChapter(publisher, title) {
   return (CURRICULUM[publisher] || []).find(item => item[0] === title);
 }
 
-// 每日 20 題嚴格架構：核心基礎 12 題 + 統整加深 6 題 + 素養挑戰 2 題（同輪嚴格去重）
-function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
+function normalizePrompt(text = '') {
+  return String(text).trim().replace(/\s+/g, '');
+}
+
+// 每日 20 題嚴格架構：核心基礎 12 題 + 統整加深 6 題 + 素養挑戰 2 題（同輪嚴格去重，支援跨回合排除已出題）
+function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1, excludePrompts = []) {
   const chapter = findChapter(publisher, chapterTitle);
   const publisherSlug = { '康軒': 'knsh', '南一': 'nani', '翰林': 'hanlin' }[publisher] || 'soc';
   const chapterNo = (CURRICULUM[publisher] || []).findIndex(item => item[0] === chapterTitle) + 1 || 1;
@@ -474,8 +478,46 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
   const allKnownTopics = Object.keys(FACTS);
 
   const seedPrefix = `${currentUser?.seatNo || 1}-${todayKey}-${attemptNo}-${publisherSlug}-${chapterNo}`;
-  const seenPrompts = new Set();
+  const seenNormPrompts = new Set();
+  const seenIds = new Set();
+  const excludedNormPrompts = new Set(
+    (Array.isArray(excludePrompts) ? excludePrompts : [])
+      .map(p => normalizePrompt(typeof p === 'string' ? p : p?.question))
+      .filter(Boolean)
+  );
   const selectedQuestions = [];
+
+  // 輔助函式：自候選題庫中優先選取「未出過（未在 excluded 中）」的題目
+  function pickFromPool(pool, targetCount, kindTag, seedSuffix) {
+    const unasked = [];
+    const previouslyAsked = [];
+    for (const item of pool) {
+      const norm = normalizePrompt(item.question);
+      if (excludedNormPrompts.has(norm)) {
+        previouslyAsked.push(item);
+      } else {
+        unasked.push(item);
+      }
+    }
+    const shuffledUnasked = seededShuffle(unasked, `${seedPrefix}-${seedSuffix}-unasked`);
+    const shuffledPrev = seededShuffle(previouslyAsked, `${seedPrefix}-${seedSuffix}-prev`);
+    const combined = [...shuffledUnasked, ...shuffledPrev];
+
+    let count = 0;
+    for (const item of combined) {
+      if (count >= targetCount) break;
+      const norm = normalizePrompt(item.question);
+      if (!seenNormPrompts.has(norm) && !seenIds.has(item.id)) {
+        seenNormPrompts.add(norm);
+        seenIds.add(item.id);
+        selectedQuestions.push({
+          ...item,
+          options: seededShuffle(item.rawOptions, `${seedPrefix}-${item.id}`)
+        });
+        count++;
+      }
+    }
+  }
 
   // 1. 核心基礎 12 題
   let corePool = primaryTopics.flatMap(topic =>
@@ -499,7 +541,7 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
         const [prompt, correct, ...rest] = fact;
         const explanation = rest.pop();
         return {
-          id: `soc-${publisherSlug}-${chapterNo}-core-${topic}-${index + 1}`,
+          id: `soc-${publisherSlug}-${chapterNo}-core-fb-${topic}-${index + 1}`,
           kind: '核心基礎',
           type: 'choice',
           question: prompt,
@@ -511,17 +553,7 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
     );
     corePool = [...corePool, ...fallbackCore];
   }
-  const shuffledCore = seededShuffle(corePool, `${seedPrefix}-core`);
-  for (const item of shuffledCore) {
-    if (selectedQuestions.length >= 12) break;
-    if (!seenPrompts.has(item.question)) {
-      seenPrompts.add(item.question);
-      selectedQuestions.push({
-        ...item,
-        options: seededShuffle(item.rawOptions, `${seedPrefix}-${item.id}`)
-      });
-    }
-  }
+  pickFromPool(corePool, 12, '核心基礎', 'core');
 
   // 2. 統整加深 6 題
   let integPool = primaryTopics.flatMap(topic =>
@@ -538,7 +570,7 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
   if (integPool.length < 6) {
     const fallbackInteg = allKnownTopics.flatMap(topic =>
       (INTEGRATION_FACTS[topic] || []).map((item, index) => ({
-        id: `soc-${publisherSlug}-${chapterNo}-integ-${topic}-${index + 1}`,
+        id: `soc-${publisherSlug}-${chapterNo}-integ-fb-${topic}-${index + 1}`,
         kind: '統整加深',
         type: item.type || 'cloze',
         question: item.prompt,
@@ -549,19 +581,7 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
     );
     integPool = [...integPool, ...fallbackInteg];
   }
-  const shuffledInteg = seededShuffle(integPool, `${seedPrefix}-integ`);
-  let integCount = 0;
-  for (const item of shuffledInteg) {
-    if (integCount >= 6) break;
-    if (!seenPrompts.has(item.question)) {
-      seenPrompts.add(item.question);
-      selectedQuestions.push({
-        ...item,
-        options: seededShuffle(item.rawOptions, `${seedPrefix}-${item.id}`)
-      });
-      integCount++;
-    }
-  }
+  pickFromPool(integPool, 6, '統整加深', 'integ');
 
   // 3. 素養挑戰 2 題
   let compPool = primaryTopics.flatMap(topic =>
@@ -578,7 +598,7 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
   if (compPool.length < 2) {
     const fallbackComp = allKnownTopics.flatMap(topic =>
       (COMPETENCY_FACTS[topic] || []).map((item, index) => ({
-        id: `soc-${publisherSlug}-${chapterNo}-comp-${topic}-${index + 1}`,
+        id: `soc-${publisherSlug}-${chapterNo}-comp-fb-${topic}-${index + 1}`,
         kind: '素養挑戰',
         type: item.type || 'sequence',
         question: item.prompt,
@@ -589,19 +609,7 @@ function buildDailyQuestions(publisher, chapterTitle, attemptNo = 1) {
     );
     compPool = [...compPool, ...fallbackComp];
   }
-  const shuffledComp = seededShuffle(compPool, `${seedPrefix}-comp`);
-  let compCount = 0;
-  for (const item of shuffledComp) {
-    if (compCount >= 2) break;
-    if (!seenPrompts.has(item.question)) {
-      seenPrompts.add(item.question);
-      selectedQuestions.push({
-        ...item,
-        options: seededShuffle(item.rawOptions, `${seedPrefix}-${item.id}`)
-      });
-      compCount++;
-    }
-  }
+  pickFromPool(compPool, 2, '素養挑戰', 'comp');
 
   return selectedQuestions.slice(0, DAILY_TOTAL);
 }
@@ -834,14 +842,20 @@ async function syncState(completed) {
   return result;
 }
 
+let todaySeenSocialPrompts = [];
+
 async function startOrResume() {
   if (dailyState?.completed) return renderResult();
   if (!dailyState) {
     const chapter = document.getElementById('chapter-select').value;
     const attemptNo = Number(todaySummary.nextAttemptNo || 1);
+    const questions = buildDailyQuestions(selectedPublisher, chapter, attemptNo, todaySeenSocialPrompts);
+    questions.forEach(q => {
+      if (q?.question) todaySeenSocialPrompts.push(q.question);
+    });
     dailyState = {
       date: todayKey, attemptNo, publisher: selectedPublisher, chapter,
-      questions: buildDailyQuestions(selectedPublisher, chapter, attemptNo),
+      questions,
       currentIndex: 0, answers: [], wrongQuestions: [], completed: false, score: 0
     };
     try {

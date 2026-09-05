@@ -195,16 +195,23 @@ const TOPIC_GENERATORS = {
     },
     // 1-6 概念選擇題：互質觀念
     () => {
-      const pairs = [
-        { a: 8, b: 9, isCoprime: true },
-        { a: 15, b: 28, isCoprime: true },
-        { a: 12, b: 18, isCoprime: false },
-        { a: 14, b: 21, isCoprime: false }
+      const coprimeCandidates = [
+        { a: 8, b: 9 }, { a: 15, b: 28 }, { a: 14, b: 25 }, { a: 21, b: 22 },
+        { a: 9, b: 16 }, { a: 20, b: 21 }, { a: 25, b: 36 }, { a: 27, b: 35 },
+        { a: 16, b: 33 }, { a: 18, b: 35 }, { a: 11, b: 24 }, { a: 13, b: 30 }
       ];
-      const correctPair = randomChoice(pairs.filter(p => p.isCoprime));
-      const wrongPairs = pairs.filter(p => !p.isCoprime);
-      const options = [`${correctPair.a} 和 ${correctPair.b}`, `${wrongPairs[0].a} 和 ${wrongPairs[0].b}`, `${wrongPairs[1].a} 和 ${wrongPairs[1].b}`, "10 和 25"].sort(() => Math.random() - 0.5);
+      const nonCoprimeCandidates = [
+        { a: 12, b: 18 }, { a: 14, b: 21 }, { a: 15, b: 25 }, { a: 20, b: 30 },
+        { a: 16, b: 24 }, { a: 18, b: 27 }, { a: 22, b: 33 }, { a: 26, b: 39 },
+        { a: 15, b: 35 }, { a: 24, b: 36 }
+      ];
+      const correctPair = randomChoice(coprimeCandidates);
+      const wrongPool = [...nonCoprimeCandidates].sort(() => Math.random() - 0.5);
+      const wrong1 = wrongPool[0];
+      const wrong2 = wrongPool[1];
+      const wrong3 = wrongPool[2];
       const ans = `${correctPair.a} 和 ${correctPair.b}`;
+      const options = [ans, `${wrong1.a} 和 ${wrong1.b}`, `${wrong2.a} 和 ${wrong2.b}`, `${wrong3.a} 和 ${wrong3.b}`].sort(() => Math.random() - 0.5);
       return {
         id: makeId('coprime_c'),
         type: 'choice',
@@ -217,12 +224,20 @@ const TOPIC_GENERATORS = {
     },
     // 1-7 質因數分解
     () => {
-      const primes = [2, 3, 5, 7];
-      const p1 = randomChoice(primes);
-      const p2 = randomChoice([11, 13, 17]);
+      const primes1 = [2, 3, 5, 7, 11];
+      const primes2 = [7, 11, 13, 17, 19, 23];
+      const p1 = randomChoice(primes1);
+      let p2 = randomChoice(primes2);
+      while (p1 === p2) p2 = randomChoice(primes2);
       const val = p1 * p2;
-      const ans = `${p1} × ${p2}`;
-      const options = [ans, `${p1} + ${p2}`, `1 × ${val}`, `${p1 * 2} × ${p2}`].sort(() => Math.random() - 0.5);
+      const ans = `${Math.min(p1, p2)} × ${Math.max(p1, p2)}`;
+      const wrongDistractors = [
+        `${p1} + ${p2}`,
+        `1 × ${val}`,
+        `${p1 * 2} × ${p2}`,
+        `${p1} × ${p2 * 2}`
+      ].sort(() => Math.random() - 0.5).slice(0, 3);
+      const options = [ans, ...wrongDistractors].sort(() => Math.random() - 0.5);
       return {
         id: makeId('prime_fac'),
         type: 'choice',
@@ -235,9 +250,9 @@ const TOPIC_GENERATORS = {
     },
     // 1-8 剪正方形紙片求數量
     () => {
-      const g = randomInt(3, 5);
-      const m1 = randomInt(3, 5);
-      const m2 = randomInt(2, 4);
+      const g = randomInt(3, 8);
+      const m1 = randomInt(3, 7);
+      const m2 = randomInt(2, 5);
       const len = g * m1, width = g * m2;
       const count = m1 * m2;
       return {
@@ -251,15 +266,37 @@ const TOPIC_GENERATORS = {
     },
     // 1-9 質數觀念題
     () => {
-      const options = ["2 是唯一的偶數質數", "所有奇數都是質數", "1 是質數也是合數", "9 是質數"].sort(() => Math.random() - 0.5);
+      const variations = [
+        {
+          q: '關於「質數」的敘述，下列何者正確？',
+          a: '2 是唯一的偶數質數',
+          wrongs: ['所有奇數都是質數', '1 是質數也是合數', '9 是質數'],
+          exp: '2 的因數只有 1 和 2，是質數且是唯一偶數質數。奇數 9 有因數 3 是合數，1 既不是質數也不是合數。'
+        },
+        {
+          q: '下列哪一個數字是「質數」？',
+          a: randomChoice(['29', '31', '37', '41', '43', '47']),
+          wrongs: ['27', '33', '39', '49', '51'],
+          exp: '質數是指大於 1 的整數中，除了 1 和該整數本身以外無法被其他正整數整除的數。'
+        },
+        {
+          q: '下列哪一個數字是「合數」？',
+          a: randomChoice(['51', '57', '87', '91', '93']),
+          wrongs: ['23', '29', '31', '43', '53'],
+          exp: '合數除了 1 和本身之外還有其他因數。例如 51 = 3 × 17，91 = 7 × 13。'
+        }
+      ];
+      const item = randomChoice(variations);
+      const chosenWrongs = item.wrongs.sort(() => Math.random() - 0.5).slice(0, 3);
+      const options = [item.a, ...chosenWrongs].sort(() => Math.random() - 0.5);
       return {
         id: makeId('prime_concept'),
         type: 'choice',
-        q: `關於「質數」的敘述，下列何者正確？`,
+        q: item.q,
         options,
-        a: "2 是唯一的偶數質數",
-        hint: `💡 提示：質數大於 1 且只有 1 和自己兩個因數；2 是質數且是唯一的偶數質數。`,
-        explanation: `📝 詳解：\n2 的因數只有 1 和 2，是質數且是唯一偶數質數。奇數 9 有因數 3 是合數，1 既不是質數也不是合數。`
+        a: item.a,
+        hint: `💡 提示：質數大於 1 且只有 1 和自己兩個因數；合數則有 3 個以上的因數。`,
+        explanation: `📝 詳解：\n${item.exp}`
       };
     },
     // 1-10 積木排正方形（最小公倍數）
@@ -763,10 +800,10 @@ const TOPIC_GENERATORS = {
     },
     // 5-4 半圓周長陷阱題
     () => {
-      const r = 10;
-      const arc = 10 * 3.14; // 半圓弧長
-      const d = 20; // 直徑
-      const ans = arc + d; // 51.4
+      const r = randomChoice([5, 10, 15, 20]);
+      const arc = Number((r * 3.14).toFixed(2)); // 半圓弧長 = 2*r*3.14/2 = r*3.14
+      const d = r * 2; // 直徑
+      const ans = Number((arc + d).toFixed(2));
       return {
         id: makeId('semi_circle_p'),
         type: 'input',
@@ -776,43 +813,55 @@ const TOPIC_GENERATORS = {
         explanation: `📝 詳解：\n1. 半圓弧長 = 2 × ${r} × 3.14 ÷ 2 = ${arc} 公分。\n2. 加上直徑：${arc} + ${d} = ${ans} 公分。`
       };
     },
-    // 5-5 90度扇形弧長
+    // 5-5 扇形弧長
     () => {
-      const r = 12;
-      const arc = Number((2 * r * 3.14 * 0.25).toFixed(2));
+      const r = randomChoice([6, 8, 10, 12, 16, 20]);
+      const deg = randomChoice([45, 60, 90, 120, 180]);
+      const frac = deg / 360;
+      const arc = Number((2 * r * 3.14 * frac).toFixed(2));
       return {
         id: makeId('sector_arc'),
         type: 'input',
-        q: `半徑為 ${r} 公分、圓心角為 90 度的扇形，其「弧長」約是多少公分？ (圓周率以 3.14 計)`,
+        q: `半徑為 ${r} 公分、圓心角為 ${deg} 度的扇形，其「弧長」約是多少公分？ (圓周率以 3.14 計)`,
         a: String(arc),
-        hint: `💡 提示：90度占整圓的 90/360 = 1/4。扇形弧長 = 圓周長 × 1/4。`,
-        explanation: `📝 詳解：\n圓周長 = 2 × ${r} × 3.14 = ${2 * r * 3.14} 公分。弧長 = ${2 * r * 3.14} × (90/360) = ${arc} 公分。`
+        hint: `💡 提示：${deg}度占整圓的 ${deg}/360。扇形弧長 = 圓周長 × (${deg}/360)。`,
+        explanation: `📝 詳解：\n圓周長 = 2 × ${r} × 3.14 = ${Number((2 * r * 3.14).toFixed(2))} 公分。弧長 = ${Number((2 * r * 3.14).toFixed(2))} × (${deg}/360) = ${arc} 公分。`
       };
     },
     // 5-6 扇形面積計算
     () => {
-      const r = 10;
-      const area = Number((r * r * 3.14 * 0.25).toFixed(2));
+      const r = randomChoice([4, 6, 8, 10, 12]);
+      const deg = randomChoice([60, 90, 120, 180]);
+      const frac = deg / 360;
+      const area = Number((r * r * 3.14 * frac).toFixed(2));
       return {
         id: makeId('sector_area'),
         type: 'input',
-        q: `半徑為 ${r} 公分、圓心角為 90 度的扇形，其「面積」約是多少平方公分？ (圓周率以 3.14 計)`,
+        q: `半徑為 ${r} 公分、圓心角為 ${deg} 度的扇形，其「面積」約是多少平方公分？ (圓周率以 3.14 計)`,
         a: String(area),
         hint: `💡 提示：扇形面積 = 圓面積 × (圓心角 / 360)。`,
-        explanation: `📝 詳解：\n整圓面積 = ${r} × ${r} × 3.14 = 314 平方公分。扇形面積 = 314 × (90/360) = ${area} 平方公分。`
+        explanation: `📝 詳解：\n整圓面積 = ${r} × ${r} × 3.14 = ${Number((r * r * 3.14).toFixed(2))} 平方公分。扇形面積 = ${Number((r * r * 3.14).toFixed(2))} × (${deg}/360) = ${area} 平方公分。`
       };
     },
     // 5-7 圓心角概念選擇題
     () => {
-      const options = ["60 度", "90 度", "120 度", "180 度"].sort(() => Math.random() - 0.5);
+      const item = randomChoice([
+        { fracStr: "二分之一", deg: 180, frac: 0.5 },
+        { fracStr: "三分之一", deg: 120, frac: 1/3 },
+        { fracStr: "四分之一", deg: 90, frac: 0.25 },
+        { fracStr: "五分之一", deg: 72, frac: 0.2 },
+        { fracStr: "六分之一", deg: 60, frac: 1/6 },
+        { fracStr: "八分之一", deg: 45, frac: 0.125 }
+      ]);
+      const options = [`${item.deg} 度`, `${item.deg + 30} 度`, `${item.deg - 20 > 0 ? item.deg - 20 : item.deg + 60} 度`, `${item.deg * 2 > 360 ? 30 : item.deg + 45} 度`].sort(() => Math.random() - 0.5);
       return {
         id: makeId('sector_deg_c'),
         type: 'choice',
-        q: `一個扇形的面積是同半徑圓面積的「六分之一」，請問這個扇形的圓心角是多少度？`,
+        q: `一個扇形的面積是同半徑圓面積的「${item.fracStr}」，請問這個扇形的圓心角是多少度？`,
         options,
-        a: "60 度",
-        hint: `💡 提示：整圓圓心角為 360 度，乘以 1/6。`,
-        explanation: `📝 詳解：\n圓心角 = 360° × (1/6) = 60°。`
+        a: `${item.deg} 度`,
+        hint: `💡 提示：整圓圓心角為 360 度，乘以所占比例。`,
+        explanation: `📝 詳解：\n圓心角 = 360° × (${item.fracStr}) = ${item.deg}°。`
       };
     },
     // 5-8 圓周長反求直徑
@@ -830,7 +879,14 @@ const TOPIC_GENERATORS = {
     },
     // 5-9 圓環面積計算
     () => {
-      const rOuter = 10, rInner = 5;
+      const pair = randomChoice([
+        { rOuter: 10, rInner: 5 },
+        { rOuter: 10, rInner: 6 },
+        { rOuter: 8, rInner: 4 },
+        { rOuter: 6, rInner: 3 },
+        { rOuter: 12, rInner: 8 }
+      ]);
+      const { rOuter, rInner } = pair;
       const ans = Number(((rOuter * rOuter - rInner * rInner) * 3.14).toFixed(2));
       return {
         id: makeId('ring_area'),
@@ -838,7 +894,7 @@ const TOPIC_GENERATORS = {
         q: `大圓半徑為 ${rOuter} 公分，小圓半徑為 ${rInner} 公分，兩圓同心，請問「圓環」的面積約是多少平方公分？ (圓周率以 3.14 計)`,
         a: String(ans),
         hint: `💡 提示：圓環面積 = 大圓面積 - 小圓面積 = (${rOuter}² - ${rInner}²) × 3.14。`,
-        explanation: `📝 詳解：\n(${rOuter} × ${rOuter} - ${rInner} × ${rInner}) × 3.14 = (100 - 25) × 3.14 = 75 × 3.14 = ${ans} 平方公分。`
+        explanation: `📝 詳解：\n(${rOuter} × ${rOuter} - ${rInner} × ${rInner}) × 3.14 = (${rOuter * rOuter} - ${rInner * rInner}) × 3.14 = ${rOuter * rOuter - rInner * rInner} × 3.14 = ${ans} 平方公分。`
       };
     },
     // 5-10 圓周率定義觀念題
@@ -1752,8 +1808,8 @@ function generateMathQuestion(unit, index = 0) {
   return q;
 }
 
-// 產生整套每日練習題（固定 10 題，嚴格保證題型不重複、題目文字不重複）
-function buildDailyMathQuestions(unit, count = 10) {
+// 產生整套每日練習題（固定 10 題，嚴格保證題型不重複、題目文字不重複，可傳入既有題幹避免跨回合重複）
+function buildDailyMathQuestions(unit, count = 10, excludeQuestionTexts = []) {
   const generators = getGeneratorsForUnit(unit);
   // 洗牌可用的 generators，保證每輪測驗子題型順序隨機
   const shuffledGenerators = [...generators].sort(() => Math.random() - 0.5);
@@ -1761,27 +1817,59 @@ function buildDailyMathQuestions(unit, count = 10) {
   const list = [];
   const seenQuestionTexts = new Set();
   const seenAnswerSignatures = new Set();
+  const externalExcluded = new Set(
+    (Array.isArray(excludeQuestionTexts) ? excludeQuestionTexts : [])
+      .map(t => typeof t === 'string' ? t.trim() : (t?.q ? String(t.q).trim() : ''))
+      .filter(Boolean)
+  );
 
   for (let i = 0; i < count; i++) {
-    // 依序挑選不同的 generator，保證同一輪 10 題具有 10 種完全相異的題型考法
-    const gen = shuffledGenerators[i % shuffledGenerators.length];
+    // 依序挑選不同的主要 generator，保證同一輪 10 題具有 10 種完全相異的題型考法
+    let gen = shuffledGenerators[i % shuffledGenerators.length];
     let q = null;
     let attempts = 0;
 
-    // 重試生成，確保題目題幹與數值絕對唯一不重複
-    while (attempts < 20) {
-      q = gen();
-      q.unit = unit;
-      const signature = `${q.type}_${q.a}_${q.q.slice(0, 15)}`;
-      if (!seenQuestionTexts.has(q.q) && !seenAnswerSignatures.has(signature)) {
-        seenQuestionTexts.add(q.q);
-        seenAnswerSignatures.add(signature);
-        break;
+    // 重試生成，確保題目題幹絕對唯一不重複，且優先避開外部排除題幹
+    while (attempts < 100) {
+      const candidate = gen();
+      candidate.unit = unit;
+      const promptText = candidate.q.trim();
+
+      // 檢查同輪內部是否已出過相同題幹
+      if (!seenQuestionTexts.has(promptText)) {
+        // 若外部未排除，或是嘗試超過 50 次放寬外部限制，但同輪絕對不可重複
+        if (!externalExcluded.has(promptText) || attempts >= 50) {
+          q = candidate;
+          break;
+        }
       }
       attempts++;
+      // 若原 generator 重複次數過多，嘗試使用該單元其他 generator 換題
+      if (attempts % 10 === 0) {
+        gen = shuffledGenerators[(i + Math.floor(attempts / 10)) % shuffledGenerators.length];
+      }
     }
 
-    list.push(q);
+    // 若極端情境 100 次仍未能產生不重複題目（保底安全防線）
+    if (!q) {
+      for (const fallbackGen of shuffledGenerators) {
+        for (let k = 0; k < 20; k++) {
+          const fb = fallbackGen();
+          fb.unit = unit;
+          const fbText = fb.q.trim();
+          if (!seenQuestionTexts.has(fbText)) {
+            q = fb;
+            break;
+          }
+        }
+        if (q) break;
+      }
+    }
+
+    if (q) {
+      seenQuestionTexts.add(q.q.trim());
+      list.push(q);
+    }
   }
 
   return list;

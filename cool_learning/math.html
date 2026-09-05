@@ -433,10 +433,16 @@
       showView('view-setup');
     }
 
+    // 記錄今日已出過的數學題目題幹，避免跨回合重複
+    let todaySeenMathQuestionTexts = [];
+
     // 開始測驗
     function startMathQuiz() {
       const unit = document.getElementById('unit-select').value;
-      dailyQuestions = buildDailyMathQuestions(unit, 10);
+      dailyQuestions = buildDailyMathQuestions(unit, 10, todaySeenMathQuestionTexts);
+      dailyQuestions.forEach(q => {
+        if (q && q.q) todaySeenMathQuestionTexts.push(q.q);
+      });
       currentIndex = 0;
       attemptTrials = {};
       questionScores = [];
