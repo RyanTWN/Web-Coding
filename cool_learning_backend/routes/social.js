@@ -111,7 +111,7 @@ module.exports = function createSocialRouter({ pool, requireAuth, requireOwnSeat
       return res.status(400).json({ success: false, error: '社會科進度資料格式錯誤' });
     }
     const questionIds = questions.map(item => String(item?.id || ''));
-    if (new Set(questionIds).size !== 20 || questionIds.some(id => !/^[a-z0-9-]{3,100}$/.test(id))) {
+    if (new Set(questionIds).size !== 20 || questionIds.some(id => !/^[a-z0-9_-]{3,100}$/.test(id))) {
       return res.status(400).json({ success: false, error: '社會科題組識別碼錯誤' });
     }
     let connection;
@@ -181,10 +181,12 @@ module.exports = function createSocialRouter({ pool, requireAuth, requireOwnSeat
 
   // 錯題複習掌握提交
   router.post('/social-review', requireAuth, requireOwnSeat, async (req, res) => {
-    const seatNo = String(req.body?.seatNo || '').trim();
-    const questionIds = Array.isArray(req.body?.questionIds)
-      ? [...new Set(req.body.questionIds.map(value => String(value)).filter(value => /^[a-z0-9-]{3,100}$/.test(value)))].slice(0, 50)
-      : [];
+    const rawList = Array.isArray(req.body?.questionIds)
+      ? req.body.questionIds
+      : req.body?.questionId
+        ? [req.body.questionId]
+        : [];
+    const questionIds = [...new Set(rawList.map(value => String(value)).filter(value => /^[a-z0-9_-]{3,100}$/.test(value)))].slice(0, 50);
     if (!seatNo || questionIds.length === 0) {
       return res.status(400).json({ success: false, error: '缺少錯題複習資料' });
     }

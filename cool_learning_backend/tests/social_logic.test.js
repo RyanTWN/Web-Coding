@@ -69,6 +69,7 @@ for (const [publisher, chapters] of Object.entries(CURRICULUM)) {
       assert.strictEqual(question.options.length, 4, '每題應有四個選項');
       assert.ok(question.options.includes(question.answer), '正確答案必須存在於選項中');
       assert.ok(question.explanation, '每題必須提供解析');
+      assert.ok(/^[a-z0-9_-]{3,100}$/.test(question.id), `${question.id} 必須符合識別碼格式規範`);
     });
   }
 }

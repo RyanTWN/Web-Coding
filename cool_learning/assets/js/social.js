@@ -759,23 +759,49 @@ async function answerDailyQuestion(option, selectedButton) {
   const feedback = document.getElementById('feedback');
   feedback.className = `mt-5 rounded-2xl p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
   feedback.innerHTML = `<strong>${correct ? '答對了！' : `正確答案：${question.answer}`}</strong><br>${question.explanation}`;
-  document.getElementById('btn-next').classList.remove('hidden');
-  await syncState(false);
+  
+  const btnNext = document.getElementById('btn-next');
+  if (btnNext) {
+    btnNext.disabled = false;
+    btnNext.classList.remove('hidden');
+  }
+
+  try {
+    await syncState(false);
+  } catch (err) {
+    console.warn('社會科答題進度背景同步失敗:', err);
+  }
 }
 
 async function advanceQuestion() {
+  const btnNext = document.getElementById('btn-next');
+  if (btnNext) {
+    btnNext.disabled = true;
+    btnNext.classList.add('hidden');
+  }
+
   dailyState.currentIndex += 1;
   if (dailyState.currentIndex >= DAILY_TOTAL) return finishQuiz();
-  await syncState(false);
+
   renderQuestion();
+
+  try {
+    await syncState(false);
+  } catch (err) {
+    console.warn('社會科進度背景同步失敗:', err);
+  }
 }
 
 async function finishQuiz() {
   dailyState.completed = true;
   dailyState.currentIndex = DAILY_TOTAL;
   dailyState.score = Math.round(getCorrectCount() / DAILY_TOTAL * 100);
-  const result = await syncState(true);
-  todaySummary = result.todaySummary || todaySummary;
+  try {
+    const result = await syncState(true);
+    todaySummary = result.todaySummary || todaySummary;
+  } catch (err) {
+    console.warn('社會科完成狀態同步失敗:', err);
+  }
   history = [{ date: todayKey, ...todaySummary }, ...history.filter(item => item.date !== todayKey)];
   wrongBank = [...new Map([...wrongBank, ...dailyState.wrongQuestions].map(item => [item.id, item])).values()];
   const wrongCountEl = document.getElementById('wrong-count');
@@ -818,7 +844,11 @@ async function startOrResume() {
       questions: buildDailyQuestions(selectedPublisher, chapter, attemptNo),
       currentIndex: 0, answers: [], wrongQuestions: [], completed: false, score: 0
     };
-    await syncState(false);
+    try {
+      await syncState(false);
+    } catch (err) {
+      console.warn('社會科題組初始同步失敗:', err);
+    }
   }
   showView('view-quiz');
   renderQuestion();
@@ -1051,7 +1081,7 @@ async function answerReviewQuestion(option, selectedButton) {
   if (correct) {
     await socialFetch('/social-review', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seatNo: currentUser.seatNo, questionId: item.id })
+      body: JSON.stringify({ seatNo: currentUser.seatNo, questionIds: [item.id], questionId: item.id })
     }).catch(() => null);
     wrongBank = wrongBank.filter(q => q.id !== item.id);
     const wrongCountEl = document.getElementById('wrong-count');
@@ -1060,10 +1090,19 @@ async function answerReviewQuestion(option, selectedButton) {
   const feedback = document.getElementById('review-feedback');
   feedback.className = `mt-5 rounded-2xl p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
   feedback.innerHTML = `<strong>${correct ? '答對了！已移出錯題清單' : `正確答案：${item.answer}`}</strong><br>${item.explanation}`;
-  document.getElementById('review-next').classList.remove('hidden');
+  const reviewNext = document.getElementById('review-next');
+  if (reviewNext) {
+    reviewNext.disabled = false;
+    reviewNext.classList.remove('hidden');
+  }
 }
 
 function advanceReview() {
+  const reviewNext = document.getElementById('review-next');
+  if (reviewNext) {
+    reviewNext.disabled = true;
+    reviewNext.classList.add('hidden');
+  }
   reviewIndex++;
   if (reviewIndex >= reviewQuestions.length) {
     showToast('錯題複習完成！', 'emerald');
