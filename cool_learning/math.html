@@ -82,8 +82,45 @@
         </div>
         <select id="unit-select" class="w-full p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 font-bold text-slate-700 focus:outline-none focus:border-emerald-500 appearance-none shadow-sm transition-colors"></select>
         
-        <div id="unit-summary" class="mt-4 bg-emerald-50/80 border border-emerald-100 rounded-2xl p-4 text-xs leading-relaxed text-emerald-900 font-medium">
-          💡 包含數值計算與概念選擇題，算錯第 1 次會提供小提示，算錯第 2 次將展開詳細推導步驟！
+        <div class="mt-5">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-sliders text-emerald-500 mr-1.5"></i>3. 選練習模式</h2>
+            <span class="text-[11px] text-slate-400 font-medium">每日綜合或獨立專項</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" data-mode="mixed" class="mode-btn py-3 px-2 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-layer-group text-sm"></i>
+              <span>每日綜合</span>
+              <small class="text-[10px] font-normal opacity-80">5基 + 3挑 + 2素</small>
+            </button>
+            <button type="button" data-mode="easy" class="mode-btn py-3 px-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1">
+              <i class="fa-solid fa-leaf text-sm text-emerald-600"></i>
+              <span>基礎打底</span>
+              <small class="text-[10px] font-normal opacity-80">10 題簡單基礎</small>
+            </button>
+            <button type="button" data-mode="challenge" class="mode-btn py-3 px-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1">
+              <i class="fa-solid fa-fire text-sm text-amber-500"></i>
+              <span>進階挑戰</span>
+              <small class="text-[10px] font-normal opacity-80">10 題挑戰進階</small>
+            </button>
+            <button type="button" data-mode="competency" class="mode-btn py-3 px-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1">
+              <i class="fa-solid fa-compass text-sm text-purple-600"></i>
+              <span>素養特訓</span>
+              <small class="text-[10px] font-normal opacity-80">10 題情境素養</small>
+            </button>
+          </div>
+        </div>
+
+        <div id="unit-summary" class="mt-4 bg-emerald-50/80 border border-emerald-100 rounded-2xl p-4 text-xs leading-relaxed text-emerald-900 font-medium space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5 text-emerald-800">
+            <i class="fa-solid fa-layer-group"></i> <span id="mode-summary-title">10 題分層演練機制（由淺入深）：</span>
+          </div>
+          <div id="mode-summary-pills" class="flex flex-wrap items-center gap-2 pt-0.5">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-100/90 text-emerald-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
+            <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 3 題</span>
+            <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 2 題</span>
+          </div>
+          <p id="mode-summary-desc" class="text-slate-500 pt-1 text-[11px]">算錯第 1 次提供解題提示，第 2 次展開步驟推導詳解，助你徹底掌握！</p>
         </div>
 
         <button id="btn-start" class="w-full mt-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-lg shadow-lg hover:shadow-emerald-500/20 active:scale-[.99] transition-all flex items-center justify-center gap-2">
@@ -130,6 +167,7 @@
         <div class="flex items-center justify-between gap-3 mb-3">
           <div class="flex items-center gap-2">
             <span id="quiz-unit-badge" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black truncate">單元名稱</span>
+            <span id="quiz-mode-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">每日綜合</span>
             <span id="quiz-attempt-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">第 1 回合</span>
           </div>
           <span id="quiz-progress-text" class="text-sm font-black text-slate-500">第 1 / 10 題</span>
@@ -139,12 +177,17 @@
           <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300" style="width: 10%;"></div>
         </div>
 
-        <!-- 題目類型標籤與題幹 -->
-        <div class="flex items-center gap-2 mb-2">
-          <span id="question-type-tag" class="text-[11px] font-black tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">數值填空題</span>
+        <!-- 題目等級標籤、類型標籤與題幹 -->
+        <div class="flex items-center justify-between gap-2 mb-2.5">
+          <div class="flex items-center gap-2">
+            <span id="question-level-tag" class="text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-1">
+              <i class="fa-solid fa-leaf"></i> 簡單基礎
+            </span>
+            <span id="question-type-tag" class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">數值填空題</span>
+          </div>
           <span id="question-attempt-hint" class="text-[11px] font-bold text-slate-400">（有 2 次作答機會）</span>
         </div>
-        <div class="min-h-[110px] flex items-center justify-center bg-slate-50/80 rounded-2xl border-2 border-slate-100 p-6 mb-6">
+        <div id="question-container" class="min-h-[110px] flex items-center justify-center bg-slate-50/80 rounded-2xl border-2 border-slate-100 p-6 mb-6 transition-all duration-300">
           <h2 id="question-text" class="text-xl sm:text-2xl font-black text-slate-800 text-center leading-relaxed">題目載入中...</h2>
         </div>
 
@@ -232,6 +275,28 @@
           </div>
         </div>
 
+        <!-- 三等級向度掌握度 -->
+        <div class="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-left">
+          <small class="block text-[11px] font-black text-slate-500 mb-2 flex items-center justify-between">
+            <span><i class="fa-solid fa-chart-pie mr-1 text-emerald-500"></i>能力向度分層掌握度</span>
+            <span id="result-tier-summary" class="text-emerald-700 font-bold"></span>
+          </small>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs font-black">
+            <div class="p-2 rounded-xl bg-emerald-100/70 text-emerald-800 border border-emerald-200">
+              <span class="block text-[10px] font-bold text-emerald-700">簡單基礎</span>
+              <strong id="result-easy-ratio" class="text-base font-black">0/5</strong>
+            </div>
+            <div class="p-2 rounded-xl bg-amber-100/70 text-amber-800 border border-amber-200">
+              <span class="block text-[10px] font-bold text-amber-700">挑戰進階</span>
+              <strong id="result-chal-ratio" class="text-base font-black">0/3</strong>
+            </div>
+            <div class="p-2 rounded-xl bg-purple-100/70 text-purple-800 border border-purple-200">
+              <span class="block text-[10px] font-bold text-purple-700">情境素養</span>
+              <strong id="result-comp-ratio" class="text-base font-black">0/2</strong>
+            </div>
+          </div>
+        </div>
+
         <p id="result-summary-text" class="my-4 rounded-2xl bg-slate-50 py-3 text-xs font-bold text-slate-600">歷程已同步至雲端伺服器</p>
         
         <div class="space-y-3">
@@ -310,7 +375,12 @@
     // ==========================================
     // 數學天地 前端狀態機與 DOM 互動邏輯
     // ==========================================
+    const urlParams = new URLSearchParams(window.location.search);
     let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user'));
+    if (!currentUser && (urlParams.get('demo') === 'true' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      currentUser = { seatNo: 'DEMO01', name: '體驗同學', token: 'mock-token' };
+      sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+    }
     let selectedPub = "康軒";
     let dailyQuestions = [];
     let currentIndex = 0;
@@ -323,6 +393,80 @@
     let mathHistory = [];
     let calendarDate = new Date();
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+
+    // 模式選擇：'mixed' (每日綜合 5:3:2) | 'easy' (基礎打底 10 題) | 'challenge' (進階挑戰 10 題) | 'competency' (素養特訓 10 題)
+    let selectedMode = 'mixed';
+
+    const MODE_CONFIG = {
+      mixed: {
+        name: '每日綜合',
+        badgeClass: 'bg-emerald-100 text-emerald-800',
+        summaryTitle: '10 題分層演練機制（由淺入深）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-100/90 text-emerald-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
+          <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 3 題</span>
+          <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 2 題</span>
+        `,
+        desc: '每日精選 10 題：螺旋循序漸進，全方位驗收觀念理解與實際應用能力！',
+        btnText: (att) => `開始今日 10 題 (第 ${att} 回合)`
+      },
+      easy: {
+        name: '基礎打底',
+        badgeClass: 'bg-emerald-100 text-emerald-800',
+        summaryTitle: '基礎打底特訓（核心運算固化）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-100/90 text-emerald-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 10 題</span>
+        `,
+        desc: '專注核心觀念與運算基本功，排除繁複情境干擾，穩固單元第一道防線！',
+        btnText: (att) => `開始基礎打底 10 題 (第 ${att} 回合)`
+      },
+      challenge: {
+        name: '進階挑戰',
+        badgeClass: 'bg-amber-100 text-amber-800',
+        summaryTitle: '進階挑戰特訓（深層幾何與逆向思維）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 10 題</span>
+        `,
+        desc: '加強多步驟逆向思考、複合幾何與高階運算，鍛鍊靈活變通，突破思維盲點！',
+        btnText: (att) => `開始進階挑戰 10 題 (第 ${att} 回合)`
+      },
+      competency: {
+        name: '素養特訓',
+        badgeClass: 'bg-purple-100 text-purple-800',
+        summaryTitle: '情境素養特訓（長文情境與跨域實戰）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 10 題</span>
+        `,
+        desc: '結合生活應用與情境題幹，鍛鍊長篇文字閱讀理解、提煉關鍵條件與數學模型建立！',
+        btnText: (att) => `開始素養特訓 10 題 (第 ${att} 回合)`
+      }
+    };
+
+    function updateModeSelection(mode) {
+      selectedMode = mode;
+      const cfg = MODE_CONFIG[mode] || MODE_CONFIG.mixed;
+
+      // 更新按鈕樣式
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        const m = btn.getAttribute('data-mode');
+        if (m === mode) {
+          btn.className = "mode-btn py-3 px-2 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm ring-2 ring-emerald-400/30";
+        } else {
+          btn.className = "mode-btn py-3 px-2 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1";
+        }
+      });
+
+      // 更新說明方塊
+      const titleEl = document.getElementById('mode-summary-title');
+      const pillsEl = document.getElementById('mode-summary-pills');
+      const descEl = document.getElementById('mode-summary-desc');
+      const startBtnText = document.getElementById('btn-start-text');
+
+      if (titleEl) titleEl.textContent = cfg.summaryTitle;
+      if (pillsEl) pillsEl.innerHTML = cfg.pills;
+      if (descEl) descEl.textContent = cfg.desc;
+      if (startBtnText) startBtnText.textContent = cfg.btnText(attemptNo);
+    }
 
     function goToIndex() {
       window.location.href = 'index.html';
@@ -409,17 +553,29 @@
           }
           if (result.summary) {
             attemptNo = result.summary.nextAttemptNo || 1;
-            document.getElementById('btn-start-text').textContent = `開始今日 10 題 (第 ${attemptNo} 回合)`;
+            const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+            document.getElementById('btn-start-text').textContent = cfg.btnText(attemptNo);
             document.getElementById('quiz-attempt-badge').textContent = `第 ${attemptNo} 回合`;
           }
 
           // 如果今日有未完成題組
           if (result.data && !result.data.completed && Array.isArray(result.data.questions) && result.data.questions.length > 0) {
             selectedPub = result.data.publisher || selectedPub;
+            if (result.data.mode) {
+              updateModeSelection(result.data.mode);
+            }
             dailyQuestions = result.data.questions;
             currentIndex = result.data.currentIndex || 0;
             attemptNo = result.data.attemptNo || attemptNo;
             wrongQuestions = result.data.wrongQuestions || [];
+            
+            const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+            const modeBadge = document.getElementById('quiz-mode-badge');
+            if (modeBadge) {
+              modeBadge.textContent = cfg.name;
+              modeBadge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold ${cfg.badgeClass}`;
+            }
+
             document.getElementById('quiz-unit-badge').textContent = result.data.unit;
             document.getElementById('quiz-attempt-badge').textContent = `第 ${attemptNo} 回合`;
             showView('view-quiz');
@@ -439,7 +595,7 @@
     // 開始測驗
     function startMathQuiz() {
       const unit = document.getElementById('unit-select').value;
-      dailyQuestions = buildDailyMathQuestions(unit, 10, todaySeenMathQuestionTexts);
+      dailyQuestions = buildDailyMathQuestions(unit, 10, todaySeenMathQuestionTexts, selectedMode);
       dailyQuestions.forEach(q => {
         if (q && q.q) todaySeenMathQuestionTexts.push(q.q);
       });
@@ -447,6 +603,13 @@
       attemptTrials = {};
       questionScores = [];
       wrongQuestions = [];
+
+      const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+      const modeBadge = document.getElementById('quiz-mode-badge');
+      if (modeBadge) {
+        modeBadge.textContent = cfg.name;
+        modeBadge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold ${cfg.badgeClass}`;
+      }
 
       document.getElementById('quiz-unit-badge').textContent = unit;
       document.getElementById('quiz-attempt-badge').textContent = `第 ${attemptNo} 回合`;
@@ -460,9 +623,30 @@
       const q = dailyQuestions[currentIndex];
       if (!q) return;
 
-      document.getElementById('quiz-progress-text').textContent = `第 ${currentIndex + 1} / 10 題`;
+      const level = q.level || 'easy';
+      const levelName = q.kind || (level === 'easy' ? '簡單基礎' : (level === 'challenge' ? '挑戰進階' : '情境素養'));
+
+      document.getElementById('quiz-progress-text').textContent = `第 ${currentIndex + 1} / 10 題 (${levelName})`;
       document.getElementById('quiz-progress-bar').style.width = `${((currentIndex + 1) / 10) * 100}%`;
       document.getElementById('question-text').textContent = q.q;
+
+      // 設置等級徽章與情境背景
+      const levelTag = document.getElementById('question-level-tag');
+      const qContainer = document.getElementById('question-container');
+
+      if (level === 'easy') {
+        levelTag.className = 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-1';
+        levelTag.innerHTML = '<i class="fa-solid fa-leaf"></i> 簡單基礎';
+        qContainer.className = 'min-h-[110px] flex items-center justify-center bg-slate-50/80 rounded-2xl border-2 border-slate-100 p-6 mb-6 transition-all duration-300';
+      } else if (level === 'challenge') {
+        levelTag.className = 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-amber-50 text-amber-700 border-amber-300 flex items-center gap-1';
+        levelTag.innerHTML = '<i class="fa-solid fa-fire"></i> 挑戰進階';
+        qContainer.className = 'min-h-[110px] flex items-center justify-center bg-amber-50/30 rounded-2xl border-2 border-amber-200/80 p-6 mb-6 transition-all duration-300';
+      } else if (level === 'competency') {
+        levelTag.className = 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-purple-50 text-purple-700 border-purple-300 flex items-center gap-1 shadow-sm';
+        levelTag.innerHTML = '<i class="fa-solid fa-compass"></i> 情境素養';
+        qContainer.className = 'min-h-[110px] flex items-center justify-center bg-purple-50/40 rounded-2xl border-2 border-purple-200/80 p-6 mb-6 transition-all duration-300';
+      }
 
       // 隱藏提示與詳解
       document.getElementById('hint-card').classList.add('hidden');
@@ -574,10 +758,58 @@
       const correctedCount = questionScores.filter(s => s === 6).length;
       const wrongCount = wrongQuestions.length;
 
-      document.getElementById('result-attempt-text').textContent = `今日第 ${attemptNo} 回合完成`;
+      const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+      document.getElementById('result-attempt-text').textContent = `今日第 ${attemptNo} 回合完成・${cfg.name}`;
       document.getElementById('result-score').textContent = finalScore;
       document.getElementById('result-first-correct').textContent = `${firstCorrectCount} 題`;
       document.getElementById('result-wrong-count').textContent = `${wrongCount} 題`;
+
+      // 三等級能力向度成果計算
+      const easyIndices = dailyQuestions.map((q, idx) => q.level === 'easy' ? idx : -1).filter(i => i !== -1);
+      const chalIndices = dailyQuestions.map((q, idx) => q.level === 'challenge' ? idx : -1).filter(i => i !== -1);
+      const compIndices = dailyQuestions.map((q, idx) => q.level === 'competency' ? idx : -1).filter(i => i !== -1);
+
+      const easyCorrect = easyIndices.filter(i => (questionScores[i] || 0) > 0).length;
+      const chalCorrect = chalIndices.filter(i => (questionScores[i] || 0) > 0).length;
+      const compCorrect = compIndices.filter(i => (questionScores[i] || 0) > 0).length;
+
+      document.getElementById('result-easy-ratio').textContent = `${easyCorrect} / ${easyIndices.length}`;
+      document.getElementById('result-chal-ratio').textContent = `${chalCorrect} / ${chalIndices.length}`;
+      document.getElementById('result-comp-ratio').textContent = `${compCorrect} / ${compIndices.length}`;
+
+      const tierSummaryEl = document.getElementById('result-tier-summary');
+      if (selectedMode === 'competency') {
+        if (compCorrect === 10) {
+          tierSummaryEl.textContent = '🏆 滿分！情境閱讀與解題能力登峰造極！';
+        } else if (compCorrect >= 7) {
+          tierSummaryEl.textContent = '🌟 素養表現亮眼，情境邏輯敏銳！';
+        } else {
+          tierSummaryEl.textContent = '💪 繼續加油！多讀詳解熟悉情境關鍵字';
+        }
+      } else if (selectedMode === 'challenge') {
+        if (chalCorrect === 10) {
+          tierSummaryEl.textContent = '🏆 滿分！高階逆向思維完全通透！';
+        } else if (chalCorrect >= 7) {
+          tierSummaryEl.textContent = '🔥 挑戰進階實力堅強！';
+        } else {
+          tierSummaryEl.textContent = '💡 透過提示逐步推敲，觀念越練越穩！';
+        }
+      } else if (selectedMode === 'easy') {
+        if (easyCorrect === 10) {
+          tierSummaryEl.textContent = '🎉 滿分！核心基礎運算堅若磐石！';
+        } else {
+          tierSummaryEl.textContent = '🌱 基礎逐步扎根，再接再厲！';
+        }
+      } else {
+        // mixed
+        if (compCorrect === compIndices.length && compIndices.length > 0 && finalScore >= 90) {
+          tierSummaryEl.textContent = '🌟 全方位素養與計算俱佳！';
+        } else if (finalScore >= 80) {
+          tierSummaryEl.textContent = '精熟達標，表現優異！';
+        } else {
+          tierSummaryEl.textContent = '複習錯題讓觀念更扎實！';
+        }
+      }
 
       const btnReview = document.getElementById('btn-result-review');
       if (wrongCount > 0) {
@@ -603,6 +835,7 @@
             date: todayStr,
             attemptNo,
             publisher: selectedPub,
+            mode: selectedMode,
             unit,
             questions: dailyQuestions,
             wrongQuestions,
@@ -809,6 +1042,16 @@
           e.target.className = "pub-btn py-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black transition-all";
           selectedPub = e.target.getAttribute('data-pub');
           updateUnitDropdown();
+        });
+      });
+
+      // 模式選擇按鈕 (每日綜合 | 基礎打底 | 進階挑戰 | 素養特訓)
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const targetBtn = e.currentTarget || e.target.closest('.mode-btn');
+          if (!targetBtn) return;
+          const mode = targetBtn.getAttribute('data-mode');
+          if (mode) updateModeSelection(mode);
         });
       });
 
