@@ -1015,7 +1015,7 @@ function renderCalendar() {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const record = history.find(item => item.date === dateStr);
     const cell = document.createElement('button');
-    cell.className = `h-10 rounded-xl flex flex-col items-center justify-center font-bold text-xs transition ${record?.completedAttempts ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-50 text-slate-400'}`;
+    cell.className = `h-10 rounded-lg flex flex-col items-center justify-center font-bold text-xs transition ${record?.completedAttempts ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-50 text-slate-400'}`;
     cell.innerHTML = `<span>${day}</span>${record?.completedAttempts ? `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 mt-0.5"></span>` : ''}`;
     cell.onclick = () => {
       const detailEl = document.getElementById('calendar-detail');

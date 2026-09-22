@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#10b981">
+  <meta name="theme-color" content="#0284c7">
   <title>數學天地｜酷學習</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,9 +12,9 @@
   <link rel="stylesheet" href="assets/css/tailwind.css">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    body { background: radial-gradient(circle at top left, #ecfdf5, #f8fafc 45%, #fef3c7); }
+    body { background: radial-gradient(circle at top left, #f0f9ff, #f8fafc 45%, #eff6ff); }
     .answer-option[disabled] { cursor: default; }
-    .answer-option.is-correct { border-color: #10b981; background: #ecfdf5; color: #047857; }
+    .answer-option.is-correct { border-color: #0284c7; background: #f0f9ff; color: #0369a1; }
     .answer-option.is-wrong { border-color: #f43f5e; background: #fff1f2; color: #be123c; }
     .calendar-cell { aspect-ratio: 1; }
     .shake { animation: shakeError 0.4s ease-in-out; }
@@ -36,18 +36,18 @@
   <!-- 全域頂端導覽列 -->
   <header class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur px-4 sm:px-5 py-3 rounded-lg border border-white shadow-sm mb-5">
     <button id="btn-home" onclick="goToIndex()" class="flex items-center gap-3 text-left group">
-      <span class="w-10 h-10 rounded-md bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center text-xl shadow group-hover:scale-105 transition-transform"><i class="fa-solid fa-calculator"></i></span>
+      <span class="w-10 h-10 rounded-md bg-gradient-to-tr from-sky-400 to-blue-600 text-white flex items-center justify-center text-xl shadow group-hover:scale-105 transition-transform"><i class="fa-solid fa-calculator"></i></span>
       <div>
-        <strong class="block text-base sm:text-lg text-emerald-800 leading-tight">數學天地</strong>
+        <strong class="block text-base sm:text-lg text-sky-800 leading-tight">數學天地</strong>
         <small class="text-slate-500 font-medium">國小六年級・每日動態演練</small>
       </div>
     </button>
     <div class="flex items-center gap-3">
       <div class="hidden sm:block text-right">
         <strong id="header-name" class="block text-sm">載入中...</strong>
-        <small id="header-seat" class="text-emerald-700 font-semibold"></small>
+        <small id="header-seat" class="text-sky-700 font-semibold"></small>
       </div>
-      <button id="btn-logout" title="返回首頁" onclick="goToIndex()" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors">
+      <button id="btn-logout" title="返回首頁" onclick="goToIndex()" class="w-9 h-9 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors">
         <i class="fa-solid fa-arrow-left"></i>
       </button>
     </div>
@@ -59,36 +59,36 @@
       <div class="bg-white/95 rounded-lg p-5 sm:p-7 shadow-xl border border-white">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
-            <button type="button" onclick="goToIndex()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
+            <button type="button" onclick="goToIndex()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
               <i class="fa-solid fa-house"></i>
               <span>科目大廳</span>
             </button>
             <h1 class="text-2xl sm:text-3xl font-black mt-1 text-slate-800">選擇今天的練習單元</h1>
             <p class="text-sm text-slate-500 mt-2">每天 10 題；支援步驟詳解、兩次機會防挫折與單日多回合精進。</p>
           </div>
-          <span class="hidden sm:flex w-16 h-16 rounded-md bg-emerald-100 text-emerald-600 items-center justify-center text-3xl shadow-inner"><i class="fa-solid fa-shapes"></i></span>
+          <span class="hidden sm:flex w-16 h-16 rounded-md bg-sky-100 text-sky-600 items-center justify-center text-3xl shadow-inner"><i class="fa-solid fa-shapes"></i></span>
         </div>
 
-        <h2 class="font-black text-sm mb-3 text-slate-700"><i class="fa-solid fa-building text-emerald-500 mr-1.5"></i>1. 選出版社</h2>
+        <h2 class="font-black text-sm mb-3 text-slate-700"><i class="fa-solid fa-building text-sky-500 mr-1.5"></i>1. 選出版社</h2>
         <div id="publisher-list" class="grid grid-cols-3 gap-3 mb-6">
-          <button class="pub-btn py-3.5 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black transition-all" data-pub="康軒">康軒</button>
+          <button class="pub-btn py-3.5 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black transition-all" data-pub="康軒">康軒</button>
           <button class="pub-btn py-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all" data-pub="翰林">翰林</button>
           <button class="pub-btn py-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all" data-pub="南一">南一</button>
         </div>
 
         <div class="flex items-center justify-between mb-3">
-          <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-list-ol text-emerald-500 mr-1.5"></i>2. 選練習單元</h2>
+          <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-list-ol text-sky-500 mr-1.5"></i>2. 選練習單元</h2>
           <span class="text-[11px] text-slate-400 font-medium">六上、六下完整單元</span>
         </div>
-        <select id="unit-select" class="w-full p-4 rounded-lg border-2 border-slate-200 bg-slate-50 font-bold text-slate-700 focus:outline-none focus:border-emerald-500 appearance-none shadow-sm transition-colors"></select>
+        <select id="unit-select" class="w-full p-4 rounded-lg border-2 border-slate-200 bg-slate-50 font-bold text-slate-700 focus:outline-none focus:border-sky-500 appearance-none shadow-sm transition-colors"></select>
         
         <div class="mt-5">
           <div class="flex items-center justify-between mb-2">
-            <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-sliders text-emerald-500 mr-1.5"></i>3. 選練習模式</h2>
+            <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-sliders text-sky-500 mr-1.5"></i>3. 選練習模式</h2>
             <span class="text-[11px] text-slate-400 font-medium">每日綜合或獨立專項</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <button type="button" data-mode="mixed" class="mode-btn py-3 px-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm">
+            <button type="button" data-mode="mixed" class="mode-btn py-3 px-2 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm">
               <i class="fa-solid fa-layer-group text-sm"></i>
               <span>每日綜合</span>
               <small class="text-[10px] font-normal opacity-80">5基 + 3挑 + 2素</small>
@@ -111,19 +111,19 @@
           </div>
         </div>
 
-        <div id="unit-summary" class="mt-4 bg-emerald-50/80 border border-emerald-100 rounded-lg p-4 text-xs leading-relaxed text-emerald-900 font-medium space-y-1.5">
-          <div class="font-bold flex items-center gap-1.5 text-emerald-800">
+        <div id="unit-summary" class="mt-4 bg-sky-50/80 border border-sky-100 rounded-lg p-4 text-xs leading-relaxed text-sky-900 font-medium space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5 text-sky-800">
             <i class="fa-solid fa-layer-group"></i> <span id="mode-summary-title">10 題分層演練機制（由淺入深）：</span>
           </div>
           <div id="mode-summary-pills" class="flex flex-wrap items-center gap-2 pt-0.5">
-            <span class="px-2.5 py-1 rounded-lg bg-emerald-100/90 text-emerald-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
+            <span class="px-2.5 py-1 rounded-lg bg-sky-100/90 text-sky-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
             <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 3 題</span>
             <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 2 題</span>
           </div>
           <p id="mode-summary-desc" class="text-slate-500 pt-1 text-[11px]">算錯第 1 次提供解題提示，第 2 次展開步驟推導詳解，助你徹底掌握！</p>
         </div>
 
-        <button id="btn-start" class="w-full mt-6 py-4 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-lg shadow-lg hover:shadow-emerald-500/20 active:scale-[.99] transition-all flex items-center justify-center gap-2">
+        <button id="btn-start" class="w-full mt-6 py-4 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-lg shadow-lg hover:shadow-sky-500/20 active:scale-[.99] transition-all flex items-center justify-center gap-2">
           <span id="btn-start-text">開始今日 10 題</span> <i class="fa-solid fa-rocket"></i>
         </button>
       </div>
@@ -133,8 +133,8 @@
         <!-- 學習日曆 -->
         <div class="bg-white/95 rounded-lg p-5 shadow-lg border border-white">
           <div class="flex justify-between items-center">
-            <h2 class="font-black text-slate-800"><i class="fa-solid fa-calendar-check text-emerald-500 mr-2"></i>學習日曆</h2>
-            <span id="calendar-completion-count" class="text-xs font-bold text-emerald-600">0 次・0 分</span>
+            <h2 class="font-black text-slate-800"><i class="fa-solid fa-calendar-check text-sky-500 mr-2"></i>學習日曆</h2>
+            <span id="calendar-completion-count" class="text-xs font-bold text-sky-600">0 次・0 分</span>
           </div>
           <div class="flex justify-between items-center my-4">
             <button id="cal-prev" class="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"><i class="fa-solid fa-chevron-left"></i></button>
@@ -145,8 +145,8 @@
             <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
           </div>
           <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
-          <p id="calendar-detail" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選綠色日期查看戰績</p>
-          <p id="today-status" class="mt-3 py-2.5 rounded-lg bg-emerald-50 text-emerald-800 text-center text-xs font-bold">完成今日 10 題即可點亮</p>
+          <p id="calendar-detail" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選藍色日期查看戰績</p>
+          <p id="today-status" class="mt-3 py-2.5 rounded-lg bg-sky-50 text-sky-800 text-center text-xs font-bold">完成今日 10 題即可點亮</p>
         </div>
 
         <!-- 錯題複習專區入口 -->
@@ -166,7 +166,7 @@
         <!-- 頂端單元與進度條 -->
         <div class="flex items-center justify-between gap-3 mb-3">
           <div class="flex items-center gap-2">
-            <span id="quiz-unit-badge" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black truncate">單元名稱</span>
+            <span id="quiz-unit-badge" class="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black truncate">單元名稱</span>
             <span id="quiz-mode-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">每日綜合</span>
             <span id="quiz-attempt-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">第 1 回合</span>
           </div>
@@ -174,7 +174,7 @@
         </div>
         
         <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mb-6">
-          <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300" style="width: 10%;"></div>
+          <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-blue-500 rounded-full transition-all duration-300" style="width: 10%;"></div>
         </div>
 
         <!-- 題目等級標籤、類型標籤與題幹 -->
@@ -195,14 +195,14 @@
         <div id="quiz-interaction-area" class="space-y-4">
           <!-- 填空題區域 -->
           <div id="input-answer-container" class="space-y-3">
-            <input type="text" id="answer-input" inputmode="text" placeholder="請輸入答案..." autocomplete="off" class="w-full py-4 px-6 rounded-lg border-2 border-slate-200 bg-white focus:border-emerald-500 focus:outline-none font-black text-2xl text-center shadow-inner text-slate-800 transition-all">
+            <input type="text" id="answer-input" inputmode="text" placeholder="請輸入答案..." autocomplete="off" class="w-full py-4 px-6 rounded-lg border-2 border-slate-200 bg-white focus:border-sky-500 focus:outline-none font-black text-2xl text-center shadow-inner text-slate-800 transition-all">
             
             <!-- 快速輔助按鈕工具列 -->
             <div class="flex items-center justify-center gap-2 text-xs">
-              <button type="button" onclick="insertInputChar('/')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">分數線 /</button>
-              <button type="button" onclick="insertInputChar('.')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">小數點 .</button>
-              <button type="button" onclick="insertInputChar('-')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">負號 -</button>
-              <button type="button" onclick="clearInput()" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold">清除 ⌫</button>
+              <button type="button" onclick="insertInputChar('/')" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">分數線 /</button>
+              <button type="button" onclick="insertInputChar('.')" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">小數點 .</button>
+              <button type="button" onclick="insertInputChar('-')" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">負號 -</button>
+              <button type="button" onclick="clearInput()" class="px-3 py-1.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold">清除 ⌫</button>
             </div>
             <p class="text-center text-[11px] text-slate-400">💡 提示：答案若為分數請寫最簡分數（如 1/2），小數與相等分數均可自動辨識。</p>
             
@@ -253,21 +253,21 @@
     <!-- 視圖 3: 結算畫面 (顯示真實成績、題數分佈與回合) -->
     <section id="view-result" class="hidden max-w-lg mx-auto">
       <div class="bg-white/95 rounded-lg p-7 sm:p-9 shadow-xl border border-white text-center">
-        <div class="w-24 h-24 mx-auto rounded-full bg-emerald-100 text-emerald-500 flex items-center justify-center text-5xl shadow-inner">
+        <div class="w-24 h-24 mx-auto rounded-full bg-sky-100 text-sky-500 flex items-center justify-center text-5xl shadow-inner">
           <i class="fa-solid fa-trophy"></i>
         </div>
         <h2 class="text-2xl font-black mt-5 text-slate-800">本次數學練習完成！</h2>
-        <p id="result-attempt-text" class="text-emerald-600 text-sm font-black mt-1">今日第 1 回合</p>
+        <p id="result-attempt-text" class="text-sky-600 text-sm font-black mt-1">今日第 1 回合</p>
         
         <!-- 得分與答題統計 -->
         <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-5">
-          <div class="rounded-lg bg-emerald-50 p-3 sm:p-4 border border-emerald-100">
-            <small class="block text-emerald-700 text-xs font-bold">本次得分</small>
-            <strong id="result-score" class="text-2xl sm:text-3xl text-emerald-600 font-black">80</strong>
+          <div class="rounded-lg bg-sky-50 p-3 sm:p-4 border border-sky-100">
+            <small class="block text-sky-700 text-xs font-bold">本次得分</small>
+            <strong id="result-score" class="text-2xl sm:text-3xl text-sky-600 font-black">80</strong>
           </div>
-          <div class="rounded-lg bg-teal-50 p-3 sm:p-4 border border-teal-100">
-            <small class="block text-teal-700 text-xs font-bold">首次答對</small>
-            <strong id="result-first-correct" class="text-2xl sm:text-3xl text-teal-600 font-black">7 題</strong>
+          <div class="rounded-lg bg-blue-50 p-3 sm:p-4 border border-blue-100">
+            <small class="block text-blue-700 text-xs font-bold">首次答對</small>
+            <strong id="result-first-correct" class="text-2xl sm:text-3xl text-blue-600 font-black">7 題</strong>
           </div>
           <div class="rounded-lg bg-rose-50 p-3 sm:p-4 border border-rose-100">
             <small class="block text-rose-700 text-xs font-bold">列入錯題</small>
@@ -278,8 +278,8 @@
         <!-- 三等級向度掌握度 -->
         <div class="mt-4 p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 text-left">
           <small class="block text-[11px] font-black text-slate-500 mb-2 flex items-center justify-between">
-            <span><i class="fa-solid fa-chart-pie mr-1 text-emerald-500"></i>能力向度分層掌握度</span>
-            <span id="result-tier-summary" class="text-emerald-700 font-bold"></span>
+            <span><i class="fa-solid fa-chart-pie mr-1 text-sky-500"></i>能力向度分層掌握度</span>
+            <span id="result-tier-summary" class="text-sky-700 font-bold"></span>
           </small>
           <div class="grid grid-cols-3 gap-2 text-center text-xs font-black">
             <div class="p-2 rounded-lg bg-emerald-100/70 text-emerald-800 border border-emerald-200">
@@ -304,7 +304,7 @@
             <i class="fa-solid fa-rotate-left"></i> 複習本次的錯題
           </button>
           <div class="grid grid-cols-2 gap-3">
-            <button id="btn-result-retry" class="py-3.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-md transition-all">
+            <button id="btn-result-retry" class="py-3.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-black shadow-md transition-all">
               再測 10 題
             </button>
             <button onclick="goToIndex()" class="py-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all">
@@ -324,15 +324,15 @@
             <h2 class="text-2xl font-black text-slate-800">數學錯題複習</h2>
             <p id="review-meta" class="text-xs text-slate-500 mt-1">答對後將自動標記為熟練掌握並移出清單。</p>
           </div>
-          <button id="btn-review-back" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-600 transition-colors">
+          <button id="btn-review-back" class="px-3.5 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-600 transition-colors">
             <i class="fa-solid fa-xmark mr-1"></i> 返回
           </button>
         </div>
 
         <div id="review-empty" class="hidden text-center py-14">
-          <i class="fa-solid fa-circle-check text-5xl text-emerald-400"></i>
+          <i class="fa-solid fa-circle-check text-5xl text-sky-500"></i>
           <p class="font-black text-slate-700 text-lg mt-4">太棒了！目前沒有待複習的數學錯題</p>
-          <button onclick="showView('view-setup')" class="mt-5 px-6 py-2.5 bg-emerald-500 text-white font-bold rounded-lg text-sm">回練習範圍</button>
+          <button onclick="showView('view-setup')" class="mt-5 px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-lg text-sm">回練習範圍</button>
         </div>
 
         <div id="review-content" class="space-y-5">
@@ -400,10 +400,10 @@
     const MODE_CONFIG = {
       mixed: {
         name: '每日綜合',
-        badgeClass: 'bg-emerald-100 text-emerald-800',
+        badgeClass: 'bg-sky-100 text-sky-800',
         summaryTitle: '10 題分層演練機制（由淺入深）：',
         pills: `
-          <span class="px-2.5 py-1 rounded-lg bg-emerald-100/90 text-emerald-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
+          <span class="px-2.5 py-1 rounded-lg bg-sky-100/90 text-sky-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
           <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 3 題</span>
           <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 2 題</span>
         `,
@@ -450,7 +450,7 @@
       document.querySelectorAll('.mode-btn').forEach(btn => {
         const m = btn.getAttribute('data-mode');
         if (m === mode) {
-          btn.className = "mode-btn py-3 px-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm ring-2 ring-emerald-400/30";
+          btn.className = "mode-btn py-3 px-2 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm ring-2 ring-sky-400/30";
         } else {
           btn.className = "mode-btn py-3 px-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1";
         }
@@ -664,7 +664,7 @@
         q.options.forEach((optText, optIdx) => {
           const btn = document.createElement('button');
           btn.className = 'answer-option py-4 px-5 rounded-lg border-2 border-slate-200 bg-white hover:bg-slate-50 font-bold text-slate-800 text-left transition-all flex items-center justify-between group';
-          btn.innerHTML = `<span><strong class="text-emerald-600 mr-2">${String.fromCharCode(65 + optIdx)}.</strong> ${optText}</span><i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-emerald-500 transition-colors"></i>`;
+          btn.innerHTML = `<span><strong class="text-sky-600 mr-2">${String.fromCharCode(65 + optIdx)}.</strong> ${optText}</span><i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-sky-500 transition-colors"></i>`;
           btn.onclick = () => submitUserAnswer(optText);
           choiceContainer.appendChild(btn);
         });
@@ -921,7 +921,7 @@
 
       feedback.classList.remove('hidden');
       if (isCorrect) {
-        feedback.className = 'rounded-lg p-4 text-sm font-bold bg-emerald-100 text-emerald-800';
+        feedback.className = 'rounded-lg p-4 text-sm font-bold bg-sky-100 text-sky-800';
         feedback.innerHTML = '🎉 答對了！已標記為熟練掌握，並移出錯題本。';
         nextBtn.classList.remove('hidden');
 
@@ -990,10 +990,10 @@
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const records = historyMap[dateStr];
         const cell = document.createElement('button');
-        cell.className = 'calendar-cell rounded-xl text-xs font-bold flex flex-col items-center justify-center transition-all';
+        cell.className = 'calendar-cell rounded-lg text-xs font-bold flex flex-col items-center justify-center transition-all';
 
         if (records && records.length > 0) {
-          cell.classList.add('bg-emerald-500', 'text-white', 'shadow-sm', 'hover:bg-emerald-600');
+          cell.classList.add('bg-sky-500', 'text-white', 'shadow-sm', 'hover:bg-sky-600');
           cell.innerHTML = `<span>${day}</span><small class="text-[9px] opacity-90">${records[0].score}分</small>`;
           cell.onclick = () => {
             document.getElementById('calendar-detail').textContent = `${dateStr}：完成 ${records.length} 回合，最佳得分 ${Math.max(...records.map(r => r.score))} 分`;
@@ -1014,7 +1014,7 @@
       const totals = getMathCalendarTotals(mathHistory, year, month);
       document.getElementById('calendar-completion-count').textContent = `${totals.completedAttempts} 次・${totals.totalScore} 分`;
       if (historyMap[todayStr]) {
-        document.getElementById('today-status').className = 'mt-3 py-2.5 rounded-xl bg-emerald-100 text-emerald-800 text-center text-xs font-bold';
+        document.getElementById('today-status').className = 'mt-3 py-2.5 rounded-lg bg-sky-100 text-sky-800 text-center text-xs font-bold';
         document.getElementById('today-status').innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> 今日學習已點亮！';
       }
     }
@@ -1039,7 +1039,7 @@
           document.querySelectorAll('.pub-btn').forEach(b => {
             b.className = "pub-btn py-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all";
           });
-          e.target.className = "pub-btn py-3.5 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-black transition-all";
+          e.target.className = "pub-btn py-3.5 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black transition-all";
           selectedPub = e.target.getAttribute('data-pub');
           updateUnitDropdown();
         });

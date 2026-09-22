@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="assets/css/tailwind.css">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    body { background: radial-gradient(circle at top left, #fffbeb, #f8fafc 45%, #ecfeff); }
+    body { background: radial-gradient(circle at top left, #fffbeb, #f8fafc 45%, #fff7ed); }
     .answer-option[disabled] { cursor: default; }
     .answer-option.is-correct { border-color: #10b981; background: #ecfdf5; color: #047857; }
     .answer-option.is-wrong { border-color: #f43f5e; background: #fff1f2; color: #be123c; }
@@ -33,7 +33,7 @@
     </button>
     <div class="flex items-center gap-3">
       <div class="hidden sm:block text-right"><strong id="header-name" class="block text-sm">學生</strong><small id="header-seat" class="text-amber-700"></small></div>
-      <button id="btn-logout" title="登出" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200"><i class="fa-solid fa-right-from-bracket"></i></button>
+      <button id="btn-logout" title="登出" class="w-9 h-9 rounded-md bg-rose-50 text-rose-600 border border-rose-200"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </header>
 
@@ -42,7 +42,7 @@
       <div class="bg-white/95 rounded-lg p-5 sm:p-7 shadow-xl border border-white">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
-            <button type="button" onclick="if (history.length > 1) { history.back(); } else { window.location.assign('index.html'); }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
+            <button type="button" onclick="if (history.length > 1) { history.back(); } else { window.location.assign('index.html'); }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
               <i class="fa-solid fa-house"></i>
               <span>科目大廳</span>
             </button>
@@ -112,7 +112,7 @@
 
     <section id="view-review" class="hidden max-w-3xl mx-auto">
       <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
-        <div class="flex justify-between items-start gap-4"><div><p class="text-xs font-black text-rose-500 tracking-wider">REVIEW</p><h2 class="text-2xl font-black">錯題複習</h2><p id="review-meta" class="text-sm text-slate-500 mt-1"></p></div><button id="review-back" class="px-3 py-2 rounded-xl bg-slate-100 text-sm font-bold"><i class="fa-solid fa-xmark mr-1"></i>返回</button></div>
+        <div class="flex justify-between items-start gap-4"><div><p class="text-xs font-black text-rose-500 tracking-wider">REVIEW</p><h2 class="text-2xl font-black">錯題複習</h2><p id="review-meta" class="text-sm text-slate-500 mt-1"></p></div><button id="review-back" class="px-3 py-2 rounded-md bg-slate-100 text-sm font-bold"><i class="fa-solid fa-xmark mr-1"></i>返回</button></div>
         <div id="review-empty" class="hidden text-center py-14"><i class="fa-solid fa-circle-check text-5xl text-emerald-400"></i><p class="font-black mt-4">目前沒有待複習錯題</p></div>
         <div id="review-content" class="mt-7"><span id="review-badge" class="text-xs font-bold text-rose-500"></span><h3 id="review-question" class="text-xl font-black mt-2 leading-relaxed"></h3><div id="review-answers" class="grid gap-3 mt-5"></div><div id="review-feedback" class="hidden mt-5 rounded-lg p-4 text-sm"></div><button id="review-next" class="hidden w-full mt-5 py-3 rounded-lg bg-slate-800 text-white font-black">下一題</button></div>
       </div>
@@ -158,7 +158,7 @@
           </button>
         </div>
 
-        <button id="btn-speed-exit" class="w-full mt-5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-600 transition">
+        <button id="btn-speed-exit" class="w-full mt-5 py-2.5 rounded-md text-xs font-bold text-slate-400 hover:text-slate-600 transition">
           放棄挑戰並返回
         </button>
       </div>

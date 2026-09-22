@@ -646,7 +646,7 @@ function renderPublisherButtons() {
   ALLOWED_PUBLISHERS.forEach(publisher => {
     const button = document.createElement('button');
     const active = publisher === selectedPublisher;
-    button.className = `py-3 rounded-lg border-2 font-black transition ${active ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-500'}`;
+    button.className = `py-3 rounded-lg border-2 font-black transition ${active ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-500'}`;
     button.textContent = publisher;
     button.disabled = Boolean(dailyState);
     button.onclick = () => { selectedPublisher = publisher; renderPublisherButtons(); renderChapterOptions(); };
@@ -669,7 +669,7 @@ function updateChapterSummary() {
   const summaryEl = document.getElementById('chapter-summary');
   if (!select || !summaryEl) return;
   const chapter = findChapter(selectedPublisher, select.value);
-  summaryEl.innerHTML = `<strong>${selectedPublisher}版課程重點：</strong>${chapter?.[2] || ''}<br><span class="text-orange-700/70">題型架構：核心基礎 12 題 ＋ 統整加深 6 題 ＋ 素養挑戰 2 題（同輪去重）</span>`;
+  summaryEl.innerHTML = `<strong>${selectedPublisher}版課程重點：</strong>${chapter?.[2] || ''}<br><span class="text-purple-700/70">題型架構：核心基礎 12 題 ＋ 統整加深 6 題 ＋ 素養挑戰 2 題（同輪去重）</span>`;
 }
 
 async function loadProgress() {
@@ -742,7 +742,7 @@ function renderQuestion() {
   list.innerHTML = '';
   question.options.forEach((option, index) => {
     const button = document.createElement('button');
-    button.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-orange-300 text-left font-bold transition';
+    button.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-purple-300 text-left font-bold transition';
     button.innerHTML = `<span class="inline-flex w-7 h-7 mr-2 rounded-lg bg-slate-100 items-center justify-center text-xs font-black">${String.fromCharCode(65 + index)}</span>${option}`;
     button.onclick = () => answerDailyQuestion(option, button);
     list.appendChild(button);
@@ -911,8 +911,8 @@ function startSpeedQuiz() {
         barEl.className = 'h-full bg-amber-500 w-full transition-all';
         if (textEl) textEl.className = 'text-2xl sm:text-3xl font-black text-amber-600 font-mono';
       } else {
-        barEl.className = 'h-full bg-gradient-to-r from-emerald-400 to-amber-400 w-full transition-all';
-        if (textEl) textEl.className = 'text-2xl sm:text-3xl font-black text-orange-600 font-mono';
+        barEl.className = 'h-full bg-gradient-to-r from-purple-400 to-fuchsia-500 w-full transition-all';
+        if (textEl) textEl.className = 'text-2xl sm:text-3xl font-black text-purple-600 font-mono';
       }
     }
 
@@ -1035,8 +1035,8 @@ function renderCalendar() {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const record = history.find(item => item.date === dateStr);
     const cell = document.createElement('button');
-    cell.className = `h-10 rounded-xl flex flex-col items-center justify-center font-bold text-xs transition ${record?.completedAttempts ? 'bg-orange-100 text-orange-800 border border-orange-300' : 'bg-slate-50 text-slate-400'}`;
-    cell.innerHTML = `<span>${day}</span>${record?.completedAttempts ? `<span class="w-1.5 h-1.5 rounded-full bg-orange-500 mt-0.5"></span>` : ''}`;
+    cell.className = `h-10 rounded-lg flex flex-col items-center justify-center font-bold text-xs transition ${record?.completedAttempts ? 'bg-purple-100 text-purple-800 border border-purple-300' : 'bg-slate-50 text-slate-400'}`;
+    cell.innerHTML = `<span>${day}</span>${record?.completedAttempts ? `<span class="w-1.5 h-1.5 rounded-full bg-purple-500 mt-0.5"></span>` : ''}`;
     cell.onclick = () => {
       const detailEl = document.getElementById('calendar-detail');
       if (detailEl) {
@@ -1075,7 +1075,7 @@ function renderReviewQuestion() {
   list.innerHTML = '';
   item.options.forEach((option, index) => {
     const button = document.createElement('button');
-    button.className = 'w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-orange-300 text-left font-bold transition';
+    button.className = 'w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-purple-300 text-left font-bold transition';
     button.innerHTML = `<span class="inline-flex w-7 h-7 mr-2 rounded-lg bg-slate-100 items-center justify-center text-xs font-black">${String.fromCharCode(65 + index)}</span>${option}`;
     button.onclick = () => answerReviewQuestion(option, button);
     list.appendChild(button);

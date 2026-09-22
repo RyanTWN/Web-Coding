@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#ea580c">
+  <meta name="theme-color" content="#a855f7">
   <title>社會人文探索館｜酷學習</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="assets/css/tailwind.css">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    body { background: radial-gradient(circle at top left, #fff7ed, #f8fafc 45%, #fef3c7); }
+    body { background: radial-gradient(circle at top left, #faf5ff, #f8fafc 45%, #fdf4ff); }
     .answer-option[disabled], .review-answer-option[disabled] { cursor: default; }
     .answer-option.is-correct, .review-answer-option.is-correct { border-color: #10b981; background: #ecfdf5; color: #047857; }
     .answer-option.is-wrong, .review-answer-option.is-wrong { border-color: #f43f5e; background: #fff1f2; color: #be123c; }
@@ -28,12 +28,12 @@
 
   <header class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur px-4 sm:px-5 py-3 rounded-lg border border-white shadow-sm mb-5">
     <button id="btn-home" onclick="if (history.length > 1) { history.back(); } else { window.location.assign('index.html'); }" class="flex items-center gap-3 text-left group cursor-pointer hover:opacity-90 transition-all">
-      <span class="w-10 h-10 rounded-md bg-gradient-to-tr from-orange-500 to-amber-600 text-white flex items-center justify-center text-xl shadow group-hover:scale-105 transition-transform"><i class="fa-solid fa-earth-americas"></i></span>
-      <span><strong class="block text-base sm:text-lg">社會人文探索館</strong><small class="text-slate-500">115 學年度・國小六年級</small></span>
+      <span class="w-10 h-10 rounded-md bg-gradient-to-tr from-purple-500 to-fuchsia-600 text-white flex items-center justify-center text-xl shadow group-hover:scale-105 transition-transform"><i class="fa-solid fa-earth-americas"></i></span>
+      <span><strong class="block text-base sm:text-lg text-purple-900">社會人文探索館</strong><small class="text-slate-500">115 學年度・國小六年級</small></span>
     </button>
     <div class="flex items-center gap-3">
-      <div class="hidden sm:block text-right"><strong id="header-name" class="block text-sm">學生</strong><small id="header-seat" class="text-orange-700"></small></div>
-      <button id="btn-logout" title="登出" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200"><i class="fa-solid fa-right-from-bracket"></i></button>
+      <div class="hidden sm:block text-right"><strong id="header-name" class="block text-sm">學生</strong><small id="header-seat" class="text-purple-700"></small></div>
+      <button id="btn-logout" title="登出" class="w-9 h-9 rounded-md bg-rose-50 text-rose-600 border border-rose-200"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </header>
 
@@ -43,41 +43,41 @@
       <div class="bg-white/95 rounded-lg p-5 sm:p-7 shadow-xl border border-white">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
-            <button type="button" onclick="if (history.length > 1) { history.back(); } else { window.location.assign('index.html'); }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
+            <button type="button" onclick="if (history.length > 1) { history.back(); } else { window.location.assign('index.html'); }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
               <i class="fa-solid fa-house"></i>
               <span>科目大廳</span>
             </button>
-            <h1 class="text-2xl sm:text-3xl font-black mt-1">選擇今天的版本與章節</h1>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1 text-slate-800">選擇今天的版本與章節</h1>
             <p class="text-sm text-slate-500 mt-2">每日固定 20 題；開始後，當日版本與章節將鎖定。</p>
           </div>
-          <span class="hidden sm:flex w-16 h-16 rounded-md bg-orange-100 text-orange-500 items-center justify-center text-3xl"><i class="fa-solid fa-landmark-dome"></i></span>
+          <span class="hidden sm:flex w-16 h-16 rounded-md bg-purple-100 text-purple-600 items-center justify-center text-3xl"><i class="fa-solid fa-landmark-dome"></i></span>
         </div>
 
         <h2 class="font-black text-sm mb-3">1. 選出版社</h2>
         <div id="publisher-list" class="grid grid-cols-3 gap-3 mb-6"></div>
         <div class="flex items-center justify-between mb-3"><h2 class="font-black text-sm">2. 選練習章節</h2><span class="text-[11px] text-slate-400">六上、六下完整章節</span></div>
-        <select id="chapter-select" class="w-full p-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 font-bold focus:outline-none focus:border-orange-400"></select>
-        <div id="chapter-summary" class="mt-3 bg-orange-50 border border-orange-100 rounded-lg p-4 text-xs leading-relaxed text-orange-900"></div>
-        <button id="btn-start" class="w-full mt-6 py-4 rounded-lg bg-gradient-to-r from-orange-500 to-amber-600 text-white font-black shadow-lg hover:brightness-105 active:scale-[.99]">開始今日 20 題 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+        <select id="chapter-select" class="w-full p-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 font-bold focus:outline-none focus:border-purple-400"></select>
+        <div id="chapter-summary" class="mt-3 bg-purple-50 border border-purple-100 rounded-lg p-4 text-xs leading-relaxed text-purple-900"></div>
+        <button id="btn-start" class="w-full mt-6 py-4 rounded-lg bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white font-black shadow-lg hover:brightness-105 active:scale-[.99]">開始今日 20 題 <i class="fa-solid fa-arrow-right ml-1"></i></button>
       </div>
 
       <aside class="space-y-5">
         <div class="bg-white/95 rounded-lg p-5 shadow-lg border border-white">
-          <div class="flex justify-between items-center"><h2 class="font-black"><i class="fa-solid fa-calendar-check text-emerald-500 mr-2"></i>學習日曆</h2><span id="completion-count" class="text-xs font-bold text-emerald-600">0 題・0 分</span></div>
+          <div class="flex justify-between items-center"><h2 class="font-black"><i class="fa-solid fa-calendar-check text-purple-500 mr-2"></i>學習日曆</h2><span id="completion-count" class="text-xs font-bold text-purple-600">0 題・0 分</span></div>
           <div class="flex justify-between items-center my-4"><button id="cal-prev" class="w-8 h-8 rounded-md bg-slate-100"><i class="fa-solid fa-chevron-left"></i></button><strong id="cal-title" class="text-sm"></strong><button id="cal-next" class="w-8 h-8 rounded-md bg-slate-100"><i class="fa-solid fa-chevron-right"></i></button></div>
           <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
           <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
           <p id="calendar-detail" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選日期查看題數與分數</p>
-          <p id="today-status" class="mt-4 py-2.5 rounded-lg bg-orange-50 text-orange-800 text-center text-xs font-bold">完成今日 20 題即可點亮</p>
+          <p id="today-status" class="mt-4 py-2.5 rounded-lg bg-purple-50 text-purple-800 text-center text-xs font-bold">完成今日 20 題即可點亮</p>
         </div>
-        <div class="bg-gradient-to-br from-orange-500 via-amber-500 to-rose-500 rounded-lg p-5 shadow-lg text-white">
+        <div class="bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500 rounded-lg p-5 shadow-lg text-white">
           <div class="flex items-center justify-between">
             <span class="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-black tracking-wider uppercase"><i class="fa-solid fa-bolt mr-1"></i>限時挑戰</span>
-            <span id="speed-best-badge" class="text-xs font-bold text-amber-100">最高紀錄: 答對 0 題</span>
+            <span id="speed-best-badge" class="text-xs font-bold text-purple-100">最高紀錄: 答對 0 題</span>
           </div>
           <h3 class="text-xl font-black mt-2">一分鐘快問快答</h3>
           <p class="text-xs text-white/90 mt-1 leading-relaxed">倒數 60 秒是非題極速衝刺！看你能連續答對幾題、破除多少觀念迷思！</p>
-          <button id="btn-start-speed" class="w-full mt-4 py-3 rounded-lg bg-white text-orange-600 font-black shadow hover:bg-orange-50 transition-all flex items-center justify-center gap-2">
+          <button id="btn-start-speed" class="w-full mt-4 py-3 rounded-lg bg-white text-purple-600 font-black shadow hover:bg-purple-50 transition-all flex items-center justify-center gap-2">
             <i class="fa-solid fa-play"></i> 立即開始挑戰 (60s)
           </button>
         </div>
@@ -91,9 +91,9 @@
     <!-- 視圖 2: 測驗作答 -->
     <section id="view-quiz" class="hidden max-w-3xl mx-auto">
       <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
-        <div class="flex items-center justify-between gap-3 mb-3"><span id="quiz-badge" class="px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-black truncate"></span><span id="quiz-progress" class="text-sm font-black text-slate-500"></span></div>
-        <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mb-7"><div id="quiz-bar" class="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all"></div></div>
-        <div class="mb-2"><span id="question-kind" class="inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-orange-100 text-orange-800 tracking-wider"></span></div>
+        <div class="flex items-center justify-between gap-3 mb-3"><span id="quiz-badge" class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-black truncate"></span><span id="quiz-progress" class="text-sm font-black text-slate-500"></span></div>
+        <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mb-7"><div id="quiz-bar" class="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all"></div></div>
+        <div class="mb-2"><span id="question-kind" class="inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 text-purple-800 tracking-wider"></span></div>
         <h2 id="question-text" class="text-xl sm:text-2xl font-black leading-relaxed min-h-[5rem]"></h2>
         <div id="answer-list" class="grid gap-3 mt-6"></div>
         <div id="feedback" class="hidden mt-5 rounded-lg p-4 text-sm leading-relaxed"></div>
@@ -104,20 +104,20 @@
     <!-- 視圖 3: 測驗結果 -->
     <section id="view-result" class="hidden max-w-lg mx-auto">
       <div class="bg-white/95 rounded-lg p-7 sm:p-9 shadow-xl border border-white text-center">
-        <div class="w-24 h-24 mx-auto rounded-full bg-emerald-100 text-emerald-500 flex items-center justify-center text-5xl"><i class="fa-solid fa-trophy"></i></div>
+        <div class="w-24 h-24 mx-auto rounded-full bg-purple-100 text-purple-500 flex items-center justify-center text-5xl"><i class="fa-solid fa-trophy"></i></div>
         <h2 class="text-2xl font-black mt-5">本次社會練習完成！</h2>
-        <p id="result-attempt" class="text-orange-600 text-sm font-black mt-2"></p>
-        <div class="grid grid-cols-2 gap-3 mt-5"><div class="rounded-lg bg-emerald-50 p-4"><small class="block text-emerald-700 font-bold">本次答對</small><strong id="result-correct" class="text-2xl text-emerald-600"></strong></div><div class="rounded-lg bg-orange-50 p-4"><small class="block text-orange-700 font-bold">本次得分</small><strong id="result-score" class="text-2xl text-orange-600"></strong></div></div>
+        <p id="result-attempt" class="text-purple-600 text-sm font-black mt-2"></p>
+        <div class="grid grid-cols-2 gap-3 mt-5"><div class="rounded-lg bg-emerald-50 p-4"><small class="block text-emerald-700 font-bold">本次答對</small><strong id="result-correct" class="text-2xl text-emerald-600"></strong></div><div class="rounded-lg bg-purple-50 p-4"><small class="block text-purple-700 font-bold">本次得分</small><strong id="result-score" class="text-2xl text-purple-600"></strong></div></div>
         <p id="result-today-total" class="my-4 rounded-lg bg-slate-50 py-3 text-sm font-black text-slate-600"></p>
-        <div class="grid grid-cols-2 gap-3"><button id="result-review" class="py-3 rounded-lg bg-rose-100 text-rose-700 font-black">複習錯題</button><button id="result-home" class="py-3 rounded-lg bg-orange-500 text-white font-black">再測 20 題</button></div>
+        <div class="grid grid-cols-2 gap-3"><button id="result-review" class="py-3 rounded-lg bg-rose-100 text-rose-700 font-black">複習錯題</button><button id="result-home" class="py-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white font-black">再測 20 題</button></div>
       </div>
     </section>
 
     <!-- 視圖 4: 錯題複習 -->
     <section id="view-review" class="hidden max-w-3xl mx-auto">
       <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
-        <div class="flex justify-between items-start gap-4"><div><p class="text-xs font-black text-rose-500 tracking-wider">REVIEW</p><h2 class="text-2xl font-black">錯題複習</h2><p id="review-meta" class="text-sm text-slate-500 mt-1"></p></div><button id="review-back" class="px-3 py-2 rounded-xl bg-slate-100 text-sm font-bold"><i class="fa-solid fa-xmark mr-1"></i>返回</button></div>
-        <div id="review-empty" class="hidden text-center py-14"><i class="fa-solid fa-circle-check text-5xl text-emerald-400"></i><p class="font-black mt-4">目前沒有待複習錯題</p></div>
+        <div class="flex justify-between items-start gap-4"><div><p class="text-xs font-black text-rose-500 tracking-wider">REVIEW</p><h2 class="text-2xl font-black">錯題複習</h2><p id="review-meta" class="text-sm text-slate-500 mt-1"></p></div><button id="review-back" class="px-3 py-2 rounded-md bg-slate-100 text-sm font-bold"><i class="fa-solid fa-xmark mr-1"></i>返回</button></div>
+        <div id="review-empty" class="hidden text-center py-14"><i class="fa-solid fa-circle-check text-5xl text-purple-400"></i><p class="font-black mt-4">目前沒有待複習錯題</p></div>
         <div id="review-content" class="mt-7"><span id="review-badge" class="text-xs font-bold text-rose-500"></span><h3 id="review-question" class="text-xl font-black mt-2 leading-relaxed"></h3><div id="review-answers" class="grid gap-3 mt-5"></div><div id="review-feedback" class="hidden mt-5 rounded-lg p-4 text-sm"></div><button id="review-next" class="hidden w-full mt-5 py-3 rounded-lg bg-slate-800 text-white font-black">下一題</button></div>
       </div>
     </section>
@@ -127,7 +127,7 @@
       <div class="bg-white/95 rounded-lg p-6 sm:p-8 shadow-xl border border-white">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2.5">
-            <span class="w-10 h-10 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center font-black"><i class="fa-solid fa-bolt text-lg"></i></span>
+            <span class="w-10 h-10 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center font-black"><i class="fa-solid fa-bolt text-lg"></i></span>
             <div>
               <p class="text-[11px] font-black text-slate-400">社會人文・一分鐘快問快答</p>
               <div class="flex items-center gap-2">
@@ -138,16 +138,16 @@
           </div>
           <div class="text-right">
             <span class="text-xs font-bold text-slate-400">剩餘時間</span>
-            <div id="speed-timer-text" class="text-2xl sm:text-3xl font-black text-orange-600 font-mono">60s</div>
+            <div id="speed-timer-text" class="text-2xl sm:text-3xl font-black text-purple-600 font-mono">60s</div>
           </div>
         </div>
 
         <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden mb-6">
-          <div id="speed-timer-bar" class="h-full bg-gradient-to-r from-emerald-400 to-orange-400 w-full transition-all duration-100"></div>
+          <div id="speed-timer-bar" class="h-full bg-gradient-to-r from-emerald-400 to-purple-400 w-full transition-all duration-100"></div>
         </div>
 
         <div class="bg-slate-50 border-2 border-slate-100 rounded-lg p-6 mb-6 text-center min-h-[9rem] flex flex-col justify-center items-center">
-          <span class="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-black mb-3">是非觀念速測</span>
+          <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-black mb-3">是非觀念速測</span>
           <h2 id="speed-question-text" class="text-xl sm:text-2xl font-black text-slate-800 leading-relaxed"></h2>
         </div>
 
@@ -162,7 +162,7 @@
           </button>
         </div>
 
-        <button id="btn-speed-exit" class="w-full mt-5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-600 transition">
+        <button id="btn-speed-exit" class="w-full mt-5 py-2.5 rounded-md text-xs font-bold text-slate-400 hover:text-slate-600 transition">
           放棄挑戰並返回
         </button>
       </div>
@@ -171,7 +171,7 @@
     <!-- 視圖 6: 一分鐘快問快答結算視圖 -->
     <section id="view-speed-result" class="hidden max-w-lg mx-auto">
       <div class="bg-white/95 rounded-lg p-6 sm:p-8 shadow-xl border border-white text-center">
-        <div class="w-20 h-20 mx-auto rounded-full bg-amber-100 text-amber-500 flex items-center justify-center text-4xl mb-4">
+        <div class="w-20 h-20 mx-auto rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-4xl mb-4">
           <i class="fa-solid fa-bolt"></i>
         </div>
         <h2 class="text-2xl font-black text-slate-800">快問快答挑戰結束！</h2>
@@ -203,7 +203,7 @@
         </div>
 
         <div class="grid grid-cols-2 gap-3 mt-6">
-          <button id="btn-speed-again" class="py-3.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black shadow hover:brightness-105 active:scale-[.99]">
+          <button id="btn-speed-again" class="py-3.5 rounded-lg bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white font-black shadow hover:brightness-105 active:scale-[.99]">
             <i class="fa-solid fa-rotate-right mr-1"></i> 再挑戰一次
           </button>
           <button id="btn-speed-finish" class="py-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black">

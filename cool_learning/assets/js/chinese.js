@@ -427,11 +427,11 @@ function switchMainTab(tab) {
   const btnIdioms = document.getElementById('tab-idioms');
 
   if (isCurriculum) {
-    btnCurriculum.className = 'flex-1 py-3 px-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 bg-white text-rose-700 shadow-md';
-    btnIdioms.className = 'flex-1 py-3 px-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50';
+    btnCurriculum.className = 'flex-1 py-3 px-4 rounded-lg font-black text-sm transition-all flex items-center justify-center gap-2 bg-white text-emerald-700 shadow-md';
+    btnIdioms.className = 'flex-1 py-3 px-4 rounded-lg font-black text-sm transition-all flex items-center justify-center gap-2 text-emerald-900 hover:text-emerald-700 hover:bg-white/50';
   } else {
-    btnCurriculum.className = 'flex-1 py-3 px-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50';
-    btnIdioms.className = 'flex-1 py-3 px-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 bg-white text-rose-700 shadow-md';
+    btnCurriculum.className = 'flex-1 py-3 px-4 rounded-lg font-black text-sm transition-all flex items-center justify-center gap-2 text-emerald-900 hover:text-emerald-700 hover:bg-white/50';
+    btnIdioms.className = 'flex-1 py-3 px-4 rounded-lg font-black text-sm transition-all flex items-center justify-center gap-2 bg-white text-emerald-700 shadow-md';
     renderIdiomCard();
   }
 }
@@ -466,8 +466,8 @@ function renderIdiomRangeButtons() {
     btn.dataset.start = String(start);
     btn.dataset.end = String(end);
     btn.className = isSelected
-      ? 'px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black text-xs shadow-sm whitespace-nowrap transition-all'
-      : 'px-2.5 py-1 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-rose-700 font-bold text-xs shadow-xs border border-slate-200/60 whitespace-nowrap transition-all';
+      ? 'px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-xs shadow-sm whitespace-nowrap transition-all'
+      : 'px-2.5 py-1 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-emerald-700 font-bold text-xs shadow-xs border border-slate-200/60 whitespace-nowrap transition-all';
     btn.textContent = `${start}-${end}`;
 
     btn.addEventListener('click', () => {
@@ -621,7 +621,7 @@ function recordDailyIdiomView(date, idiomId) {
   const statusEl = document.getElementById('idiom-today-status');
   if (statusEl) {
     statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>今日已研讀 ${todayCount} 則成語`;
-    statusEl.className = 'mt-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 text-center text-xs font-bold';
+    statusEl.className = 'mt-4 py-2.5 rounded-lg bg-emerald-50 text-emerald-800 text-center text-xs font-bold';
   }
 
   saveIdiomProgress();
@@ -684,15 +684,15 @@ function renderIdiomCalendar() {
   for (let d = 1; d <= totalDays; d++) {
     const key = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const cell = document.createElement('button');
-    cell.className = 'calendar-cell rounded-xl flex flex-col items-center justify-center text-xs font-black transition';
+    cell.className = 'calendar-cell rounded-lg flex flex-col items-center justify-center text-xs font-black transition';
     const rec = dailyIdiomHistory.find(h => h.date === key);
 
     if (rec && rec.viewedCount > 0) {
       monthStudiedDays++;
-      cell.classList.add('bg-rose-500', 'text-white', 'shadow-sm');
+      cell.classList.add('bg-emerald-500', 'text-white', 'shadow-sm');
       cell.innerHTML = `<span>${d}</span><span class="text-[9px] font-normal opacity-90">${rec.viewedCount}則</span>`;
     } else if (key === todayKey) {
-      cell.classList.add('bg-rose-100', 'text-rose-800', 'border-2', 'border-rose-400');
+      cell.classList.add('bg-emerald-100', 'text-emerald-800', 'border-2', 'border-emerald-400');
       cell.textContent = d;
     } else {
       cell.classList.add('bg-slate-50', 'text-slate-500');
@@ -884,7 +884,7 @@ function renderIdiomQuizQuestion() {
   optionsContainer.innerHTML = '';
   q.options.forEach((opt, idx) => {
     const btn = document.createElement('button');
-    btn.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-rose-300 text-left font-bold transition flex items-center';
+    btn.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-emerald-300 text-left font-bold transition flex items-center';
     btn.innerHTML = `<span class="inline-flex w-7 h-7 mr-3 rounded-lg bg-slate-100 items-center justify-center text-xs font-black text-slate-600">${String.fromCharCode(65 + idx)}</span><span>${opt}</span>`;
     btn.onclick = () => answerIdiomQuiz(opt, btn);
     optionsContainer.appendChild(btn);
@@ -953,7 +953,7 @@ function renderPublisherButtons() {
   ALLOWED_PUBLISHERS.forEach(pub => {
     const btn = document.createElement('button');
     const active = pub === selectedPublisher;
-    btn.className = `py-3 rounded-lg border-2 font-black transition ${active ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'}`;
+    btn.className = `py-3 rounded-lg border-2 font-black transition ${active ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'}`;
     btn.textContent = pub;
     btn.onclick = () => {
       selectedPublisher = pub;
@@ -1006,7 +1006,7 @@ function renderQuestion() {
   } else if (q.kind === '統整加深') {
     kindEl.className = 'inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 tracking-wider mb-2';
   } else {
-    kindEl.className = 'inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 tracking-wider mb-2';
+    kindEl.className = 'inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 tracking-wider mb-2';
   }
 
   document.getElementById('question-text').textContent = q.prompt || q.question;
@@ -1015,7 +1015,7 @@ function renderQuestion() {
   const opts = q.options || [];
   opts.forEach((opt, idx) => {
     const btn = document.createElement('button');
-    btn.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-rose-300 text-left font-bold transition flex items-center';
+    btn.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-emerald-300 text-left font-bold transition flex items-center';
     btn.innerHTML = `<span class="inline-flex w-7 h-7 mr-3 rounded-lg bg-slate-100 items-center justify-center text-xs font-black text-slate-600">${String.fromCharCode(65 + idx)}</span><span>${opt}</span>`;
     btn.onclick = () => answerDailyQuestion(opt, btn);
     list.appendChild(btn);
@@ -1172,14 +1172,14 @@ function renderCalendar() {
   for (let d = 1; d <= totalDays; d++) {
     const key = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const cell = document.createElement('button');
-    cell.className = 'calendar-cell rounded-xl flex flex-col items-center justify-center text-xs font-black transition';
+    cell.className = 'calendar-cell rounded-lg flex flex-col items-center justify-center text-xs font-black transition';
     const rec = history.find(h => h.date === key);
 
     if (rec && rec.completedAttempts > 0) {
-      cell.classList.add('bg-rose-500', 'text-white', 'shadow-sm');
+      cell.classList.add('bg-emerald-500', 'text-white', 'shadow-sm');
       cell.innerHTML = `<span>${d}</span><span class="text-[9px] font-normal opacity-90">${rec.totalScore}分</span>`;
     } else if (key === todayKey) {
-      cell.classList.add('bg-rose-100', 'text-rose-800', 'border-2', 'border-rose-400');
+      cell.classList.add('bg-emerald-100', 'text-emerald-800', 'border-2', 'border-emerald-400');
       cell.textContent = d;
     } else {
       cell.classList.add('bg-slate-50', 'text-slate-500');
@@ -1230,7 +1230,7 @@ function renderReviewQuestion() {
   const targetAns = q.correct || q.answer;
   (q.options || []).forEach((opt, idx) => {
     const btn = document.createElement('button');
-    btn.className = 'review-answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-rose-300 text-left font-bold transition flex items-center';
+    btn.className = 'review-answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-emerald-300 text-left font-bold transition flex items-center';
     btn.innerHTML = `<span class="inline-flex w-7 h-7 mr-3 rounded-lg bg-slate-100 items-center justify-center text-xs font-black text-slate-600">${String.fromCharCode(65 + idx)}</span><span>${opt}</span>`;
     btn.onclick = () => answerReviewQuestion(opt, btn, q, targetAns);
     list.appendChild(btn);

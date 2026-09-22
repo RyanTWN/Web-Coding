@@ -462,27 +462,12 @@ function getResponsiveWordSize(word) {
 }
 
 function setupColorThemeSwitcher() {
-  const allowedThemes = new Set(['blue', 'green', 'pink']);
-  const storedTheme = localStorage.getItem('cool_learning_color_theme');
-  const initialTheme = allowedThemes.has(storedTheme) ? storedTheme : 'blue';
-  const themeColors = { blue: '#71899d', green: '#788e80', pink: '#a98283' };
-
-  const applyTheme = (theme) => {
-    if (!allowedThemes.has(theme)) return;
-    document.body.dataset.colorTheme = theme;
-    localStorage.setItem('cool_learning_color_theme', theme);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColors[theme]);
-    document.querySelectorAll('.theme-swatch').forEach((button) => {
-      const isActive = button.dataset.theme === theme;
-      button.classList.toggle('is-active', isActive);
-      button.setAttribute('aria-pressed', String(isActive));
-    });
-  };
-
-  document.querySelectorAll('.theme-swatch').forEach((button) => {
-    button.addEventListener('click', () => applyTheme(button.dataset.theme));
-  });
-  applyTheme(initialTheme);
+  const swatches = document.querySelectorAll('.theme-swatch');
+  if (swatches.length) {
+    swatches.forEach(btn => btn.parentElement?.removeChild(btn));
+  }
+  delete document.body.dataset.colorTheme;
+  localStorage.removeItem('cool_learning_color_theme');
 }
 
 if ('serviceWorker' in navigator) {
@@ -589,7 +574,7 @@ function renderCard() {
         nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all shadow-md";
       } else {
         nextBtn.innerHTML = '下一個 <i class="fa-solid fa-arrow-right"></i>';
-        nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold transition-all shadow-md";
+        nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold transition-all shadow-md";
       }
   }
 
@@ -623,7 +608,7 @@ function renderStarredList() {
     const div = document.createElement('div');
     div.className = "bg-slate-50 border rounded-lg p-3 flex items-center justify-between";
     div.innerHTML = `
-      <div><span class="font-bold text-slate-800 lowercase">${String(item.vocabulary || item.word || '').toLowerCase()}</span> <span class="text-xs text-brand-600 ml-2">${item.chinese || item.translation}</span></div>
+      <div><span class="font-bold text-slate-800 lowercase">${String(item.vocabulary || item.word || '').toLowerCase()}</span> <span class="text-xs text-rose-600 ml-2">${item.chinese || item.translation}</span></div>
       <button class="text-amber-400 p-1" data-id="${item.id}"><i class="fa-solid fa-star"></i></button>
     `;
     div.querySelector('button').onclick = () => {
@@ -656,7 +641,7 @@ function renderCalendar() {
     const key = `${year}-${mm}-${dd}`;
 
     const cell = document.createElement(key <= todayKey ? 'button' : 'div');
-    cell.className = completedDates.has(key) ? "h-8 bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center justify-center hover:bg-emerald-600" : key <= todayKey ? "h-8 bg-amber-50 text-amber-800 rounded-lg text-xs flex items-center justify-center hover:bg-amber-100" : "h-8 bg-slate-50 text-slate-300 rounded-lg text-xs flex items-center justify-center";
+    cell.className = completedDates.has(key) ? "h-8 bg-rose-500 text-white font-bold rounded-lg text-xs flex items-center justify-center hover:bg-rose-600" : key <= todayKey ? "h-8 bg-rose-50 text-rose-800 rounded-lg text-xs flex items-center justify-center hover:bg-rose-100" : "h-8 bg-slate-50 text-slate-300 rounded-lg text-xs flex items-center justify-center";
     cell.textContent = day;
     if (key <= todayKey) {
       cell.type = 'button';
@@ -675,8 +660,8 @@ function renderCalendar() {
   const card = document.getElementById('today-status-card');
   if (card) {
       if (completedDates.has(todayKey)) {
-        card.className = "w-full py-3 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold text-center";
-        card.innerHTML = '<i class="fa-solid fa-circle-check"></i> 今日學習已完成打卡！';
+        card.className = "w-full py-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-xs font-bold text-center";
+        card.innerHTML = '<i class="fa-solid fa-circle-check text-rose-500"></i> 今日學習已完成打卡！';
       } else {
         card.className = "w-full py-3 bg-amber-50 text-amber-800 rounded-lg text-xs font-bold text-center";
         card.innerHTML = '<i class="fa-solid fa-clock"></i> 完成今日 30 字將自動打卡';
