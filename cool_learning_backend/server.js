@@ -17,7 +17,11 @@ const app = express();
 const allowedOrigins = new Set([
   'https://learning.ifit.myds.me',
   'http://localhost:8085',
+  'http://localhost:8080',
   'http://localhost:5500',
+  'http://127.0.0.1:8085',
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:5500',
   ...(process.env.CORS_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean)
 ]);
 app.use(cors({
@@ -75,6 +79,10 @@ app.use('/api', require('./routes/nature')({
 }));
 
 app.use('/api', require('./routes/social')({
+  pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
+}));
+
+app.use('/api', require('./routes/chinese')({
   pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
 }));
 

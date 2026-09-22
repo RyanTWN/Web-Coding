@@ -586,10 +586,10 @@ function renderCard() {
   if (nextBtn) {
       if (currentIndex === today30Words.length - 1) {
         nextBtn.innerHTML = '完成學習 <i class="fa-solid fa-circle-check"></i>';
-        nextBtn.className = "flex-1 py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all shadow-md";
+        nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all shadow-md";
       } else {
         nextBtn.innerHTML = '下一個 <i class="fa-solid fa-arrow-right"></i>';
-        nextBtn.className = "flex-1 py-3 px-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-bold transition-all shadow-md";
+        nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold transition-all shadow-md";
       }
   }
 
@@ -621,7 +621,7 @@ function renderStarredList() {
 
   list.forEach(item => {
     const div = document.createElement('div');
-    div.className = "bg-slate-50 border rounded-2xl p-3 flex items-center justify-between";
+    div.className = "bg-slate-50 border rounded-lg p-3 flex items-center justify-between";
     div.innerHTML = `
       <div><span class="font-bold text-slate-800 lowercase">${String(item.vocabulary || item.word || '').toLowerCase()}</span> <span class="text-xs text-brand-600 ml-2">${item.chinese || item.translation}</span></div>
       <button class="text-amber-400 p-1" data-id="${item.id}"><i class="fa-solid fa-star"></i></button>
@@ -656,7 +656,7 @@ function renderCalendar() {
     const key = `${year}-${mm}-${dd}`;
 
     const cell = document.createElement(key <= todayKey ? 'button' : 'div');
-    cell.className = completedDates.has(key) ? "h-8 bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center hover:bg-emerald-600" : key <= todayKey ? "h-8 bg-amber-50 text-amber-800 rounded-xl text-xs flex items-center justify-center hover:bg-amber-100" : "h-8 bg-slate-50 text-slate-300 rounded-xl text-xs flex items-center justify-center";
+    cell.className = completedDates.has(key) ? "h-8 bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center justify-center hover:bg-emerald-600" : key <= todayKey ? "h-8 bg-amber-50 text-amber-800 rounded-lg text-xs flex items-center justify-center hover:bg-amber-100" : "h-8 bg-slate-50 text-slate-300 rounded-lg text-xs flex items-center justify-center";
     cell.textContent = day;
     if (key <= todayKey) {
       cell.type = 'button';
@@ -675,10 +675,10 @@ function renderCalendar() {
   const card = document.getElementById('today-status-card');
   if (card) {
       if (completedDates.has(todayKey)) {
-        card.className = "w-full py-3 bg-emerald-100 text-emerald-800 rounded-2xl text-xs font-bold text-center";
+        card.className = "w-full py-3 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold text-center";
         card.innerHTML = '<i class="fa-solid fa-circle-check"></i> 今日學習已完成打卡！';
       } else {
-        card.className = "w-full py-3 bg-amber-50 text-amber-800 rounded-2xl text-xs font-bold text-center";
+        card.className = "w-full py-3 bg-amber-50 text-amber-800 rounded-lg text-xs font-bold text-center";
         card.innerHTML = '<i class="fa-solid fa-clock"></i> 完成今日 30 字將自動打卡';
       }
   }
@@ -703,6 +703,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('modal-cancel-btn')?.addEventListener('click', () => {
       document.getElementById('custom-modal')?.classList.add('hidden');
+  });
+
+  // 本機開發快速進入（免驗證直接進大廳）
+  const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const devQuickBox = document.getElementById('dev-quick-box');
+  if (devQuickBox) {
+    devQuickBox.style.display = isLocalEnv ? 'block' : 'none';
+  }
+  document.getElementById('btn-dev-quick-login')?.addEventListener('click', () => {
+    currentUser = { name: '本機測試生', seatNo: '60101', token: 'mock-dev-token', isDev: true };
+    sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+    const hName = document.getElementById('header-user-name');
+    const hSeat = document.getElementById('header-user-seat');
+    if (hName) hName.textContent = currentUser.name;
+    if (hSeat) hSeat.textContent = `座號: ${currentUser.seatNo}`;
+    const subName = document.getElementById('subject-user-name');
+    if (subName) subName.textContent = currentUser.name;
+    document.getElementById('user-profile-badge')?.classList.remove('hidden');
+    showView('view-subjects');
+    showToast('已以本機測試學生身分進入大廳', 'fa-flask');
   });
 
   // 登出與首頁
@@ -1446,13 +1466,13 @@ function renderGuardianChildren(children) {
 
   if (!children || children.length === 0) {
     container.innerHTML = `
-      <div class="col-span-full py-12 px-4 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+      <div class="col-span-full py-12 px-4 text-center bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
         <div class="w-14 h-14 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
           <i class="fa-solid fa-child-reaching"></i>
         </div>
         <h4 class="font-bold text-slate-700 text-sm mb-1">尚未建立任何子女檔案</h4>
         <p class="text-xs text-slate-400 mb-4">點擊右上角「+ 新增子女檔案」，系統將自動產生 5 碼專屬虛擬座號，隨時一鍵進入學習！</p>
-        <button onclick="document.getElementById('btn-open-add-child-modal').click()" class="px-5 py-2.5 bg-[#173852] hover:bg-[#112a3e] text-white font-bold text-xs rounded-xl shadow-md">
+        <button onclick="document.getElementById('btn-open-add-child-modal').click()" class="px-5 py-2.5 bg-[#173852] hover:bg-[#112a3e] text-white font-bold text-xs rounded-lg shadow-md">
           立即新增第一位子女
         </button>
       </div>
@@ -1467,11 +1487,11 @@ function renderGuardianChildren(children) {
       : `<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-shield-cat mr-1"></i>限家長代登模式</span>`;
 
     return `
-      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-4">
+      <div class="bg-white rounded-lg p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-4">
         <div>
           <div class="flex items-start justify-between gap-2 mb-2">
             <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center text-lg font-black shadow-md">
+              <div class="w-11 h-11 rounded-md bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center text-lg font-black shadow-md">
                 ${child.nickname.slice(0, 1)}
               </div>
               <div>
@@ -1491,13 +1511,13 @@ function renderGuardianChildren(children) {
         </div>
 
         <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-          <button onclick="startChildStudy(${child.id}, '${child.nickname}', '${child.linked_seat_no}')" class="flex-1 py-2.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+          <button onclick="startChildStudy(${child.id}, '${child.nickname}', '${child.linked_seat_no}')" class="flex-1 py-2.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
             <i class="fa-solid fa-rocket text-amber-400"></i> 開始學習
           </button>
-          <button onclick="openEditChildModal(${child.id}, '${child.nickname}', '${child.grade_level || '國小六年級'}')" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-colors" title="修改資訊或重設密碼">
+          <button onclick="openEditChildModal(${child.id}, '${child.nickname}', '${child.grade_level || '國小六年級'}')" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg transition-colors" title="修改資訊或重設密碼">
             <i class="fa-solid fa-pen"></i>
           </button>
-          <button onclick="deleteChildProfile(${child.id}, '${child.nickname}')" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-colors" title="刪除檔案">
+          <button onclick="deleteChildProfile(${child.id}, '${child.nickname}')" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-lg transition-colors" title="刪除檔案">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>

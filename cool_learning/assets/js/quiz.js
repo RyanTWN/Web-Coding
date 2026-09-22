@@ -137,7 +137,7 @@ function showQuizQuestion() {
     optionsGrid.innerHTML = '';
     options.forEach(opt => {
       const btn = document.createElement('button');
-      btn.className = "w-full py-3 px-4 bg-white border-2 rounded-2xl font-bold text-slate-700 text-left flex justify-between";
+      btn.className = "w-full py-3 px-4 bg-white border-2 rounded-lg font-bold text-slate-700 text-left flex justify-between";
       
       // 修正 2：相容資料庫的 vocabulary 或舊版的 word
       const wordText = String(opt.vocabulary || opt.word || '').toLowerCase();
@@ -146,10 +146,10 @@ function showQuizQuestion() {
       btn.onclick = () => {
         if (opt.id === q.id) {
           quizScore++;
-          btn.className = "w-full py-3 px-4 bg-emerald-50 border-emerald-500 text-emerald-700 border-2 rounded-2xl font-bold text-left flex justify-between";
+          btn.className = "w-full py-3 px-4 bg-emerald-50 border-emerald-500 text-emerald-700 border-2 rounded-lg font-bold text-left flex justify-between";
           speakText(wordText);
         } else {
-          btn.className = "w-full py-3 px-4 bg-rose-50 border-rose-500 text-rose-700 border-2 rounded-2xl font-bold text-left flex justify-between";
+          btn.className = "w-full py-3 px-4 bg-rose-50 border-rose-500 text-rose-700 border-2 rounded-lg font-bold text-left flex justify-between";
         }
         document.getElementById('quiz-next-btn').classList.remove('hidden');
         

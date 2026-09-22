@@ -27,8 +27,8 @@
 
   <!-- 確認對話框 -->
   <div id="custom-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
-      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">
+    <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
+      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-md flex items-center justify-center text-2xl mx-auto mb-3">
         <i id="modal-icon" class="fa-solid fa-triangle-exclamation"></i>
       </div>
       <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2">確定要執行嗎？</h3>
@@ -42,10 +42,10 @@
 
   <!-- 學生詳細數據 Modal -->
   <div id="student-detail-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-white/80 card-flip-enter flex flex-col max-h-[85vh]">
+    <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-2xl border border-white/80 card-flip-enter flex flex-col max-h-[85vh]">
       <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-black">
+          <div class="w-10 h-10 rounded-md bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-black">
             <i class="fa-solid fa-id-card"></i>
           </div>
           <div>
@@ -59,27 +59,27 @@
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-        <div class="bg-amber-50/70 p-2.5 rounded-2xl border border-amber-200/60 text-center">
+        <div class="bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/60 text-center">
           <span class="text-[10px] text-amber-700 font-bold block">累積打卡</span>
           <span id="detail-stat-completed" class="text-sm font-black text-amber-600">0 天</span>
         </div>
-        <div class="bg-blue-50/70 p-2.5 rounded-2xl border border-blue-200/60 text-center">
+        <div class="bg-blue-50/70 p-2.5 rounded-lg border border-blue-200/60 text-center">
           <span class="text-[10px] text-blue-700 font-bold block">2000字進度</span>
           <span id="detail-stat-percent" class="text-sm font-black text-blue-600">0.0%</span>
           <span id="detail-stat-learned-count" class="text-[9px] text-slate-500 font-bold block">0 / 2000 字</span>
         </div>
-        <div class="bg-purple-50/70 p-2.5 rounded-2xl border border-purple-200/60 text-center">
+        <div class="bg-purple-50/70 p-2.5 rounded-lg border border-purple-200/60 text-center">
           <span class="text-[10px] text-purple-700 font-bold block">標記難字</span>
           <span id="detail-stat-starred" class="text-sm font-black text-purple-600">0 個</span>
         </div>
-        <div class="bg-emerald-50/70 p-2.5 rounded-2xl border border-emerald-200/60 text-center">
+        <div class="bg-emerald-50/70 p-2.5 rounded-lg border border-emerald-200/60 text-center">
           <span class="text-[10px] text-emerald-700 font-bold block">測驗紀錄</span>
           <span id="detail-stat-quizzes" class="text-xs font-black text-emerald-600">0 次</span>
         </div>
       </div>
 
       <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 pr-1">
-        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+        <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
           <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center justify-between">
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left text-amber-500"></i> 測驗歷程紀錄</span>
             <span id="detail-quiz-count-badge" class="text-[10px] text-slate-400 font-medium">共 0 筆</span>
@@ -98,7 +98,7 @@
           </div>
         </div>
 
-        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+        <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
           <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center justify-between">
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-star text-amber-400"></i> 目前收藏之難字本</span>
             <span id="detail-starred-count-badge" class="text-[10px] text-slate-400 font-medium">共 0 字</span>
@@ -116,9 +116,9 @@
   </div>
 
   <!-- 管理員頂部導覽列 -->
-  <header class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-slate-200 shadow-sm mb-4">
+  <header class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-5 py-3 rounded-lg border border-slate-200 shadow-sm mb-4">
     <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
-      <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+      <div class="w-10 h-10 rounded-md bg-amber-500 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
         <i class="fa-solid fa-user-shield"></i>
       </div>
       <div>
@@ -138,8 +138,8 @@
 
   <!-- 管理員登入視圖 -->
   <section id="view-admin-login" class="w-full max-w-md mx-auto my-auto py-8">
-    <div class="bg-white rounded-3xl p-8 shadow-xl border border-slate-200 text-center card-flip-enter">
-      <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm">
+    <div class="bg-white rounded-lg p-8 shadow-xl border border-slate-200 text-center card-flip-enter">
+      <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-md flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm">
         <i class="fa-solid fa-lock"></i>
       </div>
       <h2 class="text-2xl font-black text-slate-800 tracking-wide mb-1">管理員登入</h2>
@@ -163,10 +163,10 @@
 
   <!-- 管理員主後台面板 (登入後顯示) -->
   <section id="view-admin" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter">
-    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200">
+    <div class="bg-white rounded-lg p-6 sm:p-8 shadow-xl border border-slate-200">
       <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-xl shadow-md"><i class="fa-solid fa-user-shield"></i></div>
+          <div class="w-12 h-12 bg-amber-500 text-white rounded-md flex items-center justify-center text-xl shadow-md"><i class="fa-solid fa-user-shield"></i></div>
           <div>
             <h2 class="text-2xl font-black text-slate-800">學習管理後台</h2>
             <p class="text-xs text-slate-500 font-medium">學生帳號管理、密碼重設與 2000 字學習數據稽核</p>
@@ -183,7 +183,7 @@
       <!-- 學生帳號管理面板 -->
       <div id="admin-panel-users">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 class="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-user-plus text-amber-500"></i> 手動新增單一學生</h4>
             <form id="form-add-student" class="space-y-2.5">
               <div class="grid grid-cols-2 gap-2">
@@ -194,7 +194,7 @@
             </form>
           </div>
 
-          <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 flex flex-col justify-between">
+          <div class="bg-amber-50/60 p-4 rounded-lg border border-amber-200/80 flex flex-col justify-between">
             <div>
               <div class="flex items-center justify-between mb-2">
                 <h4 class="font-bold text-sm text-amber-900 flex items-center gap-2"><i class="fa-solid fa-file-csv text-amber-600"></i> CSV 檔批次匯入帳號</h4>
@@ -209,7 +209,7 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
           <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><i class="fa-solid fa-list-check text-slate-500"></i> 學生帳號清單 (<span id="admin-user-count">0</span> 人)</span>
             <button id="btn-clear-all-students" class="text-xs text-rose-500 font-bold"><i class="fa-solid fa-trash-can mr-1"></i>清空學生名單</button>
@@ -228,10 +228,10 @@
       <!-- 全班成效統計面板 -->
       <div id="admin-panel-analytics" class="hidden">
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-amber-700 block">學生總數</span><span id="stat-total-students" class="text-xl font-black text-amber-600">0 人</span></div>
-          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-emerald-700 block">今日學習完成</span><span id="stat-completed-today" class="text-xl font-black text-emerald-600">0 人</span></div>
-          <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-amber-700 block">平均打卡天數</span><span id="stat-avg-days" class="text-xl font-black text-amber-600">0 天</span></div>
-          <div class="bg-purple-50 border border-purple-200 p-3 rounded-2xl text-center"><span class="text-[11px] font-semibold text-purple-700 block">平均標記難字</span><span id="stat-avg-starred" class="text-xl font-black text-purple-600">0 個</span></div>
+          <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-center"><span class="text-[11px] font-semibold text-amber-700 block">學生總數</span><span id="stat-total-students" class="text-xl font-black text-amber-600">0 人</span></div>
+          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-center"><span class="text-[11px] font-semibold text-emerald-700 block">今日學習完成</span><span id="stat-completed-today" class="text-xl font-black text-emerald-600">0 人</span></div>
+          <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-center"><span class="text-[11px] font-semibold text-amber-700 block">平均打卡天數</span><span id="stat-avg-days" class="text-xl font-black text-amber-600">0 天</span></div>
+          <div class="bg-purple-50 border border-purple-200 p-3 rounded-lg text-center"><span class="text-[11px] font-semibold text-purple-700 block">平均標記難字</span><span id="stat-avg-starred" class="text-xl font-black text-purple-600">0 個</span></div>
         </div>
 
         <div class="flex items-center justify-between mb-3">
@@ -239,7 +239,7 @@
           <button id="btn-export-performance-csv" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-file-export"></i> 匯出學習成效 CSV 報表</button>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
           <div class="max-h-[320px] overflow-y-auto custom-scrollbar">
             <table class="w-full text-left border-collapse">
               <thead class="bg-slate-100 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
@@ -263,7 +263,7 @@
 
       <!-- 單字庫管理面板 -->
       <div id="admin-panel-words" class="hidden space-y-5">
-        <form id="form-add-word" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+        <form id="form-add-word" class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
           <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-amber-500"></i>新增英文單字</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input id="add-word-vocabulary" required maxlength="255" placeholder="英文單字，例如 abandon" class="py-2 px-3 text-xs font-bold rounded-xl border">
@@ -280,7 +280,7 @@
           <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm">加入單字庫</button>
         </form>
 
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
           <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2 items-center justify-between">
             <input id="word-search" type="text" placeholder="搜尋單字、音標、中文..." class="py-2 px-3 text-xs rounded-xl border w-full sm:w-64">
             <div class="flex gap-2">

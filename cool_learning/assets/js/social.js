@@ -627,7 +627,7 @@ function showToast(message, tone = 'slate') {
   const toast = document.getElementById('toast');
   if (!toast) return;
   document.getElementById('toast-text').textContent = message;
-  document.getElementById('toast-bg').className = `${tone === 'rose' ? 'bg-rose-600' : tone === 'emerald' ? 'bg-emerald-600' : 'bg-slate-800'} text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 font-bold text-sm`;
+  document.getElementById('toast-bg').className = `${tone === 'rose' ? 'bg-rose-600' : tone === 'emerald' ? 'bg-emerald-600' : 'bg-slate-800'} text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 font-bold text-sm`;
   toast.classList.remove('-translate-y-16', 'opacity-0', 'pointer-events-none');
   setTimeout(() => toast.classList.add('-translate-y-16', 'opacity-0', 'pointer-events-none'), 2200);
 }
@@ -646,7 +646,7 @@ function renderPublisherButtons() {
   ALLOWED_PUBLISHERS.forEach(publisher => {
     const button = document.createElement('button');
     const active = publisher === selectedPublisher;
-    button.className = `py-3 rounded-2xl border-2 font-black transition ${active ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-500'}`;
+    button.className = `py-3 rounded-lg border-2 font-black transition ${active ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-500'}`;
     button.textContent = publisher;
     button.disabled = Boolean(dailyState);
     button.onclick = () => { selectedPublisher = publisher; renderPublisherButtons(); renderChapterOptions(); };
@@ -742,7 +742,7 @@ function renderQuestion() {
   list.innerHTML = '';
   question.options.forEach((option, index) => {
     const button = document.createElement('button');
-    button.className = 'answer-option w-full p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-orange-300 text-left font-bold transition';
+    button.className = 'answer-option w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-orange-300 text-left font-bold transition';
     button.innerHTML = `<span class="inline-flex w-7 h-7 mr-2 rounded-lg bg-slate-100 items-center justify-center text-xs font-black">${String.fromCharCode(65 + index)}</span>${option}`;
     button.onclick = () => answerDailyQuestion(option, button);
     list.appendChild(button);
@@ -765,7 +765,7 @@ async function answerDailyQuestion(option, selectedButton) {
     dailyState.wrongQuestions.push({ ...question, publisher: dailyState.publisher, chapter: dailyState.chapter });
   }
   const feedback = document.getElementById('feedback');
-  feedback.className = `mt-5 rounded-2xl p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
+  feedback.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
   feedback.innerHTML = `<strong>${correct ? '答對了！' : `正確答案：${question.answer}`}</strong><br>${question.explanation}`;
   
   const btnNext = document.getElementById('btn-next');
@@ -996,7 +996,7 @@ function finishSpeedQuiz() {
   } else {
     wrongCountTag.textContent = `${wrongs.length} 題`;
     listEl.innerHTML = wrongs.map(item => `
-      <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 text-xs text-rose-900 leading-relaxed">
+      <div class="bg-rose-50 border border-rose-100 rounded-lg p-3.5 text-xs text-rose-900 leading-relaxed">
         <div class="flex items-start gap-2 font-bold mb-1">
           <span class="px-1.5 py-0.5 rounded bg-rose-200 text-rose-700 text-[10px]">你的答案: ${item.userChoice ? '⭕ 正確' : '❌ 錯誤'}</span>
           <span class="px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800 text-[10px]">正確解答: ${item.isTrue ? '⭕ 正確' : '❌ 錯誤'}</span>
@@ -1075,7 +1075,7 @@ function renderReviewQuestion() {
   list.innerHTML = '';
   item.options.forEach((option, index) => {
     const button = document.createElement('button');
-    button.className = 'w-full p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-orange-300 text-left font-bold transition';
+    button.className = 'w-full p-4 rounded-lg border-2 border-slate-200 bg-white hover:border-orange-300 text-left font-bold transition';
     button.innerHTML = `<span class="inline-flex w-7 h-7 mr-2 rounded-lg bg-slate-100 items-center justify-center text-xs font-black">${String.fromCharCode(65 + index)}</span>${option}`;
     button.onclick = () => answerReviewQuestion(option, button);
     list.appendChild(button);
@@ -1102,7 +1102,7 @@ async function answerReviewQuestion(option, selectedButton) {
     if (wrongCountEl) wrongCountEl.textContent = wrongBank.length;
   }
   const feedback = document.getElementById('review-feedback');
-  feedback.className = `mt-5 rounded-2xl p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
+  feedback.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
   feedback.innerHTML = `<strong>${correct ? '答對了！已移出錯題清單' : `正確答案：${item.answer}`}</strong><br>${item.explanation}`;
   const reviewNext = document.getElementById('review-next');
   if (reviewNext) {

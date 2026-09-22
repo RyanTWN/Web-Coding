@@ -35,8 +35,8 @@
 
   <!-- 確認對話框 -->
   <div id="custom-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
-      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">
+    <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
+      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-md flex items-center justify-center text-2xl mx-auto mb-3">
         <i id="modal-icon" class="fa-solid fa-triangle-exclamation"></i>
       </div>
       <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2">確定要執行嗎？</h3>
@@ -48,11 +48,10 @@
     </div>
   </div>
 
-
   <!-- 全域頂部導覽列 -->
-  <header id="global-header" class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/60 shadow-sm mb-4">
+  <header id="global-header" class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/80 backdrop-blur-md px-5 py-3 rounded-lg border border-white/60 shadow-sm mb-4">
     <div id="btn-go-home" class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
-      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-500 to-amber-400 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+      <div class="w-10 h-10 rounded-md bg-gradient-to-tr from-brand-500 to-amber-400 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
         <i class="fa-solid fa-rocket"></i>
       </div>
       <div>
@@ -74,7 +73,7 @@
 
   <!-- 登入頁面 (依據設計稿精緻改版) -->
   <section id="view-login" class="w-full max-w-md mx-auto my-auto py-6 px-2">
-    <div class="relative bg-white/95 backdrop-blur-md rounded-[28px] p-7 sm:p-10 shadow-2xl border border-[#d6c7b2]/80 card-flip-enter overflow-hidden">
+    <div class="relative bg-white/95 backdrop-blur-md rounded-lg p-7 sm:p-10 shadow-2xl border border-[#d6c7b2]/80 card-flip-enter overflow-hidden">
       <!-- 呼應背景線條的微光環與波紋氛圍 -->
       <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-gradient-to-br from-cyan-100/40 via-teal-100/30 to-amber-100/30 blur-2xl pointer-events-none"></div>
       <div class="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-gradient-to-tr from-amber-100/40 to-cyan-100/30 blur-2xl pointer-events-none"></div>
@@ -116,7 +115,7 @@
           </div>
 
           <div id="student-login-password-setup" class="space-y-3 hidden">
-            <p class="text-xs text-teal-700 font-medium bg-teal-50/90 border border-teal-200/70 rounded-2xl p-3 leading-relaxed">
+            <p class="text-xs text-teal-700 font-medium bg-teal-50/90 border border-teal-200/70 rounded-lg p-3 leading-relaxed">
               <i class="fa-solid fa-circle-info mr-1 text-teal-600"></i>這是你第一次登入，請設定一組自選密碼（至少 6 碼，需含英文字母與數字），下次登入要記得用喔！
             </p>
             <div>
@@ -129,7 +128,7 @@
         </div>
 
         <!-- 學生登入錯誤提示區 -->
-        <div id="student-login-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
+        <div id="student-login-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-lg text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
           <i id="student-login-error-icon" class="fa-solid fa-circle-exclamation text-rose-500 text-base shrink-0 mt-0.5"></i>
           <span id="student-login-error-text" class="leading-relaxed font-semibold"></span>
         </div>
@@ -141,6 +140,13 @@
 
         <div class="flex items-center justify-center gap-3 text-xs text-slate-500 pt-2 font-medium">
           <button type="button" onclick="showForgotPasswordInfoModal()" class="hover:text-[#173852] transition-colors underline-offset-4 hover:underline">忘記密碼？</button>
+        </div>
+
+        <!-- 本機測試免登入快捷入口 (僅在 localhost / 127.0.0.1 顯示) -->
+        <div id="dev-quick-box" class="pt-3 border-t border-slate-200/80 text-center">
+          <button type="button" id="btn-dev-quick-login" class="w-full py-2.5 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs flex items-center justify-center gap-2 transition-all">
+            <i class="fa-solid fa-flask text-amber-600"></i> 本機開發快速進入（免密碼登入）
+          </button>
         </div>
       </form>
 
@@ -156,7 +162,7 @@
           </div>
 
           <!-- 家長登入錯誤提示區 -->
-          <div id="guardian-login-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
+          <div id="guardian-login-error" class="hidden p-3.5 bg-rose-50 border-2 border-rose-300 rounded-lg text-xs text-rose-700 font-bold flex items-start gap-2.5 shadow-sm">
             <i class="fa-solid fa-circle-exclamation text-rose-500 text-base shrink-0 mt-0.5"></i>
             <span id="guardian-login-error-text" class="leading-relaxed font-semibold"></span>
           </div>
@@ -212,8 +218,8 @@
 
   <!-- 科目大廳 -->
   <section id="view-subjects" class="w-full max-w-3xl mx-auto my-auto hidden card-flip-enter">
-    <div class="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl border border-white/80">
-      <div class="bg-gradient-to-r from-brand-500 to-indigo-500 rounded-2xl p-6 text-white mb-6 shadow-md flex items-center justify-between">
+    <div class="bg-white/90 backdrop-blur-md rounded-lg p-6 sm:p-8 shadow-xl border border-white/80">
+      <div class="bg-gradient-to-r from-brand-500 to-indigo-500 rounded-lg p-6 text-white mb-6 shadow-md flex items-center justify-between">
         <div>
           <h2 class="text-2xl sm:text-3xl font-black">你好，<span id="subject-user-name">同學</span>！ 👋</h2>
           <p class="text-xs sm:text-sm text-blue-100 mt-1 font-medium">今天想挑戰哪一個科目的酷學習呢？</p>
@@ -221,80 +227,93 @@
         <div class="hidden sm:block text-5xl opacity-80"><i class="fa-solid fa-compass-drafting"></i></div>
       </div>
 
+      <!-- ============================================================================= -->
+      <!-- 【配色記錄備份】                                                               -->
+      <!-- 1. 莫蘭迪風格 (曾用備份):                                                        -->
+      <!--    英文: bg-[#7e99ab]/20 / 數學: bg-[#8ea89d]/20 / 國語: bg-[#b88686]/20       -->
+      <!--    自然: bg-[#baa588]/20 / 社會: bg-[#b38b7d]/20 / 健體: bg-[#98a2ad]/15       -->
+      <!-- 2. 指定活力配色:                                                               -->
+      <!--    英文: 活潑珊瑚粉紅 (rose/red)                                                -->
+      <!--    數學: 清爽天藍 (sky/blue)                                                   -->
+      <!--    國語: 護眼翠綠 (emerald/teal)                                               -->
+      <!--    自然: 明亮琥珀橙 (amber/orange)                                             -->
+      <!--    社會: 浪漫粉紫色 (purple/fuchsia)                                           -->
+      <!-- ============================================================================= -->
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- 英文單字 (跳轉至 english.html) -->
-        <div onclick="window.location.href='english.html'" class="card-bounce bg-gradient-to-br from-brand-50 to-blue-100/60 border-2 border-brand-200 rounded-3xl p-5 cursor-pointer flex items-center justify-between group">
+        <!-- 英文單字 (活潑珊瑚粉紅・半透明動態玻璃風格) -->
+        <div onclick="window.location.href='english.html'" class="card-bounce bg-gradient-to-br from-rose-50/85 to-red-100/60 backdrop-blur-md border border-rose-200/80 hover:border-rose-300 hover:shadow-lg hover:-translate-y-0.5 rounded-lg p-5 cursor-pointer flex items-center justify-between group transition-all duration-300 shadow-sm">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform"><i class="fa-solid fa-language"></i></div>
+            <div class="w-14 h-14 rounded-md bg-gradient-to-tr from-rose-500 to-red-600 text-white flex items-center justify-center text-2xl shadow-md shadow-rose-500/25 group-hover:scale-105 transition-transform"><i class="fa-solid fa-language"></i></div>
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="text-xl font-bold text-slate-800">英文單字</h3>
-                <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">每日30字</span>
+                <span class="bg-rose-100/90 text-rose-700 text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-xs">每日30字</span>
               </div>
               <p class="text-xs text-slate-500 font-medium mt-0.5">2000 常用字庫動態抽取</p>
             </div>
           </div>
-          <i class="fa-solid fa-chevron-right text-brand-500 text-lg group-hover:translate-x-1 transition-transform"></i>
+          <i class="fa-solid fa-chevron-right text-rose-500 text-lg group-hover:translate-x-1 transition-transform"></i>
         </div>
 
-        <!-- 數學天地 -->
-        <div onclick="window.location.href='math.html'" class="card-bounce bg-gradient-to-br from-emerald-50 to-green-100/60 border-2 border-emerald-200 rounded-3xl p-5 cursor-pointer flex items-center justify-between group">
+        <!-- 數學天地 (清爽天藍・半透明動態玻璃風格) -->
+        <div onclick="window.location.href='math.html'" class="card-bounce bg-gradient-to-br from-sky-50/85 to-blue-100/60 backdrop-blur-md border border-sky-200/80 hover:border-sky-300 hover:shadow-lg hover:-translate-y-0.5 rounded-lg p-5 cursor-pointer flex items-center justify-between group transition-all duration-300 shadow-sm">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-emerald-400 text-white flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform"><i class="fa-solid fa-calculator"></i></div>
+            <div class="w-14 h-14 rounded-md bg-gradient-to-tr from-sky-400 to-blue-600 text-white flex items-center justify-center text-2xl shadow-md shadow-sky-500/25 group-hover:scale-105 transition-transform"><i class="fa-solid fa-calculator"></i></div>
             <div>
-              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">數學天地</h3><span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">每日10題</span></div>
+              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">數學天地</h3><span class="bg-sky-100/90 text-sky-700 text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-xs">每日10題</span></div>
               <p class="text-xs text-slate-500 font-medium mt-0.5">課綱動態演練・步驟詳解・錯題本</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-sky-500 text-lg group-hover:translate-x-1 transition-transform"></i>
+        </div>
+
+        <!-- 國語文學 (護眼翠綠・半透明動態玻璃風格) -->
+        <div onclick="window.location.href='chinese.html'" class="card-bounce bg-gradient-to-br from-emerald-50/85 to-teal-100/60 backdrop-blur-md border border-emerald-200/80 hover:border-emerald-300 hover:shadow-lg hover:-translate-y-0.5 rounded-lg p-5 cursor-pointer flex items-center justify-between group transition-all duration-300 shadow-sm">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-md bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center text-2xl shadow-md shadow-emerald-500/25 group-hover:scale-105 transition-transform"><i class="fa-solid fa-book-open"></i></div>
+            <div>
+              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">國語文學</h3><span class="bg-emerald-100/90 text-emerald-700 text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-xs">每日20題・成語200</span></div>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">三版本課綱・3D翻卡・成語隨堂測驗</p>
             </div>
           </div>
           <i class="fa-solid fa-chevron-right text-emerald-500 text-lg group-hover:translate-x-1 transition-transform"></i>
         </div>
 
-        <!-- 國語 (即將上線) -->
-        <div onclick="window.showToast('『國語』即將上線！', 'fa-rocket')" class="card-bounce bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 cursor-pointer flex items-center justify-between opacity-85 hover:bg-slate-100 transition-colors">
+        <!-- 自然科學 (明亮琥珀橙・半透明動態玻璃風格) -->
+        <div onclick="window.location.href='nature.html'" class="card-bounce bg-gradient-to-br from-amber-50/85 to-orange-100/60 backdrop-blur-md border border-amber-200/80 hover:border-amber-300 hover:shadow-lg hover:-translate-y-0.5 rounded-lg p-5 cursor-pointer flex items-center justify-between group transition-all duration-300 shadow-sm">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-rose-400 text-white flex items-center justify-center text-2xl shadow-md"><i class="fa-solid fa-book-open"></i></div>
+            <div class="w-14 h-14 rounded-md bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center text-2xl shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform"><i class="fa-solid fa-flask"></i></div>
             <div>
-              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">國語</h3><span class="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold">即將上線</span></div>
-              <p class="text-xs text-slate-400 font-medium mt-0.5">閱讀與寫作素養</p>
-            </div>
-          </div>
-          <i class="fa-solid fa-lock text-slate-300"></i>
-        </div>
-
-        <!-- 自然科學 -->
-        <div onclick="window.location.href='nature.html'" class="card-bounce bg-gradient-to-br from-amber-50 to-orange-100/60 border-2 border-amber-200 rounded-3xl p-5 cursor-pointer flex items-center justify-between group">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform"><i class="fa-solid fa-flask"></i></div>
-            <div>
-              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">自然科學</h3><span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold">每日20題</span></div>
+              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">自然科學</h3><span class="bg-amber-100/90 text-amber-700 text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-xs">每日20題</span></div>
               <p class="text-xs text-slate-500 font-medium mt-0.5">115學年度三版本章節題庫</p>
             </div>
           </div>
           <i class="fa-solid fa-chevron-right text-amber-500 text-lg group-hover:translate-x-1 transition-transform"></i>
         </div>
 
-        <!-- 社會人文 (跳轉至 social.html) -->
-        <div onclick="window.location.href='social.html'" class="card-bounce bg-gradient-to-br from-orange-50 to-amber-100/60 border-2 border-orange-200 rounded-3xl p-5 cursor-pointer flex items-center justify-between group">
+        <!-- 社會人文 (浪漫粉紫色・半透明動態玻璃風格) -->
+        <div onclick="window.location.href='social.html'" class="card-bounce bg-gradient-to-br from-purple-50/85 to-fuchsia-100/60 backdrop-blur-md border border-purple-200/80 hover:border-purple-300 hover:shadow-lg hover:-translate-y-0.5 rounded-lg p-5 cursor-pointer flex items-center justify-between group transition-all duration-300 shadow-sm">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-orange-500 text-white flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform"><i class="fa-solid fa-earth-americas"></i></div>
+            <div class="w-14 h-14 rounded-md bg-gradient-to-tr from-purple-500 to-fuchsia-600 text-white flex items-center justify-center text-2xl shadow-md shadow-purple-500/25 group-hover:scale-105 transition-transform"><i class="fa-solid fa-earth-americas"></i></div>
             <div>
-              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">社會人文</h3><span class="bg-orange-100 text-orange-700 text-[10px] px-2 py-0.5 rounded-full font-bold">每日20題</span></div>
+              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">社會人文</h3><span class="bg-purple-100/90 text-purple-700 text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-xs">每日20題</span></div>
               <p class="text-xs text-slate-500 font-medium mt-0.5">115學年度三版本章節題庫</p>
             </div>
           </div>
-          <i class="fa-solid fa-chevron-right text-orange-500 text-lg group-hover:translate-x-1 transition-transform"></i>
+          <i class="fa-solid fa-chevron-right text-purple-500 text-lg group-hover:translate-x-1 transition-transform"></i>
         </div>
 
-        <!-- 健康與體育 (即將上線) -->
-        <div onclick="window.showToast('『健康與體育』即將上線！', 'fa-rocket')" class="card-bounce bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 cursor-pointer flex items-center justify-between opacity-85 hover:bg-slate-100 transition-colors">
+        <!-- 健康與體育 (天藍・半透明動態玻璃風格) -->
+        <div onclick="window.showToast('『健康與體育』即將上線！', 'fa-rocket')" class="card-bounce bg-slate-50/80 backdrop-blur-md border border-slate-200/80 hover:bg-slate-100/90 rounded-lg p-5 cursor-pointer flex items-center justify-between opacity-85 transition-all duration-300 shadow-sm">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-cyan-400 text-white flex items-center justify-center text-2xl shadow-md"><i class="fa-solid fa-person-running"></i></div>
+            <div class="w-14 h-14 rounded-md bg-gradient-to-tr from-cyan-400 to-blue-500 text-white flex items-center justify-center text-2xl shadow-md shadow-cyan-500/25"><i class="fa-solid fa-person-running"></i></div>
             <div>
-              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-800">健康與體育</h3><span class="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold">即將上線</span></div>
+              <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-slate-700">健康與體育</h3><span class="bg-slate-200 text-slate-600 text-[10px] px-2.5 py-0.5 rounded-full font-bold">即將上線</span></div>
               <p class="text-xs text-slate-400 font-medium mt-0.5">運動與健康生活</p>
             </div>
           </div>
-          <i class="fa-solid fa-lock text-slate-300"></i>
+          <i class="fa-solid fa-lock text-slate-400"></i>
         </div>
       </div>
     </div>
@@ -302,11 +321,11 @@
 
    <!-- 家長專屬儀表板 (Guardian Dashboard) -->
   <section id="view-guardian-dashboard" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter pb-8">
-    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#d6c7b2]/80">
+    <div class="bg-white/95 backdrop-blur-md rounded-lg p-6 sm:p-8 shadow-2xl border border-[#d6c7b2]/80">
       <!-- 家長歡迎標題列 -->
       <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-gradient-to-tr from-[#173852] to-[#3a7d88] text-white rounded-2xl flex items-center justify-center text-xl shadow-md">
+          <div class="w-12 h-12 bg-gradient-to-tr from-[#173852] to-[#3a7d88] text-white rounded-md flex items-center justify-center text-xl shadow-md">
             <i class="fa-solid fa-user-shield"></i>
           </div>
           <div>
@@ -326,19 +345,19 @@
 
       <!-- 5 大功能分頁籤 -->
       <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-        <button id="guardian-tab-children" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all bg-[#173852] text-white shadow-md flex items-center gap-1.5">
+        <button id="guardian-tab-children" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all bg-[#173852] text-white shadow-md flex items-center gap-1.5">
           <i class="fa-solid fa-children"></i> 子女管理
         </button>
-        <button id="guardian-tab-tracking" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+        <button id="guardian-tab-tracking" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
           <i class="fa-solid fa-chart-pie"></i> 學習追蹤
         </button>
-        <button id="guardian-tab-growth" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+        <button id="guardian-tab-growth" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
           <i class="fa-solid fa-award"></i> 成長記錄
         </button>
-        <button id="guardian-tab-support" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+        <button id="guardian-tab-support" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
           <i class="fa-solid fa-headset"></i> 聯絡客服
         </button>
-        <button id="guardian-tab-community" class="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+        <button id="guardian-tab-community" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
           <i class="fa-brands fa-line text-emerald-600 text-sm"></i> LINE 社群
         </button>
       </div>
@@ -350,14 +369,14 @@
             <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
               <i class="fa-solid fa-address-book text-teal-600"></i> 子女檔案清單
             </h4>
-            <p class="text-xs text-slate-500 mt-0.5">每位子女均有專屬 5 碼虛擬座號，可由家長一鍵代登或在孩子設備獨立登入</p>
+            <p class="text-xs text-slate-500">管理家庭成員中的國小學生檔案，可獨立設定密碼或綁定學習帳號</p>
           </div>
-          <button id="btn-open-add-child-modal" class="px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all">
-            <i class="fa-solid fa-user-plus"></i> + 新增子女檔案
+          <button id="btn-add-child-modal" class="px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all">
+            <i class="fa-solid fa-user-plus"></i> 新增 / 綁定子女
           </button>
         </div>
 
-        <div id="guardian-children-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="guardian-children-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- 子女卡片由 JS 動態渲染 -->
           <div class="col-span-full py-12 text-center text-slate-400">
             <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-teal-600"></i>
@@ -368,7 +387,7 @@
 
       <!-- 2. 學習追蹤面板 -->
       <div id="guardian-panel-tracking" class="hidden space-y-5">
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
           <div class="flex items-center gap-2">
             <label class="text-xs font-bold text-slate-700">選擇檢視子女：</label>
             <select id="tracking-child-select" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white">
@@ -379,7 +398,7 @@
 
         <div id="tracking-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- 英文單字追蹤卡 -->
-          <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4 rounded-2xl border border-blue-200">
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4 rounded-lg border border-blue-200">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-blue-900">英文天地</span>
               <i class="fa-solid fa-book-open text-blue-500"></i>
@@ -390,7 +409,7 @@
           </div>
 
           <!-- 數學天地追蹤卡 -->
-          <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 rounded-2xl border border-emerald-200">
+          <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 rounded-lg border border-emerald-200">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-emerald-900">數學天地</span>
               <i class="fa-solid fa-calculator text-emerald-500"></i>
@@ -400,7 +419,7 @@
           </div>
 
           <!-- 自然科學追蹤卡 -->
-          <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 p-4 rounded-2xl border border-amber-200">
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 p-4 rounded-lg border border-amber-200">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-amber-900">自然科學</span>
               <i class="fa-solid fa-flask text-amber-500"></i>
@@ -410,7 +429,7 @@
           </div>
 
           <!-- 社會人文追蹤卡 -->
-          <div class="bg-gradient-to-br from-rose-50 to-orange-50/60 p-4 rounded-2xl border border-rose-200">
+          <div class="bg-gradient-to-br from-rose-50 to-orange-50/60 p-4 rounded-lg border border-rose-200">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-rose-900">社會人文</span>
               <i class="fa-solid fa-earth-americas text-rose-500"></i>
@@ -423,7 +442,7 @@
 
       <!-- 3. 成長記錄面板 -->
       <div id="guardian-panel-growth" class="hidden space-y-5">
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <label class="text-xs font-bold text-slate-700">選擇子女：</label>
             <select id="growth-child-select" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white">
@@ -433,7 +452,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-4">
             <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
               <i class="fa-solid fa-bullseye text-rose-500"></i> 錯題本精熟掌握率
             </h4>
@@ -469,7 +488,7 @@
             </div>
           </div>
 
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
             <div>
               <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2 mb-3">
                 <i class="fa-solid fa-medal text-amber-500"></i> 自主激勵指標
@@ -488,7 +507,7 @@
       <!-- 4. 聯絡客服面板 -->
       <div id="guardian-panel-support" class="hidden space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+          <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
             <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2 mb-3">
               <i class="fa-solid fa-headset text-teal-600"></i> 官方客服支援
             </h4>
@@ -508,7 +527,7 @@
             </div>
           </div>
 
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-3">
             <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
               <i class="fa-solid fa-circle-question text-blue-500"></i> 常見問題 FAQ
             </h4>
@@ -526,7 +545,7 @@
 
       <!-- 5. LINE 社群面板 -->
       <div id="guardian-panel-community" class="hidden">
-        <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-6 rounded-2xl border border-emerald-200 text-center max-w-xl mx-auto space-y-4">
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-6 rounded-lg border border-emerald-200 text-center max-w-xl mx-auto space-y-4">
           <div class="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center text-3xl mx-auto shadow-md">
             <i class="fa-brands fa-line"></i>
           </div>
@@ -549,7 +568,7 @@
 
   <!-- 新增/修改子女檔案 Modal -->
   <div id="modal-child-form" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-white/80 card-flip-enter">
+    <div class="bg-white rounded-lg p-6 sm:p-7 max-w-md w-full shadow-2xl border border-white/80 card-flip-enter">
       <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
         <h3 id="modal-child-form-title" class="text-base font-black text-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-user-plus text-teal-600"></i> 新增子女檔案
@@ -651,7 +670,7 @@
 
 <!-- 付費解鎖彈窗 -->
 <div id="paywall-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center card-flip-enter relative overflow-hidden">
+  <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center card-flip-enter relative overflow-hidden">
     <!-- 裝飾背景 -->
     <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-amber-400 to-orange-500 -z-10"></div>
     
@@ -662,13 +681,13 @@
     <h3 class="text-2xl font-black text-slate-800 mb-2">試用期已屆滿</h3>
     <p class="text-sm text-slate-500 mb-6 font-medium">您的 7 天免費體驗已結束。<br>立即升級 VIP，解鎖全科目的無限制學習權限！</p>
     
-    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-left space-y-2">
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left space-y-2">
       <div class="flex items-center gap-2 text-sm font-bold text-amber-800"><i class="fa-solid fa-check text-emerald-500"></i> 無限制英文 2000 字測驗</div>
       <div class="flex items-center gap-2 text-sm font-bold text-amber-800"><i class="fa-solid fa-check text-emerald-500"></i> 解鎖每日動態數學天地</div>
       <div class="flex items-center gap-2 text-sm font-bold text-amber-800"><i class="fa-solid fa-check text-emerald-500"></i> 跨平台進度雲端即時同步</div>
     </div>
 
-    <button id="btn-subscribe" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black rounded-2xl shadow-lg transition-transform active:scale-95 text-lg flex items-center justify-center gap-2">
+    <button id="btn-subscribe" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black rounded-lg shadow-lg transition-transform active:scale-95 text-lg flex items-center justify-center gap-2">
       立即訂閱升級 <i class="fa-solid fa-cart-shopping"></i>
     </button>
     <button onclick="logout()" class="mt-4 text-xs text-slate-400 font-bold hover:text-slate-600 underline">切換其他帳號</button>

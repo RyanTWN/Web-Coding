@@ -425,6 +425,11 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     const [socialProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM social_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
     const [socialWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM social_wrong_questions WHERE seat_no = ?', [seatNo]);
 
+    // 5. 國語學習統計
+    const [chineseProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM chinese_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+    const [chineseWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM chinese_wrong_questions WHERE seat_no = ?', [seatNo]);
+    const [idiomStars] = await pool.query('SELECT COUNT(*) AS star_count FROM student_idiom_stars WHERE seat_no = ?', [seatNo]);
+
     const engDays = Number(engProgress[0]?.days_count || 0);
     const engQuizTotal = Number(engQuizzes[0]?.total_quizzes || 0);
     const engScoreAvg = Math.round(Number(engQuizzes[0]?.avg_score || 0));
@@ -443,6 +448,12 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     const socialScoreAvg = Math.round(Number(socialProgress[0]?.avg_score || 0));
     const socialWrongTotal = Number(socialWrong[0]?.wrong_count || 0);
     const socialMastered = Number(socialWrong[0]?.mastered_count || 0);
+
+    const chineseDays = Number(chineseProgress[0]?.days_count || 0);
+    const chineseScoreAvg = Math.round(Number(chineseProgress[0]?.avg_score || 0));
+    const chineseWrongTotal = Number(chineseWrong[0]?.wrong_count || 0);
+    const chineseMastered = Number(chineseWrong[0]?.mastered_count || 0);
+    const idiomStarTotal = Number(idiomStars[0]?.star_count || 0);
 
     const summaryPayload = {
       english: {
@@ -483,6 +494,17 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
         wrongCount: socialWrongTotal,
         masteredWrong: socialMastered,
         masteredCount: socialMastered
+      },
+      chinese: {
+        completedDays: chineseDays,
+        daysCompleted: chineseDays,
+        quizCount: chineseDays,
+        avgScore: chineseScoreAvg,
+        totalWrong: chineseWrongTotal,
+        wrongCount: chineseWrongTotal,
+        masteredWrong: chineseMastered,
+        masteredCount: chineseMastered,
+        idiomStars: idiomStarTotal
       }
     };
 
