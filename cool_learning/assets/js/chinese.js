@@ -615,8 +615,8 @@ function renderIdiomCard() {
 
   if (filtered.length === 0) {
     document.getElementById('idiom-seq-badge').textContent = '#000 / 0';
-    document.getElementById('idiom-name').textContent = idiomFilterOnlyStarred ? '尚無收藏成語' : '無符合成語';
-    document.getElementById('idiom-bopomofo').textContent = idiomFilterOnlyStarred ? '請在字卡右上角點擊星號收藏' : '請嘗試更換關鍵字';
+    document.getElementById('idiom-name').textContent = idiomFilterOnlyStarred ? '尚無重點成語' : '無符合成語';
+    document.getElementById('idiom-bopomofo').textContent = idiomFilterOnlyStarred ? '請點擊字卡右下角星號加入重點學習區' : '請嘗試更換關鍵字';
     document.getElementById('idiom-counter-text').textContent = '0 / 0';
     return;
   }
@@ -638,10 +638,16 @@ function renderIdiomCard() {
   const groupBadge = document.getElementById('idiom-group-badge');
   if (groupBadge) groupBadge.textContent = `第 ${groupStart}-${groupEnd} 則`;
 
-  const starBtn = document.getElementById('btn-star-idiom');
-  if (starBtn) {
-    starBtn.className = `w-10 h-10 rounded-md flex items-center justify-center text-lg shadow-sm border transition ${isStarred ? 'bg-amber-50 text-amber-500 border-amber-300' : 'bg-white/80 text-slate-300 hover:text-amber-400 border-slate-200/60'}`;
-  }
+  const updateIdiomStarBtnAppearance = (btn) => {
+    if (!btn) return;
+    btn.className = isStarred
+      ? "w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-amber-400 flex items-center justify-center text-xl shadow-lg border border-amber-300 transition-all transform hover:scale-105 active:scale-95 is-starred cursor-pointer"
+      : "w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer";
+    btn.style.color = isStarred ? '#f59e0b' : '';
+    btn.title = isStarred ? '已加入重點學習區（點擊可移出）' : '加入重點學習區';
+  };
+  updateIdiomStarBtnAppearance(document.getElementById('btn-star-idiom'));
+  updateIdiomStarBtnAppearance(document.getElementById('btn-star-idiom-back'));
 
   // Back
   document.getElementById('idiom-back-name').textContent = idiom.name;
@@ -840,6 +846,16 @@ async function loadIdiomProgress() {
     if (Array.isArray(localData.allViewed)) allViewedIdiomIds = new Set(localData.allViewed);
   }
 
+  // 1-1. 本機重點成語快取瞬時載入
+  try {
+    const rawStars = localStorage.getItem(`cool_idiom_stars_${currentUser.seatNo}`);
+    if (rawStars) {
+      starredIdiomIds = new Set(JSON.parse(rawStars));
+      const badge = document.getElementById('star-count-badge');
+      if (badge) badge.textContent = starredIdiomIds.size;
+    }
+  } catch (e) {}
+
   // 2. 異步讀取後端資料庫
   if (currentUser?.token) {
     try {
@@ -944,6 +960,14 @@ async function toggleStarCurrentIdiom() {
   document.getElementById('star-count-badge').textContent = starredIdiomIds.size;
   renderIdiomCard();
 
+  if (currentUser?.seatNo) {
+    try {
+      localStorage.setItem(`cool_idiom_stars_${currentUser.seatNo}`, JSON.stringify(Array.from(starredIdiomIds)));
+    } catch (e) {}
+  }
+
+  showToast(willBeStarred ? `已將成語「${idiom.name}」加入重點學習區！` : `已從重點學習區移出「${idiom.name}」`, willBeStarred ? 'emerald' : 'slate');
+
   if (currentUser?.token && currentUser?.seatNo) {
     try {
       await chineseFetch('/chinese/idiom-stars/toggle', {
@@ -951,7 +975,6 @@ async function toggleStarCurrentIdiom() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ seatNo: currentUser.seatNo, idiomId: idiom.id })
       });
-      showToast(willBeStarred ? `已收藏「${idiom.name}」` : `已取消收藏「${idiom.name}」`, 'rose');
     } catch (err) {
       console.warn('星號狀態同步失敗:', err);
     }
@@ -1483,17 +1506,22 @@ if (typeof document !== 'undefined') {
   document.getElementById('btn-next-idiom')?.addEventListener('click', nextIdiom);
   document.getElementById('btn-prev-idiom')?.addEventListener('click', prevIdiom);
   document.getElementById('btn-shuffle-idiom')?.addEventListener('click', shuffleIdiom);
-  document.getElementById('btn-star-idiom')?.addEventListener('click', (e) => {
-    e.stopPropagation();
+  const handleToggleIdiomStar = (e) => {
+    e?.stopPropagation();
     toggleStarCurrentIdiom();
-  });
-  document.getElementById('btn-speak-idiom')?.addEventListener('click', (e) => {
-    e.stopPropagation();
+  };
+  document.getElementById('btn-star-idiom')?.addEventListener('click', handleToggleIdiomStar);
+  document.getElementById('btn-star-idiom-back')?.addEventListener('click', handleToggleIdiomStar);
+
+  const handleSpeakIdiom = (e) => {
+    e?.stopPropagation();
     const filtered = getFilteredIdioms();
     if (filtered[idiomCurrentIndex]) {
       speakText(filtered[idiomCurrentIndex].name);
     }
-  });
+  };
+  document.getElementById('btn-speak-idiom')?.addEventListener('click', handleSpeakIdiom);
+  document.getElementById('btn-speak-idiom-back')?.addEventListener('click', handleSpeakIdiom);
 
   // 成語搜尋
   document.getElementById('idiom-search-input')?.addEventListener('input', (e) => {
@@ -1502,11 +1530,11 @@ if (typeof document !== 'undefined') {
     renderIdiomCard();
   });
 
-  // 成語分組與收藏篩選
+  // 成語分組與重點收藏篩選
   document.getElementById('filter-all')?.addEventListener('click', () => {
     selectedIdiomRange = null; // 清除每 10 則限制，顯示全部 200 則
     idiomFilterOnlyStarred = false;
-    document.getElementById('filter-all').className = 'px-3 py-1.5 rounded-lg bg-white text-rose-700 shadow-sm transition';
+    document.getElementById('filter-all').className = 'px-3 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition';
     document.getElementById('filter-starred').className = 'px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center gap-1';
     renderIdiomRangeButtons();
     const filtered = getFilteredIdioms();
@@ -1517,7 +1545,7 @@ if (typeof document !== 'undefined') {
   document.getElementById('filter-starred')?.addEventListener('click', () => {
     selectedIdiomRange = null;
     idiomFilterOnlyStarred = true;
-    document.getElementById('filter-starred').className = 'px-3 py-1.5 rounded-lg bg-white text-rose-700 shadow-sm transition flex items-center gap-1';
+    document.getElementById('filter-starred').className = 'px-3 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition flex items-center gap-1';
     document.getElementById('filter-all').className = 'px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 transition';
     renderIdiomRangeButtons();
     idiomCurrentIndex = 0;
@@ -1585,6 +1613,9 @@ if (typeof document !== 'undefined') {
     if (starJson.success && Array.isArray(starJson.starredIds)) {
       starredIdiomIds = new Set(starJson.starredIds);
       document.getElementById('star-count-badge').textContent = starredIdiomIds.size;
+      try {
+        localStorage.setItem(`cool_idiom_stars_${currentUser.seatNo}`, JSON.stringify(starJson.starredIds));
+      } catch (e) {}
     }
   } catch (err) {
     console.warn('載入成語收藏清單失敗:', err);

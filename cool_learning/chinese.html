@@ -265,11 +265,11 @@
             <div id="idiom-range-container" class="flex items-center gap-1"></div>
           </div>
 
-          <!-- 全部 200 則 與 我的收藏 (緊鄰於 10 則分組按鈕右側) -->
+          <!-- 全部 200 則 與 我的重點 (緊鄰於 10 則分組按鈕右側) -->
           <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold shrink-0 shadow-inner">
             <button id="filter-all" class="px-3 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition">全部 200 則</button>
             <button id="filter-starred" class="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center gap-1">
-              <i class="fa-solid fa-star text-amber-400"></i>收藏 (<span id="star-count-badge">0</span>)
+              <i class="fa-solid fa-star text-amber-400"></i>重點學習 (<span id="star-count-badge">0</span>)
             </button>
           </div>
         </div>
@@ -282,16 +282,13 @@
           <div id="idiom-card-container" class="w-full max-w-2xl mx-auto idiom-card-perspective">
             <div id="idiom-card-inner" class="idiom-card-inner shadow-2xl cursor-pointer">
               <!-- 字卡正面 (Front) -->
-              <div class="idiom-card-face bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl">
+              <div class="idiom-card-face relative bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl">
                 <!-- 頂部資訊列 -->
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span id="idiom-seq-badge" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-black text-xs tracking-wider">#001 / 200</span>
                     <span id="idiom-group-badge" class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold text-[11px]">第 1-10 則</span>
                   </div>
-                  <button id="btn-star-idiom" title="收藏成語" class="w-10 h-10 rounded-md bg-white/80 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition">
-                    <i class="fa-solid fa-star"></i>
-                  </button>
                 </div>
 
                 <!-- 中間核心書法成語大字與注音 -->
@@ -300,27 +297,36 @@
                   <p id="idiom-bopomofo" class="text-sm sm:text-base font-bold text-emerald-700/80 tracking-widest font-mono">ㄎㄡˇ ㄖㄨㄛˋ ㄒㄩㄢˊ ㄏㄜˊ</p>
                 </div>
 
-                <!-- 底部語音發音與翻面提示 -->
-                <div class="flex items-center justify-between pt-4 border-t border-emerald-100/60">
-                  <button id="btn-speak-idiom" title="朗讀發音" class="px-3.5 py-1.5 rounded-xl bg-white/90 hover:bg-white text-emerald-600 font-bold text-xs shadow-sm border border-emerald-200/80 flex items-center gap-1.5 transition">
-                    <i class="fa-solid fa-volume-high"></i> 聽發音 (TTS)
-                  </button>
+                <!-- 底部翻面提示 -->
+                <div class="flex items-center justify-center pt-4 border-t border-emerald-100/60 pr-14 sm:pr-0">
                   <span class="text-xs text-slate-400 font-bold flex items-center gap-1 animate-pulse">
                     <i class="fa-solid fa-arrows-rotate"></i> 點擊卡片翻面看釋義
                   </span>
                 </div>
+
+                <!-- 右下角單手操作快捷區：上方重點星號、下方成語發音按鈕 -->
+                <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
+                  <!-- 加入重點學習區星號 (在發音按鈕上方) -->
+                  <button type="button" id="btn-star-idiom" title="加入重點學習區" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-star"></i>
+                  </button>
+                  <!-- 成語發音按鈕 (在卡片右下角) -->
+                  <button type="button" id="btn-speak-idiom" aria-label="播放成語發音" title="聽發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-volume-high"></i>
+                  </button>
+                </div>
               </div>
 
               <!-- 字卡背面 (Back) -->
-              <div class="idiom-card-face idiom-card-back bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto">
-                <div class="space-y-4">
+              <div class="idiom-card-face idiom-card-back relative bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto">
+                <div class="space-y-4 pb-14 sm:pb-8">
                   <!-- 背面頂部標題與序號 -->
                   <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-2">
                       <h3 id="idiom-back-name" class="text-xl font-black text-slate-800 font-['Noto_Serif_TC']">口若懸河</h3>
                       <span id="idiom-back-bpmf" class="text-xs font-bold text-emerald-600 font-mono">ㄎㄡˇ ㄖㄨㄛˋ ㄒㄩㄢˊ ㄏㄜˊ</span>
                     </div>
-                    <button id="btn-flip-back" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs">
+                    <button type="button" id="btn-flip-back" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation();">
                       <i class="fa-solid fa-rotate-left"></i>
                     </button>
                   </div>
@@ -357,8 +363,20 @@
                 </div>
 
                 <!-- 背面翻轉回正面提示 -->
-                <div class="pt-3 text-center text-[11px] font-bold text-slate-400">
+                <div class="pt-3 text-center text-[11px] font-bold text-slate-400 pr-14 sm:pr-0">
                   <i class="fa-solid fa-arrow-left mr-1"></i> 點擊任意處翻回正面
+                </div>
+
+                <!-- 右下角單手操作快捷區：上方重點星號、下方成語發音按鈕 -->
+                <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
+                  <!-- 加入重點學習區星號 (在發音按鈕上方) -->
+                  <button type="button" id="btn-star-idiom-back" title="加入重點學習區" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-star"></i>
+                  </button>
+                  <!-- 成語發音按鈕 (在卡片右下角) -->
+                  <button type="button" id="btn-speak-idiom-back" aria-label="播放成語發音" title="聽發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-volume-high"></i>
+                  </button>
                 </div>
               </div>
             </div>
