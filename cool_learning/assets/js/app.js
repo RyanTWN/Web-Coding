@@ -72,14 +72,23 @@ function updateSyncStatus(text, className = 'text-slate-400') {
 async function apiFetch(path, options = {}) {
   const headers = new Headers(options.headers || {});
   if (!headers.has('Authorization')) {
-    if (currentUser?.token) {
-      headers.set('Authorization', `Bearer ${currentUser.token}`);
-    } else if (guardianToken) {
-      headers.set('Authorization', `Bearer ${guardianToken}`);
+    const isGuardianRoute = path.startsWith('/guardian') || path.startsWith('/dev/subscriptions');
+    if (isGuardianRoute) {
+      if (guardianToken) {
+        headers.set('Authorization', `Bearer ${guardianToken}`);
+      } else if (currentUser?.token) {
+        headers.set('Authorization', `Bearer ${currentUser.token}`);
+      }
+    } else {
+      if (currentUser?.token) {
+        headers.set('Authorization', `Bearer ${currentUser.token}`);
+      } else if (guardianToken) {
+        headers.set('Authorization', `Bearer ${guardianToken}`);
+      }
     }
   }
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  if (response.status === 401 && !path.endsWith('/login') && !path.endsWith('/register') && !path.endsWith('/link')) {
+  if ((response.status === 401 || (response.status === 403 && path.startsWith('/guardian'))) && !path.endsWith('/login') && !path.endsWith('/register') && !path.endsWith('/link')) {
     if (path.startsWith('/guardian')) {
       currentGuardian = null;
       guardianToken = null;
@@ -745,6 +754,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('login-tab-guardian')?.addEventListener('click', () => {
+    if (currentGuardian && guardianToken) {
+      showView('view-guardian-dashboard');
+      loadGuardianDashboard();
+      return;
+    }
     document.getElementById('guardian-auth-container')?.classList.remove('hidden');
     document.getElementById('form-student-login')?.classList.add('hidden');
     document.getElementById('login-tab-guardian')?.classList.add('bg-white', 'text-[#173852]', 'shadow-sm');
@@ -1234,7 +1248,7 @@ function initGuardianModule() {
   document.getElementById('tab-child-mode-create')?.addEventListener('click', () => switchChildModalTab('create'));
   document.getElementById('tab-child-mode-link')?.addEventListener('click', () => switchChildModalTab('link'));
 
-  document.getElementById('btn-open-add-child-modal')?.addEventListener('click', () => {
+  const openAddChildModal = () => {
     document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-user-plus text-teal-600"></i> 新增或綁定子女';
     document.getElementById('child-modal-tabs')?.classList.remove('hidden');
     document.getElementById('link-child-error')?.classList.add('hidden');
@@ -1252,7 +1266,11 @@ function initGuardianModule() {
 
     switchChildModalTab('create');
     document.getElementById('modal-child-form')?.classList.remove('hidden');
-  });
+  };
+
+  window.openAddChildModal = openAddChildModal;
+  document.getElementById('btn-add-child-modal')?.addEventListener('click', openAddChildModal);
+  document.getElementById('btn-open-add-child-modal')?.addEventListener('click', openAddChildModal);
 
   document.getElementById('btn-close-child-modal')?.addEventListener('click', () => {
     document.getElementById('modal-child-form')?.classList.add('hidden');
@@ -1417,6 +1435,16 @@ async function loadGuardianDashboard() {
     if (userDisplay) userDisplay.innerHTML = `歡迎，<span class="font-bold text-slate-700">${currentGuardian.displayName || currentGuardian.email}</span>`;
   }
 
+  const container = document.getElementById('guardian-children-list') || document.getElementById('guardian-children-container');
+  if (container && (!guardianChildren || guardianChildren.length === 0)) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400">
+        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-teal-600"></i>
+        <p class="text-xs font-medium">正在載入子女檔案...</p>
+      </div>
+    `;
+  }
+
   try {
     const response = await apiFetch('/guardian/children');
     const data = await response.json();
@@ -1442,11 +1470,22 @@ async function loadGuardianDashboard() {
   } catch (err) {
     console.error(err);
     showToast('載入家長專區資料失敗', 'fa-triangle-exclamation');
+    if (container) {
+      container.innerHTML = `
+        <div class="col-span-full py-10 px-4 text-center bg-rose-50/60 rounded-lg border border-rose-200">
+          <i class="fa-solid fa-triangle-exclamation text-rose-500 text-2xl mb-2"></i>
+          <p class="text-xs font-bold text-rose-700 mb-2">載入子女檔案失敗：${err.message || '網路或伺服器連線異常'}</p>
+          <button onclick="loadGuardianDashboard()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-sm">
+            <i class="fa-solid fa-rotate-right mr-1"></i> 重新載入
+          </button>
+        </div>
+      `;
+    }
   }
 }
 
 function renderGuardianChildren(children) {
-  const container = document.getElementById('guardian-children-container');
+  const container = document.getElementById('guardian-children-list') || document.getElementById('guardian-children-container');
   if (!container) return;
 
   if (!children || children.length === 0) {
@@ -1456,9 +1495,9 @@ function renderGuardianChildren(children) {
           <i class="fa-solid fa-child-reaching"></i>
         </div>
         <h4 class="font-bold text-slate-700 text-sm mb-1">尚未建立任何子女檔案</h4>
-        <p class="text-xs text-slate-400 mb-4">點擊右上角「+ 新增子女檔案」，系統將自動產生 5 碼專屬虛擬座號，隨時一鍵進入學習！</p>
-        <button onclick="document.getElementById('btn-open-add-child-modal').click()" class="px-5 py-2.5 bg-[#173852] hover:bg-[#112a3e] text-white font-bold text-xs rounded-lg shadow-md">
-          立即新增第一位子女
+        <p class="text-xs text-slate-400 mb-4">點擊右上角「+ 新增 / 綁定子女」，系統將自動產生 5 碼專屬虛擬座號，隨時一鍵進入學習！</p>
+        <button onclick="window.openAddChildModal ? window.openAddChildModal() : (document.getElementById('btn-add-child-modal') || document.getElementById('btn-open-add-child-modal'))?.click()" class="px-5 py-2.5 bg-[#173852] hover:bg-[#112a3e] text-white font-bold text-xs rounded-lg shadow-md">
+          <i class="fa-solid fa-user-plus mr-1.5"></i>立即新增第一位子女
         </button>
       </div>
     `;
@@ -1470,6 +1509,7 @@ function renderGuardianChildren(children) {
     const pwdBadge = hasPwd
       ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-key mr-1"></i>自主密碼已啟用</span>`
       : `<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><i class="fa-solid fa-shield-cat mr-1"></i>限家長代登模式</span>`;
+    const initialChar = (child.nickname || '子').slice(0, 1);
 
     return `
       <div class="bg-white rounded-lg p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-4">
@@ -1477,7 +1517,7 @@ function renderGuardianChildren(children) {
           <div class="flex items-start justify-between gap-2 mb-2">
             <div class="flex items-center gap-3">
               <div class="w-11 h-11 rounded-md bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center text-lg font-black shadow-md">
-                ${child.nickname.slice(0, 1)}
+                ${initialChar}
               </div>
               <div>
                 <div class="flex items-center gap-2">
@@ -1496,13 +1536,13 @@ function renderGuardianChildren(children) {
         </div>
 
         <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-          <button onclick="startChildStudy(${child.id}, '${child.nickname}', '${child.linked_seat_no}')" class="flex-1 py-2.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+          <button onclick="startChildStudy(${child.id})" class="flex-1 py-2.5 bg-gradient-to-r from-[#173852] to-[#21546e] hover:from-[#112a3e] hover:to-[#173852] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
             <i class="fa-solid fa-rocket text-amber-400"></i> 開始學習
           </button>
-          <button onclick="openEditChildModal(${child.id}, '${child.nickname}', '${child.grade_level || '國小六年級'}')" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg transition-colors" title="修改資訊或重設密碼">
+          <button onclick="openEditChildModal(${child.id})" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg transition-colors" title="修改資訊或重設密碼">
             <i class="fa-solid fa-pen"></i>
           </button>
-          <button onclick="deleteChildProfile(${child.id}, '${child.nickname}')" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-lg transition-colors" title="刪除檔案">
+          <button onclick="deleteChildProfile(${child.id})" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-lg transition-colors" title="刪除檔案">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>
@@ -1512,6 +1552,10 @@ function renderGuardianChildren(children) {
 }
 
 window.startChildStudy = async function(childId, nickname, seatNo) {
+  const child = guardianChildren.find(c => c.id === Number(childId));
+  const targetNickname = nickname || child?.nickname || '子女';
+  const targetSeatNo = seatNo || child?.linked_seat_no || '';
+
   try {
     const response = await apiFetch(`/guardian/children/${childId}/select`, {
       method: 'POST'
@@ -1520,8 +1564,8 @@ window.startChildStudy = async function(childId, nickname, seatNo) {
     if (!response.ok || !data.success) throw new Error(data.error || '代登失敗');
 
     currentUser = {
-      name: nickname,
-      seatNo: seatNo,
+      name: targetNickname,
+      seatNo: targetSeatNo,
       token: data.token,
       isChild: true,
       guardianLinked: true
@@ -1529,9 +1573,9 @@ window.startChildStudy = async function(childId, nickname, seatNo) {
     sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
 
     const subjectUserEl = document.getElementById('subject-user-name');
-    if (subjectUserEl) subjectUserEl.textContent = nickname;
+    if (subjectUserEl) subjectUserEl.textContent = targetNickname;
 
-    showToast(`正在以 ${nickname} (座號: ${seatNo}) 開始自主學習！`, 'fa-rocket');
+    showToast(`正在以 ${targetNickname} (座號: ${targetSeatNo}) 開始自主學習！`, 'fa-rocket');
     showView('view-subjects');
   } catch (err) {
     console.error(err);
@@ -1540,19 +1584,26 @@ window.startChildStudy = async function(childId, nickname, seatNo) {
 };
 
 window.openEditChildModal = function(childId, nickname, gradeLevel) {
+  const child = guardianChildren.find(c => c.id === Number(childId));
+  const targetNickname = nickname || child?.nickname || '';
+  const targetGrade = gradeLevel || child?.grade_level || '國小六年級';
+
   document.getElementById('modal-child-form-title').innerHTML = '<i class="fa-solid fa-pen text-teal-600"></i> 修改子女資訊 / 密碼';
   document.getElementById('child-modal-tabs')?.classList.add('hidden');
   document.getElementById('form-child-profile')?.classList.remove('hidden');
   document.getElementById('form-child-link')?.classList.add('hidden');
   document.getElementById('input-child-id').value = childId;
-  document.getElementById('input-child-nickname').value = nickname;
-  document.getElementById('input-child-grade').value = gradeLevel;
+  document.getElementById('input-child-nickname').value = targetNickname;
+  document.getElementById('input-child-grade').value = targetGrade;
   document.getElementById('input-child-password').value = '';
   document.getElementById('modal-child-form')?.classList.remove('hidden');
 };
 
 window.deleteChildProfile = function(childId, nickname) {
-  openCustomModal(`確定刪除子女【${nickname}】？`, '刪除後，相關學習歷程與座號綁定將一併移除且無法復原。', async () => {
+  const child = guardianChildren.find(c => c.id === Number(childId));
+  const targetNickname = nickname || child?.nickname || '此子女';
+
+  openCustomModal(`確定刪除子女【${targetNickname}】？`, '刪除後，相關學習歷程與座號綁定將一併移除且無法復原。', async () => {
     try {
       const response = await apiFetch(`/guardian/children/${childId}`, {
         method: 'DELETE'
