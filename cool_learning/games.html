@@ -212,58 +212,134 @@
           </div>
         </div>
 
-        <!-- 遊戲 2: 成語疊疊樂 (即刻開戰) -->
-        <div onclick="openIdiomGame()" class="game-card bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50/80 border-2 border-emerald-300/80 hover:border-emerald-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+        <!-- 遊戲 2: 洞築機先 (即刻開戰) -->
+        <div onclick="openIdiomGame()" class="game-card bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50/80 border-2 border-indigo-300/80 hover:border-indigo-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
           <!-- 背景裝飾微光 -->
-          <div class="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-emerald-200/50 blur-xl pointer-events-none"></div>
+          <div class="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-indigo-200/50 blur-xl pointer-events-none"></div>
 
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-xs shadow-xs animate-bounce">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 text-white font-black text-xs shadow-xs animate-bounce">
                 <i class="fa-solid fa-fire"></i> 即刻開戰
               </span>
-              <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                成語縱橫 × 洞築機先
+              <span class="text-xs font-bold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
+                公視一字千金 × 經典題型
               </span>
             </div>
 
-            <!-- 生動插畫 SVG: 疊疊樂積木與毛筆成語捲軸 -->
-            <div class="w-full h-36 bg-gradient-to-b from-emerald-100/60 to-white/80 rounded-lg border border-emerald-200/60 flex items-center justify-center p-3 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
-              <svg viewBox="0 0 320 140" class="w-full h-full max-w-[280px]">
-                <!-- 成語積木塔 -->
-                <g transform="translate(110, 20)">
-                  <!-- 頂層積木 -->
-                  <rect x="25" y="10" width="50" height="24" rx="4" fill="#34d399" stroke="#059669" stroke-width="2"/>
-                  <text x="50" y="27" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">口</text>
-                  <!-- 第二層 -->
-                  <rect x="15" y="38" width="70" height="24" rx="4" fill="#10b981" stroke="#047857" stroke-width="2"/>
-                  <text x="50" y="55" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">若</text>
-                  <!-- 第三層 -->
-                  <rect x="5" y="66" width="90" height="24" rx="4" fill="#059669" stroke="#065f46" stroke-width="2"/>
-                  <text x="50" y="83" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">懸</text>
-                  <!-- 底層積木 -->
-                  <rect x="-5" y="94" width="110" height="24" rx="4" fill="#047857" stroke="#064e3b" stroke-width="2"/>
-                  <text x="50" y="111" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">河</text>
+            <!-- 生動插畫 SVG: 與《一字千金》「洞築機先」相同之郵票十字交錯盤與橘紅考古題吊牌 -->
+            <div class="w-full h-36 bg-gradient-to-br from-indigo-600 to-purple-800 rounded-lg border border-indigo-400/40 flex items-center justify-center p-2 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+              <svg viewBox="0 0 320 140" class="w-full h-full max-w-[290px]">
+                <!-- 背景九宮格淡淡底線 -->
+                <defs>
+                  <pattern id="bg-grid-dong" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#818cf8" stroke-width="0.75" opacity="0.3"/>
+                  </pattern>
+                </defs>
+                <rect width="320" height="140" fill="url(#bg-grid-dong)" />
+                <text x="35" y="32" fill="#c7d2fe" font-size="28" font-weight="900" opacity="0.25">?</text>
+                <text x="280" y="125" fill="#c7d2fe" font-size="26" font-weight="900" opacity="0.25">?</text>
+
+                <!-- 左側：粉紅郵票造型底盤 (齒孔效果) -->
+                <g transform="translate(42, 10)">
+                  <!-- 郵票主體陰影與本體 -->
+                  <rect x="0" y="0" width="130" height="120" rx="8" fill="#fce7f3" stroke="#f472b6" stroke-width="2"/>
+                  <!-- 郵票齒孔裝飾點 -->
+                  <circle cx="10" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="30" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="50" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="70" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="90" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="110" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="10" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="30" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="50" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="70" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="90" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="110" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="20" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="40" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="60" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="80" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="100" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="20" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="40" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="60" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="80" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="100" r="3.5" fill="#4338ca"/>
+
+                  <!-- 郵票內部的交錯題目格 (重現截圖中的老、言、辶、大、人、雨、雨) -->
+                  <!-- 縱橫格線群 -->
+                  <g transform="translate(15, 12)">
+                    <!-- 格子 1: 老 -->
+                    <rect x="36" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="45" y="30" font-size="12" font-weight="900" text-anchor="middle" fill="#1e1b4b">老</text>
+                    <!-- 格子 2: 空格 -->
+                    <rect x="54" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <!-- 格子 3: 言 -->
+                    <rect x="72" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="81" y="30" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">言</text>
+                    <!-- 格子 4: 辶 -->
+                    <rect x="90" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="99" y="30" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">辶</text>
+
+                    <!-- 下方交錯: 大、人、空白孔洞 -->
+                    <rect x="0" y="44" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="9" y="58" font-size="12" font-weight="900" text-anchor="middle" fill="#1e1b4b">大</text>
+                    <rect x="18" y="56" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="27" y="70" font-size="12" font-weight="900" text-anchor="middle" fill="#1e1b4b">人</text>
+                    <!-- 交會核心孔洞 (亮黃閃耀) -->
+                    <rect x="36" y="56" width="18" height="18" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+                    <text x="45" y="69" font-size="12" font-weight="900" text-anchor="middle" fill="#b45309">氵</text>
+                    <rect x="54" y="56" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="63" y="70" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">目</text>
+
+                    <rect x="90" y="34" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="99" y="48" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">末</text>
+                    <rect x="90" y="52" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="99" y="66" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">足</text>
+
+                    <rect x="0" y="62" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="9" y="76" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">雨</text>
+                    <rect x="0" y="80" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="9" y="94" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">雨</text>
+                  </g>
                 </g>
-                <!-- 古風捲軸裝飾 -->
-                <path d="M 30 75 Q 45 60 60 75 L 60 110 Q 45 95 30 110 Z" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
-                <circle cx="45" cy="85" r="8" fill="#f59e0b" opacity="0.3"/>
-                <!-- 毛筆 -->
-                <line x1="240" y1="35" x2="275" y2="105" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
-                <polygon points="237,30 244,38 234,42" fill="#1e293b"/>
+
+                <!-- 右側：橘紅色吊牌「考古題」 -->
+                <g transform="translate(195, 24) rotate(4)">
+                  <!-- 吊繩 -->
+                  <path d="M -8 18 Q -16 10 -24 22" fill="none" stroke="#fed7aa" stroke-width="2"/>
+                  <!-- 吊牌本體 -->
+                  <polygon points="0,18 16,0 108,0 108,38 16,38 0,18" fill="#ea580c" stroke="#c2410c" stroke-width="2"/>
+                  <circle cx="14" cy="19" r="4" fill="#4338ca"/>
+                  <text x="60" y="27" font-size="16" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">考古題</text>
+                </g>
+
+                <!-- 右側上方先練手感標語與右下可愛生動小表情 -->
+                <text x="245" y="18" font-size="10" font-weight="900" fill="#fed7aa" text-anchor="middle">\ 先練手感！/</text>
+                <!-- 認真解題臉譜小貼圖 -->
+                <circle cx="260" cy="98" r="22" fill="#f97316" stroke="#ea580c" stroke-width="2"/>
+                <circle cx="252" cy="92" r="3" fill="#1e1b4b"/>
+                <circle cx="268" cy="92" r="3" fill="#1e1b4b"/>
+                <!-- 認真眉毛 -->
+                <path d="M 248 85 L 256 89" stroke="#1e1b4b" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M 272 85 L 264 89" stroke="#1e1b4b" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- 嘴巴 -->
+                <path d="M 254 106 L 266 106" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round"/>
               </svg>
             </div>
 
             <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
-              成語疊疊樂 <i class="fa-solid fa-cubes-stacked text-emerald-600"></i>
+              洞築機先 <i class="fa-solid fa-puzzle-piece text-indigo-600"></i>
             </h3>
             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-              公視《一字千金》「洞築機先」經典玩法！十字交錯的成語填空，點擊漢字積木精準填入交會孔洞，堆出智慧高塔！
+              公視《一字千金》招牌單元！縱橫十字交錯成語填空，觀察上下文推敲關鍵交會字，考驗你的成語底蘊與字形洞察力！
             </p>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-emerald-700 font-black text-sm">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始堆疊！</span>
+          <div class="mt-4 pt-3 border-t border-indigo-200/80 flex items-center justify-between text-indigo-700 font-black text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始挑戰！</span>
             <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
           </div>
         </div>
@@ -606,13 +682,13 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 遊戲 2: 成語疊疊樂 (Idiom Stacker) - 縱橫交錯・洞築機先                      -->
+  <!-- 遊戲 2: 洞築機先 (Idiom Crossword) - 公視《一字千金》招牌題型                -->
   <!-- ========================================================================= -->
   <section id="view-game-idiom" class="w-full max-w-4xl mx-auto hidden pb-8">
-    <div class="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-emerald-300 p-4 sm:p-6 shadow-xl relative overflow-hidden">
+    <div class="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-indigo-300 p-4 sm:p-6 shadow-xl relative overflow-hidden">
 
       <!-- 頂部資訊列 (關卡、智慧星數、生命/機會、返回、音效) -->
-      <div class="flex items-center justify-between pb-3 mb-4 border-b border-emerald-200/80">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-indigo-200/80">
         <div class="flex items-center gap-3">
           <button onclick="backToGamesLobbyFromIdiom()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs">
             <i class="fa-solid fa-arrow-left"></i>
@@ -620,10 +696,10 @@
           </button>
           <div>
             <h2 class="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2 leading-tight">
-              成語疊疊樂 <span class="text-xs px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-bold">洞築機先</span>
+              洞築機先 <span class="text-xs px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 font-bold">一字千金</span>
             </h2>
             <div class="flex items-center gap-2 mt-0.5">
-              <span id="idiom-level-badge" class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">第 1 關</span>
+              <span id="idiom-level-badge" class="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">第 1 關</span>
               <span id="idiom-mode-badge" class="text-xs font-bold text-slate-500">十字交錯</span>
             </div>
           </div>
@@ -651,28 +727,28 @@
       </div>
 
       <!-- 玩法引導提示 -->
-      <div class="flex items-center justify-between px-3 py-1.5 bg-emerald-50/90 rounded-lg mb-4 text-xs font-bold border border-emerald-100">
-        <div class="flex items-center gap-2 text-emerald-900">
+      <div class="flex items-center justify-between px-3 py-1.5 bg-indigo-50/90 rounded-lg mb-4 text-xs font-bold border border-indigo-100">
+        <div class="flex items-center gap-2 text-indigo-900">
           <i class="fa-solid fa-lightbulb text-amber-500 text-sm"></i>
           <span>觀察成語縱橫上下文，點選下方漢字積木填入正確孔洞！</span>
         </div>
-        <button onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="text-emerald-700 hover:text-emerald-900 underline text-xs font-black flex items-center gap-1 cursor-pointer">
+        <button onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="text-indigo-700 hover:text-indigo-900 underline text-xs font-black flex items-center gap-1 cursor-pointer">
           <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 提示
         </button>
       </div>
 
       <!-- 成語縱橫棋盤容器 (立體交錯盤) -->
-      <div class="w-full bg-gradient-to-b from-amber-50/80 via-emerald-50/40 to-teal-50/80 rounded-2xl border-2 border-emerald-200/90 p-4 sm:p-6 mb-5 shadow-inner flex flex-col items-center justify-center min-h-[300px]">
+      <div class="w-full bg-gradient-to-b from-indigo-50/60 via-purple-50/30 to-pink-50/60 rounded-2xl border-2 border-indigo-200/90 p-4 sm:p-6 mb-5 shadow-inner flex flex-col items-center justify-center min-h-[300px]">
         <div id="idiom-grid-board" class="inline-grid gap-2 sm:gap-2.5 justify-center items-center my-auto">
           <!-- JS 動態生成成語交錯矩陣與孔洞 -->
         </div>
       </div>
 
       <!-- 下方：備選漢字積木區 (6~8 塊木質/翡翠質感積木按鈕) -->
-      <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-2xl p-4 border-2 border-emerald-300/80 shadow-md text-center">
-        <div class="flex items-center justify-between text-xs font-bold text-emerald-800 mb-2.5 px-1">
-          <span class="flex items-center gap-1.5"><i class="fa-solid fa-cubes text-emerald-600"></i> 請選擇漢字積木填入：</span>
-          <span id="idiom-target-hint" class="text-emerald-600 font-normal">點擊或拖曳置入空格</span>
+      <div class="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-indigo-300/80 shadow-md text-center">
+        <div class="flex items-center justify-between text-xs font-bold text-indigo-800 mb-2.5 px-1">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-cubes text-indigo-600"></i> 請選擇漢字積木填入：</span>
+          <span id="idiom-target-hint" class="text-indigo-600 font-normal">點擊置入空格，中途離開自動存檔</span>
         </div>
 
         <div id="idiom-pool-container" class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5 max-w-xl mx-auto py-1">
@@ -684,49 +760,72 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 彈窗: 成語疊疊樂 - 通關慶祝卡片 (釋義、注音、例句全解析)                    -->
+  <!-- 彈窗: 洞築機先 - 通關慶祝卡片 (釋義、注音、例句全解析，需逐一確認閱讀)   -->
   <!-- ========================================================================= -->
   <div id="idiom-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-emerald-400 card-flip-enter max-h-[90vh] overflow-y-auto">
-      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-2 border-emerald-300 shadow-sm animate-bounce">
+    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-indigo-400 card-flip-enter max-h-[90vh] overflow-y-auto">
+      <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-2 border-indigo-300 shadow-sm animate-bounce">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
       </div>
       <h3 class="text-2xl font-black text-slate-800 mb-0.5">太厲害了！完全答對！</h3>
-      <p class="text-xs text-emerald-600 font-bold mb-4">成語積木精準咬合，智慧博學之塔又增高一層！</p>
+      <p class="text-xs text-indigo-600 font-bold mb-3">請點選下方每一則成語卡片確認讀懂，即可晉級下一關！</p>
+
+      <!-- 閱讀進度提示條 -->
+      <div class="flex items-center justify-between text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg mb-4">
+        <span><i class="fa-solid fa-book-open-reader text-indigo-600 mr-1"></i>成語閱讀確認</span>
+        <span id="idiom-read-progress" class="text-indigo-700 font-black">0 / 0 已研讀</span>
+      </div>
 
       <!-- 包含的成語詳細解說卡 -->
       <div id="idiom-success-details" class="space-y-3 mb-5 text-left">
-        <!-- JS 動態填入本關成語解析 (注音、釋義、例句) -->
+        <!-- JS 動態填入本關成語解析 (可點擊切換已研讀勾選狀態) -->
       </div>
 
       <div class="space-y-2">
-        <button onclick="window.coolGameIdiom && window.coolGameIdiom.nextLevel()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md text-base transition-all active:scale-95 flex items-center justify-center gap-2">
-          <span>晉級下一關</span> <i class="fa-solid fa-arrow-right"></i>
+        <button id="btn-idiom-next-level" disabled onclick="window.coolGameIdiom && window.coolGameIdiom.nextLevel()" class="w-full py-3.5 bg-slate-300 text-slate-500 font-black rounded-xl shadow-md text-base transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>請先點擊上方成語確認讀懂</span> <i class="fa-solid fa-lock text-sm"></i>
         </button>
       </div>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 彈窗: 成語疊疊樂 - 遊戲結束 (機會用盡)                                      -->
+  <!-- 彈窗: 洞築機先 - 遊戲結束 (機會用盡，完整揭曉正確答案與棋盤)              -->
   <!-- ========================================================================= -->
   <div id="idiom-gameover-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-2 border-rose-300 card-flip-enter">
-      <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-2 border-rose-300 shadow-sm">
+    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-rose-300 card-flip-enter max-h-[90vh] overflow-y-auto">
+      <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-rose-300 shadow-sm">
         <i class="fa-solid fa-heart-crack"></i>
       </div>
-      <h3 class="text-2xl font-black text-slate-800 mb-1">差一點點！機會用盡</h3>
-      <p class="text-xs text-slate-500 mb-4">別氣餒，成語越玩越熟悉，再來挑戰一次吧！</p>
+      <h3 class="text-2xl font-black text-slate-800 mb-0.5">生命值耗盡！本題答案揭曉</h3>
+      <p class="text-xs text-slate-500 mb-3">別氣餒！仔細看看正確交會字與成語解析，下次一定能洞築機先！</p>
 
-      <div class="bg-emerald-50 rounded-xl p-3.5 border border-emerald-200 mb-5">
-        <span class="text-xs text-emerald-700 block font-medium">本次共連續闖過</span>
-        <span id="idiom-gameover-score" class="text-3xl font-black text-emerald-600">0</span>
-        <span class="text-xs text-emerald-700 block font-medium mt-0.5">座智慧成語積木塔</span>
+      <!-- 揭曉正確解答框 (重點顯示缺失交錯字) -->
+      <div class="bg-amber-50 rounded-xl p-3.5 border-2 border-amber-300 text-left mb-4 shadow-inner">
+        <div class="text-xs font-black text-amber-900 flex items-center gap-1.5 mb-2">
+          <i class="fa-solid fa-key text-amber-600"></i> 本關正確填空字：
+          <span id="idiom-gameover-answers" class="text-base text-rose-600 font-black ml-1"></span>
+        </div>
+        <!-- 縮小版完整棋盤還原 -->
+        <div class="text-[11px] font-bold text-slate-500 mb-1">完整交錯棋盤：</div>
+        <div id="idiom-gameover-board-preview" class="inline-grid gap-1.5 justify-center items-center mx-auto my-1 p-2 bg-white/80 rounded-lg border border-amber-200">
+          <!-- JS 動態渲染本題完整答案棋盤 -->
+        </div>
+      </div>
+
+      <!-- 本題成語解析清單 -->
+      <div id="idiom-gameover-details" class="space-y-2.5 mb-4 text-left">
+        <!-- JS 動態填入成語注音與釋義 -->
+      </div>
+
+      <!-- 成績統計 -->
+      <div class="bg-indigo-50 rounded-xl p-2.5 border border-indigo-200 mb-4 text-xs font-bold text-indigo-800 flex items-center justify-around">
+        <span>本次共成功通關：<strong id="idiom-gameover-score" class="text-base text-indigo-600 font-black">0</strong> 關</span>
       </div>
 
       <div class="space-y-2">
-        <button onclick="restartIdiomGame()" class="w-full py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-rotate-left"></i> 重新挑戰！
+        <button onclick="restartIdiomGame()" class="w-full py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-600 hover:from-indigo-600 hover:to-pink-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 重新開始新挑戰！
         </button>
         <button onclick="closeIdiomGameOverAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
           返回遊戲大廳

@@ -1634,12 +1634,82 @@
 
     start() {
       this.isRunning = true;
-      this.level = 1;
-      this.score = 0;
-      this.lives = 3;
       this.initData();
-      this.updateLivesUI();
-      this.loadLevel(this.level);
+
+      // 檢查是否有尚未耗盡生命的中途退出存檔 (生命值 > 0 且未結束)
+      const saved = this.loadSavedState();
+      if (saved && saved.lives > 0 && !saved.solved) {
+        this.level = saved.level || 1;
+        this.score = saved.score || 0;
+        this.lives = saved.lives || 3;
+        this.currentPuzzle = saved.currentPuzzle;
+        this.userFilled = saved.userFilled || {};
+        this.selectedSlotKey = saved.selectedSlotKey || (this.currentPuzzle ? this.currentPuzzle.blankKeys[0] : null);
+        this.solved = false;
+
+        this.updateLivesUI();
+        const lvlBadge = document.getElementById('idiom-level-badge');
+        if (lvlBadge) lvlBadge.textContent = `第 ${this.level} 關`;
+        const modeBadge = document.getElementById('idiom-mode-badge');
+        if (modeBadge && this.currentPuzzle) modeBadge.textContent = this.currentPuzzle.modeName;
+        const scoreBadge = document.getElementById('idiom-score-count');
+        if (scoreBadge) scoreBadge.textContent = this.score;
+
+        this.renderBoard();
+        this.renderBlockPool();
+        showGameToast('已為您恢復上次的遊戲進度！', 'fa-rotate-left');
+      } else {
+        this.level = 1;
+        this.score = 0;
+        this.lives = 3;
+        this.updateLivesUI();
+        this.loadLevel(this.level);
+      }
+    }
+
+    getStorageKey() {
+      try {
+        const user = JSON.parse(sessionStorage.getItem('g6_portal_user'));
+        const userKey = (user && user.seatNo) ? user.seatNo : 'guest';
+        return `cool_learning_dong_zhu_state_${userKey}`;
+      } catch (_) {
+        return 'cool_learning_dong_zhu_state_guest';
+      }
+    }
+
+    saveState() {
+      try {
+        if (!this.isRunning || this.lives <= 0) return;
+        const state = {
+          level: this.level,
+          score: this.score,
+          lives: this.lives,
+          currentPuzzle: this.currentPuzzle,
+          userFilled: this.userFilled,
+          selectedSlotKey: this.selectedSlotKey,
+          solved: this.solved,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(state));
+      } catch (_) {}
+    }
+
+    loadSavedState() {
+      try {
+        const raw = localStorage.getItem(this.getStorageKey());
+        if (!raw) return null;
+        const state = JSON.parse(raw);
+        if (state && state.currentPuzzle && state.lives > 0) {
+          return state;
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    clearSavedState() {
+      try {
+        localStorage.removeItem(this.getStorageKey());
+      } catch (_) {}
     }
 
     updateLivesUI() {
@@ -1816,6 +1886,9 @@
       const scoreBadge = document.getElementById('idiom-score-count');
       if (scoreBadge) scoreBadge.textContent = this.score;
 
+      // 儲存狀態以支援中途退出記憶
+      this.saveState();
+
       // 渲染棋盤
       this.renderBoard();
       // 渲染候選積木池
@@ -1901,7 +1974,7 @@
 
             // 若為交錯格
             if (cellData.isCross) {
-              cellDiv.classList.add('border-emerald-400', 'bg-emerald-50/50');
+              cellDiv.classList.add('border-indigo-400', 'bg-indigo-50/50');
             }
           }
 
@@ -1939,7 +2012,7 @@
       pool.forEach(char => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-b from-emerald-500 to-teal-700 text-white font-black text-xl sm:text-2xl idiom-block-btn flex items-center justify-center transition-all cursor-pointer border border-emerald-300/40 relative active:scale-95';
+        btn.className = 'w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-b from-indigo-500 to-purple-700 text-white font-black text-xl sm:text-2xl idiom-block-btn flex items-center justify-center transition-all cursor-pointer border border-indigo-300/40 relative active:scale-95';
         btn.textContent = char;
 
         btn.onclick = () => this.handlePickBlock(char, btn);
@@ -1954,11 +2027,13 @@
         delete this.userFilled[key];
         sounds.playBlockSnap();
         this.selectedSlotKey = key;
+        this.saveState();
         this.renderBoard();
         return;
       }
       this.selectedSlotKey = key;
       sounds.playBlockSnap();
+      this.saveState();
       this.renderBoard();
     }
 
@@ -1984,6 +2059,7 @@
       const nextEmpty = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]);
       this.selectedSlotKey = nextEmpty || null;
 
+      this.saveState();
       this.renderBoard();
 
       // 檢查是否所有空格均已填入
@@ -2041,10 +2117,12 @@
           }
         }
         this.selectedSlotKey = p.blankKeys.find(k => !this.userFilled[k]);
+        this.saveState();
         this.renderBoard();
 
         if (this.lives <= 0) {
-          // 機會用盡，遊戲結束
+          // 機會用盡，遊戲結束，並強制公開完整答案！
+          this.clearSavedState();
           this.handleGameOver();
         }
       }
@@ -2053,36 +2131,121 @@
     showSuccessModal() {
       const modal = document.getElementById('idiom-success-modal');
       const detailsEl = document.getElementById('idiom-success-details');
+      const nextBtn = document.getElementById('btn-idiom-next-level');
       if (!modal || !detailsEl) return;
 
       detailsEl.innerHTML = '';
 
+      // 初始化閱讀狀態追蹤：每則成語必須點選卡片確認讀懂
+      const idioms = this.currentPuzzle.idiomNames;
+      this.readConfirmations = {};
+      idioms.forEach(name => {
+        this.readConfirmations[name] = false;
+      });
+
+      this.updateReadConfirmationUI();
+
       // 渲染本關成語解析卡片
-      this.currentPuzzle.idiomNames.forEach(name => {
+      idioms.forEach(name => {
         const found = this.idiomsBank.find(x => x.name === name) || {
           name, bopomofo: '', meaning: '成語釋義', example: ''
         };
 
         const card = document.createElement('div');
-        card.className = 'bg-slate-50 border border-slate-200 rounded-xl p-3.5 shadow-xs';
+        card.id = `read-card-${name}`;
+        card.className = 'bg-slate-50 hover:bg-indigo-50/50 border-2 border-slate-200 hover:border-indigo-300 rounded-xl p-3.5 shadow-xs cursor-pointer transition-all relative group';
+
+        card.onclick = (e) => {
+          // 若點擊的是語音按鈕，不阻礙勾選
+          if (e.target.closest('button')) return;
+          this.toggleReadConfirmation(name);
+        };
+
         card.innerHTML = `
           <div class="flex items-center justify-between mb-1.5">
             <div class="flex items-baseline gap-2">
               <span class="text-base sm:text-lg font-black text-slate-800 tracking-wider">${found.name}</span>
-              <span class="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">${found.bopomofo || ''}</span>
+              <span class="text-xs font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded">${found.bopomofo || ''}</span>
             </div>
-            <button onclick="window.coolGameIdiom && window.coolGameIdiom.speakIdiom('${found.name}')" title="語音朗讀" class="w-7 h-7 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 flex items-center justify-center text-xs transition-all">
-              <i class="fa-solid fa-volume-high"></i>
-            </button>
+            <div class="flex items-center gap-2">
+              <button onclick="window.coolGameIdiom && window.coolGameIdiom.speakIdiom('${found.name}')" title="語音朗讀" class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-800 flex items-center justify-center text-xs transition-all">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+              <div id="read-check-${name}" class="w-7 h-7 rounded-lg border-2 border-slate-300 bg-white flex items-center justify-center text-xs font-black text-white transition-all shadow-xs">
+                <i class="fa-solid fa-check hidden"></i>
+              </div>
+            </div>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed mb-1.5"><strong class="text-slate-700">釋義：</strong>${found.meaning || '暫無釋義'}</p>
           ${found.example ? `<p class="text-xs text-slate-500 leading-relaxed bg-white p-2 rounded-lg border border-slate-100"><strong class="text-slate-600">例句：</strong>${found.example}</p>` : ''}
+          <div class="text-[11px] font-bold text-slate-400 mt-2 flex items-center justify-end gap-1 group-hover:text-indigo-600 transition-colors">
+            <i class="fa-regular fa-hand-pointer"></i> 點擊卡片確認讀懂
+          </div>
         `;
         detailsEl.appendChild(card);
       });
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+    }
+
+    toggleReadConfirmation(name) {
+      if (!this.readConfirmations) return;
+      this.readConfirmations[name] = !this.readConfirmations[name];
+      sounds.playCatch();
+      this.updateReadConfirmationUI();
+    }
+
+    updateReadConfirmationUI() {
+      const idioms = this.currentPuzzle.idiomNames;
+      let confirmedCount = 0;
+
+      idioms.forEach(name => {
+        const isConfirmed = !!this.readConfirmations[name];
+        if (isConfirmed) confirmedCount += 1;
+
+        const card = document.getElementById(`read-card-${name}`);
+        const checkIcon = document.getElementById(`read-check-${name}`);
+
+        if (card && checkIcon) {
+          if (isConfirmed) {
+            card.classList.add('bg-indigo-50/90', 'border-indigo-400', 'shadow-sm');
+            card.classList.remove('bg-slate-50', 'border-slate-200');
+            checkIcon.className = 'w-7 h-7 rounded-lg border-2 border-emerald-500 bg-emerald-500 flex items-center justify-center text-xs font-black text-white transition-all shadow-xs';
+            checkIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
+          } else {
+            card.classList.remove('bg-indigo-50/90', 'border-indigo-400', 'shadow-sm');
+            card.classList.add('bg-slate-50', 'border-slate-200');
+            checkIcon.className = 'w-7 h-7 rounded-lg border-2 border-slate-300 bg-white flex items-center justify-center text-xs font-black text-white transition-all shadow-xs';
+            checkIcon.innerHTML = '<i class="fa-solid fa-check hidden"></i>';
+          }
+        }
+      });
+
+      // 更新進度條
+      const progressEl = document.getElementById('idiom-read-progress');
+      if (progressEl) {
+        progressEl.textContent = `${confirmedCount} / ${idioms.length} 已研讀`;
+        if (confirmedCount === idioms.length) {
+          progressEl.className = 'text-emerald-600 font-black animate-pulse';
+        } else {
+          progressEl.className = 'text-indigo-700 font-black';
+        }
+      }
+
+      // 下一關按鈕狀態
+      const nextBtn = document.getElementById('btn-idiom-next-level');
+      if (nextBtn) {
+        if (confirmedCount === idioms.length) {
+          nextBtn.disabled = false;
+          nextBtn.className = 'w-full py-3.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-600 hover:from-indigo-600 hover:to-pink-700 text-white font-black rounded-xl shadow-md text-base transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer';
+          nextBtn.innerHTML = '<span>晉級下一關</span> <i class="fa-solid fa-arrow-right"></i>';
+        } else {
+          nextBtn.disabled = true;
+          nextBtn.className = 'w-full py-3.5 bg-slate-300 text-slate-500 font-black rounded-xl shadow-md text-base transition-all flex items-center justify-center gap-2 cursor-not-allowed';
+          nextBtn.innerHTML = `<span>請先點擊上方成語確認讀懂 (${confirmedCount}/${idioms.length})</span> <i class="fa-solid fa-lock text-sm"></i>`;
+        }
+      }
     }
 
     speakIdiom(text) {
@@ -2114,6 +2277,7 @@
         this.userFilled[emptyKey] = correctChar;
         sounds.playCatch();
         this.selectedSlotKey = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]) || null;
+        this.saveState();
         this.renderBoard();
         showGameToast(`為您自動填入「${correctChar}」！`, 'fa-wand-magic-sparkles');
 
@@ -2125,12 +2289,82 @@
       }
     }
 
+    // 生命耗盡：給出完整解答，展示答案字、棋盤還原、與成語解析
     handleGameOver() {
       this.isRunning = false;
+      this.clearSavedState();
       sounds.playGameOver();
+
       const modal = document.getElementById('idiom-gameover-modal');
       const scoreEl = document.getElementById('idiom-gameover-score');
+      const answersEl = document.getElementById('idiom-gameover-answers');
+      const boardPreviewEl = document.getElementById('idiom-gameover-board-preview');
+      const detailsEl = document.getElementById('idiom-gameover-details');
+
       if (scoreEl) scoreEl.textContent = this.score;
+
+      const p = this.currentPuzzle;
+      if (p) {
+        // 1. 揭曉正確答案字
+        if (answersEl) {
+          const ansList = p.blankKeys.map(k => `【${p.cells[k].char}】`).join('、');
+          answersEl.textContent = ansList;
+        }
+
+        // 2. 還原完整棋盤
+        if (boardPreviewEl) {
+          const numRows = p.maxR - p.minR + 1;
+          const numCols = p.maxC - p.minC + 1;
+          boardPreviewEl.style.gridTemplateRows = `repeat(${numRows}, minmax(0, 1fr))`;
+          boardPreviewEl.style.gridTemplateColumns = `repeat(${numCols}, minmax(0, 1fr))`;
+          boardPreviewEl.innerHTML = '';
+
+          for (let r = p.minR; r <= p.maxR; r++) {
+            for (let c = p.minC; c <= p.maxC; c++) {
+              const key = `${r},${c}`;
+              const cellData = p.cells[key];
+              const cellDiv = document.createElement('div');
+              cellDiv.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-black text-sm sm:text-base border';
+
+              if (!cellData) {
+                cellDiv.classList.add('opacity-0', 'pointer-events-none');
+              } else {
+                const wasBlank = p.blankKeys.includes(key);
+                if (wasBlank) {
+                  // 正確答案亮綠高光
+                  cellDiv.classList.add('bg-rose-500', 'text-white', 'border-rose-600', 'shadow-xs', 'scale-105');
+                  cellDiv.textContent = cellData.char;
+                } else {
+                  cellDiv.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
+                  cellDiv.textContent = cellData.char;
+                }
+              }
+              boardPreviewEl.appendChild(cellDiv);
+            }
+          }
+        }
+
+        // 3. 填入成語注音與釋義
+        if (detailsEl) {
+          detailsEl.innerHTML = '';
+          p.idiomNames.forEach(name => {
+            const found = this.idiomsBank.find(x => x.name === name) || {
+              name, bopomofo: '', meaning: '成語釋義'
+            };
+            const div = document.createElement('div');
+            div.className = 'bg-white p-2.5 rounded-lg border border-slate-200 text-xs';
+            div.innerHTML = `
+              <div class="font-black text-slate-800 flex items-center gap-2 mb-0.5">
+                <span>${found.name}</span>
+                <span class="text-[11px] font-bold text-indigo-600">${found.bopomofo || ''}</span>
+              </div>
+              <p class="text-slate-600 text-[11px] leading-relaxed">${found.meaning || ''}</p>
+            `;
+            detailsEl.appendChild(div);
+          });
+        }
+      }
+
       if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
