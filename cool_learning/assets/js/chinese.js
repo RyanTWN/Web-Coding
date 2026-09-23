@@ -37,33 +37,76 @@ let idiomQuizState = {
   userAnswers: []
 };
 
-// 115 學年度國語六年級章節架構
+// 115 學年度國語六年級章節架構（展開至課次級別，支援單元 optgroup 分組）
 const CURRICULUM = {
   '康軒': [
-    ['[六上] 1. 成長的軌跡', ['growth_mindset', 'classics_culture'], '課文：一、跑道／二、朱子治家格言選／三、談遇見更好的自己。重點：自我成長心理、挫折容忍、治家格言警句、論說立意與實踐智慧'],
-    ['[六上] 2. 臺灣風情畫', ['land_affection', 'rhetoric_figures'], '課文：四、臺灣美食詩選／五、最好的味覺禮物／六、珍珠奶茶。重點：臺灣在地美食文化、飲食文學賞析、現代詩感官摹寫與抒情技巧'],
-    ['[六上] 3. 人性的光輝', ['wisdom_fables', 'facing_challenges'], '課文：七、大小剛好的鞋子／八、狐假虎威。重點：同理心與人性溫暖、寓言諷刺意旨、成語典故由來與處事智慧'],
-    ['[六下] 1. 智慧的火花', ['wisdom_fables', 'idiom_application'], '寓言哲理、成語典故、象徵手法與為人處世智慧'],
-    ['[六下] 2. 迎向挑戰', ['facing_challenges', 'argumentation'], '勇敢面對考驗、立志堅持、論說文論點與論據架構'],
-    ['[六下] 3. 藝術與文化', ['arts_aesthetics', 'rhetoric_advanced'], '傳統文化遺產、書法與戲曲美學、意境品味與進階修辭']
+    ['[六上] 第 1 課：跑道', ['growth_mindset', 'facing_challenges'], '政彬接力賽挫折、嫉妒與自我超越、重拾友誼全力以赴', '[六上] 第一單元：成長的軌跡'],
+    ['[六上] 第 2 課：朱子治家格言選', ['classics_culture', 'wisdom_fables'], '清代朱柏廬家訓、一粥一飯當思來處不易、宜未雨而綢繆、勤儉惜福與防患未然', '[六上] 第一單元：成長的軌跡'],
+    ['[六上] 第 3 課：談遇見更好的自己', ['growth_mindset', 'argumentation'], '自我探索、突破舒適圈、論說文論點與行動實踐', '[六上] 第一單元：成長的軌跡'],
+    ['[六上] 統整活動一', ['growth_mindset', 'classics_culture'], '成長思維統整、文言家訓警句辨析、成語思維與自我精進素養', '[六上] 第一單元：成長的軌跡'],
+
+    ['[六上] 第 4 課：臺灣美食詩選', ['land_affection', 'rhetoric_figures'], '在地小吃詩篇（蚵仔煎、擔仔麵等）、視覺聽覺動態感官摹寫、常民生活情味', '[六上] 第二單元：臺灣風情畫'],
+    ['[六上] 第 5 課：最好的味覺禮物', ['land_affection', 'rhetoric_figures'], '家常料理滋味、親人溫暖陪伴、飲食文學、不可替代的親情記憶', '[六上] 第二單元：臺灣風情畫'],
+    ['[六上] 第 6 課：珍珠奶茶', ['land_affection', 'facing_challenges'], '臺灣原創手搖茶、茶文化與粉圓巧思、街頭走向全球、跨文化創新行銷', '[六上] 第二單元：臺灣風情畫'],
+    ['[六上] 統整活動二', ['land_affection', 'rhetoric_advanced'], '飲食文學賞析、感官摹寫修辭深化、臺灣風土民情與在地認同', '[六上] 第二單元：臺灣風情畫'],
+
+    ['[六上] 第 7 課：大小剛好的鞋子', ['wisdom_fables', 'facing_challenges'], '生活哲理、鞋子合不合腳只有自己知道、適合自己才是最好、不隨波逐流', '[六上] 第三單元：人性的光輝'],
+    ['[六上] 第 8 課：狐假虎威', ['wisdom_fables', 'idiom_application'], '古典成語寓言、狐狸巧借天帝之命與猛虎威勢、看清表象與實質、諷喻處事智慧', '[六上] 第三單元：人性的光輝'],
+    ['[六上] 統整活動三', ['wisdom_fables', 'argumentation'], '同理心與人性關懷、寓言諷刺心理深度剖析、為人處世之道', '[六上] 第三單元：人性的光輝'],
+
+    ['[六下] 1. 智慧的火花', ['wisdom_fables', 'idiom_application'], '寓言哲理、成語典故、象徵手法與為人處世智慧', '[六下] 智慧與文化'],
+    ['[六下] 2. 迎向挑戰', ['facing_challenges', 'argumentation'], '勇敢面對考驗、立志堅持、論說文論點與論據架構', '[六下] 智慧與文化'],
+    ['[六下] 3. 藝術與文化', ['arts_aesthetics', 'rhetoric_advanced'], '傳統文化遺產、書法與戲曲美學、意境品味與進階修辭', '[六下] 智慧與文化']
   ],
   '南一': [
-    ['[六上] 1. 美好時刻', ['nature_insight', 'classics_culture'], '課文：一、在天晴了的時候／二、珍珠鳥／三、客至。重點：抒情表述方式、認識律詩、借物抒情、人與自然生靈的情懷'],
-    ['[六上] 2. 工作圖像', ['facing_challenges', 'argumentation', 'idiom_application'], '課文：四、贏得喝采的輸家／五、哇！原來如此／六、登月先鋒。重點：敘述時的人稱、成語真有用、如何說明事理、敬業與探索精神'],
-    ['[六上] 3. 問題解決', ['wisdom_fables', 'argumentation', 'classics_culture'], '課文：七、明智的抉擇／八、飢渴好「火」伴／九、火燒連環船。重點：用圖像做筆記、認識小說類型、危機因應與決策智慧'],
-    ['[六上] 4. 文學之窗', ['reading_world', 'classics_culture', 'land_affection'], '課文：十、戲術／十一、紀念照／十二、少年筆耕。重點：認識古典詩文、跟著文學穿梭時空、文言筆記小說與外國經典文學賞析'],
-    ['[六下] 1. 人間溫情', ['land_affection', 'rhetoric_figures'], '社會關懷、愛與奉獻、倒敘與插敘寫作技巧'],
-    ['[六下] 2. 探索世界', ['reading_world', 'land_affection'], '多元文化采風、旅遊紀行、空間推移描寫與素養'],
-    ['[六下] 3. 夢想起飛', ['facing_challenges', 'argumentation'], '生涯啟蒙、熱情實踐、演講修辭與論說文架構']
+    ['[六上] 第 1 課：在天晴了的時候', ['nature_insight', 'rhetoric_figures'], '戴望舒現代詩賞析、雨後大自然景致、擬人轉化與五感動態摹寫', '[六上] 第一單元：美好時刻'],
+    ['[六上] 第 2 課：珍珠鳥', ['nature_insight', 'land_affection'], '馮驥才散文、人與生靈的情感交流、細膩動態摹寫、信賴創造美好境界', '[六上] 第一單元：美好時刻'],
+    ['[六上] 第 3 課：客至', ['classics_culture', 'rhetoric_advanced'], '杜甫七言律詩、律詩頷聯頸聯嚴整對仗、平水韻、誠摯好客淳樸真情', '[六上] 第一單元：美好時刻'],
+    ['[六上] 語文天地一', ['classics_culture', 'rhetoric_figures'], '表述方式—抒情技巧、律詩體裁與格律常識、借物抒情', '[六上] 第一單元：美好時刻'],
+
+    ['[六上] 第 4 課：贏得喝采的輸家', ['facing_challenges', 'argumentation'], '運動家風度、雖敗猶榮、堅持到底的毅力、論說文論點與論據', '[六上] 第二單元：工作圖像'],
+    ['[六上] 第 5 課：哇！原來如此', ['facing_challenges', 'argumentation'], '仿生學發明、日常觀察好奇心、打比方說明方法、魔鬼氈發明歷程', '[六上] 第二單元：工作圖像'],
+    ['[六上] 第 6 課：登月先鋒', ['facing_challenges', 'reading_world'], '阿姆斯壯登月、科學探索勇氣、記敘要素、人類歷史里程碑', '[六上] 第二單元：工作圖像'],
+    ['[六上] 語文天地二', ['idiom_application', 'argumentation'], '敘述人稱效果、成語真有用、事理說明方法、邏輯思維', '[六上] 第二單元：工作圖像'],
+
+    ['[六上] 第 7 課：明智的抉擇', ['wisdom_fables', 'argumentation'], '王溢嘉論說散文、面對人生關口、審慎評估自我與勇敢承擔責任', '[六上] 第三單元：問題解決'],
+    ['[六上] 第 8 課：飢渴好「火」伴', ['facing_challenges', 'reading_world'], '手斧男孩布萊恩荒野求生、獨立解決問題、火的象徵意義與生存希望', '[六上] 第三單元：問題解決'],
+    ['[六上] 第 9 課：火燒連環船', ['wisdom_fables', 'classics_culture'], '三國演義赤壁之戰、黃蓋詐降苦肉計、因果情節流程圖整理筆記', '[六上] 第三單元：問題解決'],
+    ['[六上] 語文天地三', ['wisdom_fables', 'reading_world'], '用圖像做筆記（流程圖/時間軸）、認識小說類型（歷史/冒險求生）', '[六上] 第三單元：問題解決'],
+
+    ['[六上] 第 10 課：戲術', ['classics_culture', 'arts_aesthetics'], '蒲松齡聊齋志異、文言筆記小說、民間藝人魔術幻術神奇精湛表演', '[六上] 第四單元：文學之窗'],
+    ['[六上] 第 11 課：紀念照', ['land_affection', 'reading_world'], '向田邦子家庭散文、泛黃舊照時光回眸、平實真摯的親情歲月力量', '[六上] 第四單元：文學之窗'],
+    ['[六上] 第 12 課：少年筆耕', ['classics_culture', 'land_affection'], '愛的教育亞米契斯、敘利奧深夜抄寫分擔家計、無私孝心體貼擔當', '[六上] 第四單元：文學之窗'],
+    ['[六上] 語文天地四', ['classics_culture', 'reading_world'], '認識古典詩文、文白對照賞析、文學穿梭時空閱讀素養', '[六上] 第四單元：文學之窗'],
+
+    ['[六下] 1. 人間溫情', ['land_affection', 'rhetoric_figures'], '社會關懷、愛與奉獻、倒敘與插敘寫作技巧', '[六下] 溫情與世界'],
+    ['[六下] 2. 探索世界', ['reading_world', 'land_affection'], '多元文化采風、旅遊紀行、空間推移描寫與素養', '[六下] 溫情與世界'],
+    ['[六下] 3. 夢想起飛', ['facing_challenges', 'argumentation'], '生涯啟蒙、熱情實踐、演講修辭與論說文架構', '[六下] 溫情與世界']
   ],
   '翰林': [
-    ['[六上] 1. 自我探討', ['growth_mindset', 'classics_culture'], '課文：一、遇見自己／二、為什麼大家不理我？／三、孔子說的話。重點：探索自我內心、人際互動與溝通同理、孔子論語名言與儒家先哲智慧'],
-    ['[六上] 2. 向大自然學習', ['nature_insight', 'rhetoric_figures'], '課文：四、向大自然學習／五、樹的聯想／六、善用自嘲，展現幽默。重點：觀察大自然哲理、樹的象徵與多向聯想、自嘲幽默與說話藝術'],
-    ['[六上] 3. 美學延伸', ['arts_aesthetics', 'reading_world'], '課文：七、跟著公共藝術去旅行／八、街頭藝術家／九、戲台上的她與他。重點：生活公共藝術探訪、街頭藝人專注執著、傳統戲曲行當與粉墨人生'],
-    ['[六上] 4. 經典文學導讀', ['classics_culture', 'land_affection'], '課文：十、過故人莊／十一、來一碗溫暖的羹湯／十二、存存（存根）。重點：孟浩然田園五言律詩、食物中的溫暖人情、親情記憶與生命存根'],
-    ['[六下] 1. 文化的印記', ['arts_aesthetics', 'classics_culture'], '民俗節慶文化、成語由來、文史典故與文化認同'],
-    ['[六下] 2. 生命的歌詠', ['land_affection', 'rhetoric_advanced'], '生命故事感動、現代詩歌律動、象徵修辭與意象'],
-    ['[六下] 3. 迎向未來', ['facing_challenges', 'argumentation'], '科技時代反思、環境倫理、論說文反駁與綜合素養']
+    ['[六上] 第 1 課：遇見自己', ['growth_mindset', 'reading_world'], '自我對話與安靜獨處、褪去喧囂浮躁、誠實面對本心、釐清自我價值', '[六上] 第一單元：自我探討'],
+    ['[六上] 第 2 課：為什麼大家不理我？', ['growth_mindset', 'facing_challenges'], '人際疏離挫折、反求諸己、換位思考同理心、修復人際互動', '[六上] 第一單元：自我探討'],
+    ['[六上] 第 3 課：孔子說的話', ['classics_culture', 'wisdom_fables'], '《論語》經典名言、三人行必有我師、擇善而從、先哲仁道與求知修養', '[六上] 第一單元：自我探討'],
+    ['[六上] 統整活動一', ['growth_mindset', 'classics_culture'], '自我認知省思、同理心溝通、論語格言生活實踐統整', '[六上] 第一單元：自我探討'],
+
+    ['[六上] 第 4 課：向大自然學習', ['nature_insight', 'reading_world'], '向大自然謙卑致敬、萬物和諧共生、體悟生物生存精妙智慧', '[六上] 第二單元：向大自然學習'],
+    ['[六上] 第 5 課：樹的聯想', ['nature_insight', 'rhetoric_figures'], '樹木生命哲理、根基扎實與舒展庇蔭、象徵修辭、厚積薄發美德', '[六上] 第二單元：向大自然學習'],
+    ['[六上] 第 6 課：善用自嘲，展現幽默', ['wisdom_fables', 'argumentation'], '自嘲的溝通智慧、化解尷尬緊張、強大內心自信的高級幽默', '[六上] 第二單元：向大自然學習'],
+    ['[六上] 統整活動二', ['nature_insight', 'rhetoric_figures'], '大自然啟發整合、心智圖聯想技巧、說話藝術與幽默素養統整', '[六上] 第二單元：向大自然學習'],
+
+    ['[六上] 第 7 課：跟著公共藝術去旅行', ['arts_aesthetics', 'reading_world'], '公共藝術互動性、打破美術館藩籬、在地環境歷史融合、公眾美感素養', '[六上] 第三單元：美學延伸'],
+    ['[六上] 第 8 課：街頭藝術家', ['arts_aesthetics', 'facing_challenges'], '街頭藝人專注表演、不畏風吹日晒、對藝術純粹熱愛、技藝與尊嚴', '[六上] 第三單元：美學延伸'],
+    ['[六上] 第 9 課：戲台上的她與他', ['arts_aesthetics', 'classics_culture'], '傳統戲曲乾旦坤生演繹、生旦淨丑角色行當、唱念做打四功五法苦練', '[六上] 第三單元：美學延伸'],
+    ['[六上] 統整活動三', ['arts_aesthetics', 'rhetoric_advanced'], '公共藝術生活融合、街頭表演藝術觀察、傳統戲曲美學品味統整', '[六上] 第三單元：美學延伸'],
+
+    ['[六上] 第 10 課：過故人莊', ['classics_culture', 'land_affection'], '孟浩然五言律詩格律、平水韻、開軒把酒農家真情、重陽菊花之約', '[六上] 第四單元：經典文學導讀'],
+    ['[六上] 第 11 課：來一碗溫暖的羹湯', ['land_affection', 'rhetoric_figures'], '寒冬熱氣蒸騰羹湯、市井小民人情溫暖、生活樸實撫慰、飲食感恩', '[六上] 第四單元：經典文學導讀'],
+    ['[六上] 第 12 課：存存（存根）', ['land_affection', 'growth_mindset'], '票券存根象徵手法、歲月歷程見證、付出努力深刻印記、珍惜時光', '[六上] 第四單元：經典文學導讀'],
+    ['[六上] 統整活動四', ['classics_culture', 'land_affection'], '古典田園律詩對仗分析、常民生活情味、生命記憶存根抒情統整', '[六上] 第四單元：經典文學導讀'],
+
+    ['[六下] 1. 文化的印記', ['arts_aesthetics', 'classics_culture'], '民俗節慶文化、成語由來、文史典故與文化認同', '[六下] 文化與未來'],
+    ['[六下] 2. 生命的歌詠', ['land_affection', 'rhetoric_advanced'], '生命故事感動、現代詩歌律動、象徵修辭與意象', '[六下] 文化與未來'],
+    ['[六下] 3. 迎向未來', ['facing_challenges', 'argumentation'], '科技時代反思、環境倫理、論說文反駁與綜合素養', '[六下] 文化與未來']
   ]
 };
 
@@ -1035,11 +1078,27 @@ function renderChapters() {
   if (!select) return;
   select.innerHTML = '';
   const chapters = CURRICULUM[selectedPublisher] || [];
-  chapters.forEach(([name]) => {
+
+  let currentGroup = null;
+  let currentGroupName = '';
+
+  chapters.forEach(item => {
+    const [name, tags, desc, unitName] = item;
+    const groupLabel = unitName || '精選單元';
+    if (groupLabel !== currentGroupName) {
+      currentGroup = document.createElement('optgroup');
+      currentGroup.label = groupLabel;
+      select.appendChild(currentGroup);
+      currentGroupName = groupLabel;
+    }
     const opt = document.createElement('option');
     opt.value = name;
     opt.textContent = name;
-    select.appendChild(opt);
+    if (currentGroup) {
+      currentGroup.appendChild(opt);
+    } else {
+      select.appendChild(opt);
+    }
   });
   updateChapterSummary();
 }
@@ -1050,7 +1109,7 @@ function updateChapterSummary() {
   if (!select || !summaryEl) return;
   const chapters = CURRICULUM[selectedPublisher] || [];
   const found = chapters.find(c => c[0] === select.value);
-  summaryEl.textContent = found ? `單元核心重點：${found[2]}` : '每日固定 20 題，包含字音字形、詞義成語、修辭句型與素養閱讀。';
+  summaryEl.textContent = found ? `本課核心重點：${found[2]}` : '每日固定 20 題，包含字音字形、詞義成語、修辭句型與素養閱讀。';
 }
 
 function getCorrectCount(state = dailyState) {
