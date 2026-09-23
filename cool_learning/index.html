@@ -22,8 +22,10 @@
 
   <!-- Google Identity Services (GIS) SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- Chart.js 生長曲線繪圖庫 -->
+  <!-- Chart.js 生長曲線繪圖庫與手勢縮放外掛 (支援雙指縮放與滾輪縮放) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 </head>
 <body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen is-login-state">
 
@@ -565,9 +567,40 @@
                 </div>
               </div>
 
+              <!-- 時間軸縮放與視角控制列 (支援手機雙指手勢/滑鼠滾輪/按鈕縮放) -->
+              <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 bg-slate-50 rounded-xl border border-slate-200 text-xs mt-2.5">
+                <div class="flex items-center gap-1.5 text-slate-700 font-bold">
+                  <i class="fa-solid fa-arrows-left-right text-teal-600"></i>
+                  <span id="growth-chart-range-text">顯示範圍：前後 1 年區間</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <!-- 放大按鈕 (縮短時間軸) -->
+                  <button type="button" id="btn-growth-zoom-in" title="放大時間軸" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-teal-700 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs">
+                    <i class="fa-solid fa-magnifying-glass-plus text-teal-600"></i>
+                    <span>放大</span>
+                  </button>
+                  <!-- 縮小按鈕 (拉長時間軸) -->
+                  <button type="button" id="btn-growth-zoom-out" title="縮小時間軸" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-teal-700 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs">
+                    <i class="fa-solid fa-magnifying-glass-minus text-teal-600"></i>
+                    <span>縮小</span>
+                  </button>
+                  <!-- 前後 1 年 (預設) -->
+                  <button type="button" id="btn-growth-zoom-default" title="回到預設：當下前後各 1 年" class="px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs">
+                    <i class="fa-solid fa-crosshairs text-teal-600"></i>
+                    <span>前後1年</span>
+                  </button>
+                  <!-- 全部 0-18 歲 -->
+                  <button type="button" id="btn-growth-zoom-full" title="檢視 0-18 歲完整發育曲線" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs">
+                    <i class="fa-solid fa-expand text-slate-500"></i>
+                    <span>全區間</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- 圖表畫布容器 -->
               <div class="relative w-full h-[320px] sm:h-[350px] mt-2">
-                <canvas id="growth-curve-canvas"></canvas>
+                <canvas id="growth-curve-canvas" style="touch-action: pan-y;"></canvas>
               </div>
             </div>
 
@@ -857,7 +890,7 @@
   </div>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260923-physical-growth-chart"></script>
+  <script src="assets/js/app.js?v=20260923-zoom-growth-chart"></script>
   <script src="assets/js/quiz.js"></script>
 
 <!-- 付費解鎖彈窗 -->

@@ -2026,6 +2026,91 @@ function renderGrowthQuickStats() {
   }
 }
 
+// 取得孩子當前年齡與預設前後各 1 年範圍 (共 2 年區間)
+function getChildDefaultAgeRange() {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const ageInfo = calculateChildAge(currentChildBio.birthday, todayStr, currentChildBio.grade_level);
+  let centerAge = Number(ageInfo.ageDecimal.toFixed(2));
+  if (isNaN(centerAge) || centerAge < 0) centerAge = 10;
+  if (centerAge > 18) centerAge = 18;
+
+  let defaultMin = Number((centerAge - 1.0).toFixed(2));
+  let defaultMax = Number((centerAge + 1.0).toFixed(2));
+
+  if (defaultMin < 0) {
+    defaultMin = 0;
+    defaultMax = Math.min(18, 2.0);
+  } else if (defaultMax > 18) {
+    defaultMax = 18;
+    defaultMin = Math.max(0, 16.0);
+  }
+
+  return { defaultMin, defaultMax, centerAge, ageText: ageInfo.ageStr };
+}
+
+// 更新圖表範圍文字提示
+function updateGrowthChartRangeDisplay(chart) {
+  const rangeEl = document.getElementById('growth-chart-range-text');
+  if (!rangeEl) return;
+  const targetChart = chart || growthChartInstance;
+  if (!targetChart || !targetChart.scales || !targetChart.scales.x) return;
+
+  const minVal = Math.max(0, targetChart.scales.x.min).toFixed(1);
+  const maxVal = Math.min(18, targetChart.scales.x.max).toFixed(1);
+  const { centerAge } = getChildDefaultAgeRange();
+  rangeEl.textContent = `顯示範圍：${minVal} 歲 ～ ${maxVal} 歲 (當前: ${centerAge}歲)`;
+}
+
+// 放大 (時間軸縮短) / 縮小 (時間軸拉長)
+function zoomGrowthChart(direction) {
+  if (!growthChartInstance || !growthChartInstance.scales || !growthChartInstance.scales.x) return;
+  const currentMin = growthChartInstance.scales.x.min;
+  const currentMax = growthChartInstance.scales.x.max;
+  const currentSpan = Math.max(0.2, currentMax - currentMin);
+  const center = (currentMin + currentMax) / 2;
+
+  // 放大時區間縮短為 70%，縮小時區間擴大為 140%
+  let newSpan = direction === 'in' ? currentSpan * 0.7 : currentSpan * 1.4;
+  if (newSpan < 0.5) newSpan = 0.5; // 最少檢視半年 (0.5歲)
+  if (newSpan > 18) newSpan = 18;   // 最多檢視 18 歲
+
+  let newMin = center - newSpan / 2;
+  let newMax = center + newSpan / 2;
+
+  if (newMin < 0) {
+    newMin = 0;
+    newMax = Math.min(18, newSpan);
+  } else if (newMax > 18) {
+    newMax = 18;
+    newMin = Math.max(0, 18 - newSpan);
+  }
+
+  growthChartInstance.options.scales.x.min = Number(newMin.toFixed(2));
+  growthChartInstance.options.scales.x.max = Number(newMax.toFixed(2));
+  growthChartInstance.update();
+  updateGrowthChartRangeDisplay(growthChartInstance);
+}
+
+// 回到預設：顯示前後各 1 年
+function resetGrowthChartDefaultRange() {
+  if (!growthChartInstance) return;
+  const { defaultMin, defaultMax } = getChildDefaultAgeRange();
+  growthChartInstance.options.scales.x.min = defaultMin;
+  growthChartInstance.options.scales.x.max = defaultMax;
+  growthChartInstance.update();
+  updateGrowthChartRangeDisplay(growthChartInstance);
+}
+
+// 檢視全部 0-18 歲
+function resetGrowthChartFullRange() {
+  if (!growthChartInstance) return;
+  growthChartInstance.options.scales.x.min = 0;
+  growthChartInstance.options.scales.x.max = 18;
+  growthChartInstance.update();
+  updateGrowthChartRangeDisplay(growthChartInstance);
+}
+
 // 繪製 0-18 歲兒童生長曲線百分位圖表 (Chart.js)
 function renderGrowthCurveChart() {
   const canvas = document.getElementById('growth-curve-canvas');
@@ -2041,6 +2126,9 @@ function renderGrowthCurveChart() {
   const metric = currentGrowthMetric; // 'height' | 'weight' | 'bmi'
   const normData = TAIWAN_GROWTH_NORMS[gender][metric];
   const ages = TAIWAN_GROWTH_NORMS.ages;
+
+  // 常模資料轉為 {x, y} 物件陣列，確保線性座標軸縮放、平移與裁切時順暢
+  const toPoints = (arr) => arr.map((v, i) => ({ x: ages[i], y: v }));
 
   // 整理孩子的實際測量資料點
   const childPoints = currentGrowthRecords.map(r => {
@@ -2060,6 +2148,7 @@ function renderGrowthCurveChart() {
   }).filter(pt => pt.x >= 0 && pt.x <= 18);
 
   const metricLabel = metric === 'height' ? '身高 (cm)' : (metric === 'weight' ? '體重 (kg)' : 'BMI (kg/m²)');
+  const { defaultMin, defaultMax } = getChildDefaultAgeRange();
 
   if (growthChartInstance) {
     growthChartInstance.destroy();
@@ -2090,7 +2179,7 @@ function renderGrowthCurveChart() {
         // 常模 P97
         {
           label: 'P97 (97%)',
-          data: normData.p97,
+          data: toPoints(normData.p97),
           borderColor: '#475569',
           borderWidth: 1.5,
           pointRadius: 0,
@@ -2101,7 +2190,7 @@ function renderGrowthCurveChart() {
         // 常模 P85
         {
           label: 'P85 (85%)',
-          data: normData.p85,
+          data: toPoints(normData.p85),
           borderColor: '#0284c7',
           backgroundColor: 'rgba(2, 132, 199, 0.08)',
           borderWidth: 1.5,
@@ -2113,7 +2202,7 @@ function renderGrowthCurveChart() {
         // 常模 P50 (中位線)
         {
           label: 'P50 (中位標準)',
-          data: normData.p50,
+          data: toPoints(normData.p50),
           borderColor: '#059669',
           backgroundColor: 'rgba(5, 150, 105, 0.12)',
           borderWidth: 2.5,
@@ -2125,7 +2214,7 @@ function renderGrowthCurveChart() {
         // 常模 P15
         {
           label: 'P15 (15%)',
-          data: normData.p15,
+          data: toPoints(normData.p15),
           borderColor: '#06b6d4',
           backgroundColor: 'rgba(6, 182, 212, 0.08)',
           borderWidth: 1.5,
@@ -2137,7 +2226,7 @@ function renderGrowthCurveChart() {
         // 常模 P3
         {
           label: 'P3 (3%)',
-          data: normData.p3,
+          data: toPoints(normData.p3),
           borderColor: '#6366f1',
           borderWidth: 1.5,
           pointRadius: 0,
@@ -2158,6 +2247,33 @@ function renderGrowthCurveChart() {
         legend: {
           display: false
         },
+        // Chart.js Zoom 插件設定 (支援手勢 Pinch / 滾輪 Wheel / 拖曳 Pan)
+        zoom: {
+          pan: {
+            enabled: true,
+            mode: 'x',
+            modifierKey: null,
+            onPanComplete: function({ chart }) {
+              updateGrowthChartRangeDisplay(chart);
+            }
+          },
+          zoom: {
+            wheel: {
+              enabled: true,
+              speed: 0.1
+            },
+            pinch: {
+              enabled: true
+            },
+            mode: 'x',
+            onZoomComplete: function({ chart }) {
+              updateGrowthChartRangeDisplay(chart);
+            }
+          },
+          limits: {
+            x: { min: 0, max: 18, minRange: 0.5 }
+          }
+        },
         tooltip: {
           backgroundColor: 'rgba(15, 23, 42, 0.9)',
           titleFont: { size: 12, weight: 'bold' },
@@ -2171,14 +2287,16 @@ function renderGrowthCurveChart() {
                 const raw = item.raw;
                 return `測量日期：${raw.recordDate || ''} (年齡: ${raw.x} 歲)`;
               }
-              return `年齡：${item.label} 歲`;
+              const xVal = item.raw && typeof item.raw.x !== 'undefined' ? item.raw.x : item.label;
+              return `年齡：${xVal} 歲常模`;
             },
             label: function(item) {
               if (item.datasetIndex === 0) {
                 const raw = item.raw;
                 return `孩子記錄：${raw.y} ${metric === 'height' ? 'cm' : (metric === 'weight' ? 'kg' : '')} ｜ 身高:${raw.height}cm 體重:${raw.weight}kg BMI:${raw.bmi}`;
               }
-              return `${item.dataset.label}：${item.formattedValue}`;
+              const yVal = item.raw && typeof item.raw.y !== 'undefined' ? item.raw.y : item.formattedValue;
+              return `${item.dataset.label}：${yVal} ${metric === 'height' ? 'cm' : (metric === 'weight' ? 'kg' : '')}`;
             }
           }
         }
@@ -2192,10 +2310,10 @@ function renderGrowthCurveChart() {
             font: { size: 11, weight: 'bold' },
             color: '#64748b'
           },
-          min: 0,
-          max: 18,
+          min: defaultMin,
+          max: defaultMax,
           ticks: {
-            stepSize: 2,
+            stepSize: (defaultMax - defaultMin) <= 3 ? 0.5 : 1,
             font: { size: 10 }
           },
           grid: {
@@ -2219,6 +2337,8 @@ function renderGrowthCurveChart() {
       }
     }
   });
+
+  updateGrowthChartRangeDisplay(growthChartInstance);
 }
 
 // 渲染近期測量紀錄歷史清單
@@ -2319,6 +2439,12 @@ window.deleteChildGrowthRecord = async function(recordId) {
     renderGrowthCurveChart();
   });
 });
+
+// 綁定時間軸縮放與視角控制按鈕
+document.getElementById('btn-growth-zoom-in')?.addEventListener('click', () => zoomGrowthChart('in'));
+document.getElementById('btn-growth-zoom-out')?.addEventListener('click', () => zoomGrowthChart('out'));
+document.getElementById('btn-growth-zoom-default')?.addEventListener('click', resetGrowthChartDefaultRange);
+document.getElementById('btn-growth-zoom-full')?.addEventListener('click', resetGrowthChartFullRange);
 
 // 新增測量紀錄表單送出
 document.getElementById('form-add-growth-record')?.addEventListener('submit', async (e) => {
