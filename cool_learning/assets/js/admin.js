@@ -14,6 +14,7 @@ async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   if (response.status === 401) {
     sessionStorage.removeItem('g6_portal_user');
+    localStorage.removeItem('g6_portal_user');
     window.location.reload();
   }
   return response;
@@ -25,6 +26,7 @@ function initAdminModule() {
   document.getElementById('admin-tab-words').onclick = () => switchAdminTab('words');
   document.getElementById('btn-admin-logout').onclick = () => {
     sessionStorage.removeItem('g6_portal_user');
+    localStorage.removeItem('g6_portal_user');
     location.reload();
   };
   document.getElementById('form-add-student').onsubmit = handleAddSingleStudent;

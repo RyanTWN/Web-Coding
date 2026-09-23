@@ -3,7 +3,7 @@
 const DAILY_TOTAL = 20;
 const ALLOWED_PUBLISHERS = ['康軒', '南一', '翰林'];
 const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
-let currentUser = (typeof sessionStorage !== 'undefined') ? JSON.parse(sessionStorage.getItem('g6_portal_user') || 'null') : null;
+let currentUser = (typeof sessionStorage !== 'undefined') ? JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null') : null;
 let selectedPublisher = '康軒';
 let dailyState = null;
 let history = [];
@@ -1434,6 +1434,7 @@ if (typeof document !== 'undefined') {
   // 登出與大廳
   document.getElementById('btn-logout')?.addEventListener('click', () => {
     sessionStorage.removeItem('g6_portal_user');
+    localStorage.removeItem('g6_portal_user');
     window.location.replace('index.html');
   });
 

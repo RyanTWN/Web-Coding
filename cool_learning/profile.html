@@ -531,6 +531,7 @@
     // 登出系統
     function logoutCurrentStudent() {
       sessionStorage.removeItem('g6_portal_user');
+      localStorage.removeItem('g6_portal_user');
       showToast('已登出系統', 'fa-right-from-bracket');
       setTimeout(() => {
         window.location.assign('index.html');
@@ -540,7 +541,7 @@
     // 載入當前學生資料
     async function initProfilePage() {
       try {
-        const stored = sessionStorage.getItem('g6_portal_user');
+        const stored = sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user');
         currentUser = stored ? JSON.parse(stored) : null;
       } catch (e) {
         currentUser = null;

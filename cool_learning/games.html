@@ -847,7 +847,7 @@
   <script>
     // 初始化使用者顯示
     document.addEventListener('DOMContentLoaded', () => {
-      const user = JSON.parse(sessionStorage.getItem('g6_portal_user'));
+      const user = JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null');
       if (user) {
         const badge = document.getElementById('user-profile-badge');
         const nameEl = document.getElementById('header-user-name');
@@ -860,6 +860,7 @@
 
     function logoutCurrentStudent() {
       sessionStorage.removeItem('g6_portal_user');
+      localStorage.removeItem('g6_portal_user');
       window.location.assign('index.html');
     }
 

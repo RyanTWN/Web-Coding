@@ -390,10 +390,11 @@
     // 數學天地 前端狀態機與 DOM 互動邏輯
     // ==========================================
     const urlParams = new URLSearchParams(window.location.search);
-    let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user'));
+    let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null');
     if (!currentUser && (urlParams.get('demo') === 'true' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       currentUser = { seatNo: 'DEMO01', name: '體驗同學', token: 'mock-token' };
       sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+      localStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
     }
     let selectedPub = "康軒";
     let dailyQuestions = [];
@@ -488,6 +489,7 @@
 
     function logoutStudent() {
       sessionStorage.removeItem('g6_portal_user');
+      localStorage.removeItem('g6_portal_user');
       window.location.href = 'index.html';
     }
 
@@ -1042,6 +1044,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       if (!currentUser || !currentUser.token) {
         sessionStorage.removeItem('g6_portal_user');
+        localStorage.removeItem('g6_portal_user');
         window.location.href = 'index.html';
         return;
       }

@@ -2,7 +2,7 @@
 const DAILY_TOTAL = 20;
 const ALLOWED_PUBLISHERS = ['康軒', '南一', '翰林'];
 const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
-let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || 'null');
+let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null');
 let selectedPublisher = '康軒';
 let dailyState = null;
 let history = [];
@@ -1128,6 +1128,7 @@ function advanceReview() {
 
 function logout() {
   sessionStorage.removeItem('g6_portal_user');
+  localStorage.removeItem('g6_portal_user');
   window.location.href = 'index.html';
 }
 

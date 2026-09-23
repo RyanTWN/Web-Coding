@@ -1,7 +1,7 @@
-// 全局狀態管理
-let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user')) || null;
-let currentGuardian = JSON.parse(sessionStorage.getItem('g6_guardian_user')) || null;
-let guardianToken = sessionStorage.getItem('g6_guardian_token') || null;
+// 全局狀態管理 (支援 localStorage 持久化記憶與 sessionStorage 跨分頁同步)
+let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null');
+let currentGuardian = JSON.parse(sessionStorage.getItem('g6_guardian_user') || localStorage.getItem('g6_guardian_user') || 'null');
+let guardianToken = sessionStorage.getItem('g6_guardian_token') || localStorage.getItem('g6_guardian_token') || null;
 let guardianChildren = [];
 
 // 管理後台用；一律由 /api/admin/analytics 的真實資料覆蓋（見 admin.js），這裡只需要空陣列起始值。
@@ -94,11 +94,14 @@ async function apiFetch(path, options = {}) {
       guardianToken = null;
       sessionStorage.removeItem('g6_guardian_user');
       sessionStorage.removeItem('g6_guardian_token');
+      localStorage.removeItem('g6_guardian_user');
+      localStorage.removeItem('g6_guardian_token');
       showToast('家長登入憑證已過期，請重新登入', 'fa-lock');
       showView('view-login');
     } else {
       currentUser = null;
       sessionStorage.removeItem('g6_portal_user');
+      localStorage.removeItem('g6_portal_user');
       if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/') {
         window.location.assign('index.html?session=expired');
       }
@@ -345,6 +348,7 @@ async function loadStudentAppData(seatNo) {
   }
   saveStudentAppData();
   renderCard();
+  renderCalendar();
   if (allWordsCompleted) showToast('恭喜所有單字已學習完成！', 'fa-trophy');
 }
 
@@ -402,14 +406,20 @@ function showView(viewId) {
 
 function switchAppTab(tabId) {
   document.body.dataset.englishTab = tabId;
+
+  // 若切換至 calendar，因日曆已整併至每日學習右側欄位，直接顯示 learn 並滾動聚焦至日曆
+  const shouldScrollToCalendar = (tabId === 'calendar');
+  if (tabId === 'calendar') {
+    tabId = 'learn';
+  }
+
   // 1. 隱藏所有內容區塊
   document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
   
-  // 2. 將所有按鈕重置為「未選取」的平坦狀態
+  // 2. 將所有按鈕重置為「未選取」狀態
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.remove('bg-brand-500', 'text-white', 'shadow-comic', 'transform', '-translate-y-1');
-    btn.classList.remove('is-active');
-    btn.classList.add('text-slate-500', 'hover:text-slate-800');
+    btn.classList.remove('bg-white', 'text-rose-700', 'shadow-md', 'is-active', 'bg-brand-500', 'text-white');
+    btn.classList.add('text-rose-900', 'hover:text-rose-700');
     btn.setAttribute('aria-selected', 'false');
   });
 
@@ -417,17 +427,22 @@ function switchAppTab(tabId) {
   const view = document.getElementById(`app-view-${tabId}`);
   if(view) view.classList.remove('hidden');
   
-  // 4. 為目前選中的按鈕加上「彩色浮起」的漫畫風格
+  // 4. 為目前選中的按鈕加上選中樣式
   const navBtn = document.getElementById(`nav-${tabId}`);
   if(navBtn) {
-    navBtn.classList.remove('text-slate-500', 'hover:text-slate-800');
-    navBtn.classList.add('bg-brand-500', 'text-white', 'shadow-comic', 'transform', '-translate-y-1');
-    navBtn.classList.add('is-active');
+    navBtn.classList.remove('text-rose-900', 'hover:text-rose-700', 'text-slate-500');
+    navBtn.classList.add('bg-white', 'text-rose-700', 'shadow-md', 'is-active');
     navBtn.setAttribute('aria-selected', 'true');
   }
 
+  if (tabId === 'learn') renderCalendar();
   if (tabId === 'starred') renderStarredList();
-  if (tabId === 'calendar') renderCalendar();
+
+  if (shouldScrollToCalendar) {
+    setTimeout(() => {
+      document.getElementById('calendar-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
 }
 
 /**
@@ -566,12 +581,16 @@ function renderCard() {
   const translateEl = document.getElementById('card-translate');
   if (translateEl) translateEl.textContent = item.translate;
 
+  // 切換單字時自動翻回正面
+  const flashcard = document.getElementById('flashcard');
+  if (flashcard) flashcard.classList.remove('is-flipped');
+
   const starBtn = document.getElementById('star-btn');
   if (starBtn) {
     const isStarred = starredIds.has(item.id);
     starBtn.className = isStarred
-      ? "absolute top-3 right-3 text-3xl text-amber-400 p-2 z-30 transition-transform transform hover:scale-110 active:scale-95 drop-shadow-md is-starred"
-      : "absolute top-3 right-3 text-3xl text-slate-300 hover:text-amber-400 p-2 z-30 transition-transform transform hover:scale-110 active:scale-95 drop-shadow-md";
+      ? "w-10 h-10 rounded-md bg-white/80 hover:bg-white text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition is-starred"
+      : "w-10 h-10 rounded-md bg-white/80 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition";
     starBtn.style.color = isStarred ? '#f59e0b' : '';
     starBtn.title = isStarred ? '已加入難字本（需在「難字本拼字特訓」連續拼對 3 次方可移除）' : '點擊加入難字本';
   }
@@ -580,10 +599,10 @@ function renderCard() {
   if (nextBtn) {
       if (currentIndex === today30Words.length - 1) {
         nextBtn.innerHTML = '完成學習 <i class="fa-solid fa-circle-check"></i>';
-        nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all shadow-md";
+        nextBtn.className = "flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm";
       } else {
-        nextBtn.innerHTML = '下一個 <i class="fa-solid fa-arrow-right"></i>';
-        nextBtn.className = "flex-1 py-3 px-4 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold transition-all shadow-md";
+        nextBtn.innerHTML = '下一個單字 <i class="fa-solid fa-chevron-right text-base ml-1"></i>';
+        nextBtn.className = "flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm";
       }
   }
 
@@ -597,6 +616,13 @@ function renderCard() {
     progText.textContent = `${dateLabel}${currentIndex + 1} / ${today30Words.length} · ${percent}%`;
   }
   
+  const counterBadge = document.getElementById('word-counter-badge');
+  if (counterBadge) {
+    const cur = String(currentIndex + 1).padStart(2, '0');
+    const tot = String(today30Words.length).padStart(2, '0');
+    counterBadge.textContent = `${cur} / ${tot}`;
+  }
+
   const starBadge = document.getElementById('starred-count-badge');
   if (starBadge) starBadge.textContent = `${starredIds.size} 難字`;
 }
@@ -723,6 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-logout')?.addEventListener('click', () => {
     currentUser = null;
     sessionStorage.removeItem('g6_portal_user');
+    localStorage.removeItem('g6_portal_user');
     resetStudentLoginForm();
     if (currentGuardian && guardianToken) {
       showView('view-guardian-dashboard');
@@ -863,6 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         currentUser = { name, seatNo, token: data.token, isAdmin: false };
         sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+        localStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
         
         const hName = document.getElementById('header-user-name');
         const hSeat = document.getElementById('header-user-seat');
@@ -953,6 +981,8 @@ document.addEventListener('DOMContentLoaded', () => {
       dailyProgressMap.set(selectedLearningDate, { learningDate: selectedLearningDate, currentWordIndex: 29, completed: true });
       saveStudentAppData();
       syncStudentProgressToCloud();
+      renderCalendar();
+      showToast('恭喜完成今日 30 字學習，已成功打卡！', 'fa-trophy');
       switchAppTab('calendar');
     }
   });
@@ -1580,6 +1610,7 @@ window.startChildStudy = async function(childId, nickname, seatNo) {
       guardianLinked: true
     };
     sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+    localStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
 
     const subjectUserEl = document.getElementById('subject-user-name');
     if (subjectUserEl) subjectUserEl.textContent = targetNickname;

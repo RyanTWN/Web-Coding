@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="酷學習">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
-  <title>酷學習 Cool Learning - 英文學習區</title>
+  <title>英文單字天地｜酷學習</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,869 +21,68 @@
   <link rel="stylesheet" href="assets/css/style.css">
 
   <style>
-    /* 漫畫風格背景網點 (Halftone Pattern) */
-    .comic-bg {
-      background-color: #f8fafc;
-      background-image: radial-gradient(#cbd5e1 2.5px, transparent 2.5px);
-      background-size: 24px 24px;
+    body {
+      background: radial-gradient(circle at top left, #fff1f2, #f8fafc 45%, #fef2f2);
+      min-height: 100vh;
     }
     
-    /* 3D 翻轉卡片的核心 CSS 設定 (跨平台與 iOS Safari 專屬硬體加速支援) */
-    .perspective-1000 {
-      perspective: 1000px;
-      -webkit-perspective: 1000px;
+    .calendar-cell { aspect-ratio: 1; }
+
+    /* 3D 翻轉卡片 Core CSS (與成語200樣式完全一致) */
+    .word-card-perspective {
+      perspective: 1200px;
+      -webkit-perspective: 1200px;
     }
-    .transform-style-3d {
+    .word-card-inner {
+      position: relative;
+      width: 100%;
+      min-height: 420px;
       transform-style: preserve-3d;
       -webkit-transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.34, 1.4, 0.64, 1);
     }
-    .backface-hidden {
-      backface-visibility: hidden !important;
-      -webkit-backface-visibility: hidden !important;
-    }
-    .rotate-y-180 {
-      transform: rotateY(180deg) translateZ(1px);
-      -webkit-transform: rotateY(180deg) translateZ(1px);
-    }
-    .flip-card-inner { 
-      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-      -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-      transform-style: preserve-3d;
-      -webkit-transform-style: preserve-3d;
-    }
-    /* 當外層加上 is-flipped 類別時，內層旋轉 180 度 */
-    .is-flipped .flip-card-inner { 
+    .word-card-inner.is-flipped {
       transform: rotateY(180deg);
       -webkit-transform: rotateY(180deg);
     }
-    #flashcard .flip-card-front,
-    #flashcard .flip-card-back {
+    .word-card-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       -webkit-backface-visibility: hidden !important;
       backface-visibility: hidden !important;
-      -webkit-transform-style: preserve-3d;
-      transform-style: preserve-3d;
-      -webkit-font-smoothing: antialiased;
-    }
-    #flashcard .flip-card-front {
-      transform: rotateY(0deg) translateZ(1px);
-      -webkit-transform: rotateY(0deg) translateZ(1px);
-    }
-    #flashcard .flip-card-back {
-      transform: rotateY(180deg) translateZ(1px);
-      -webkit-transform: rotateY(180deg) translateZ(1px);
+      border-radius: 0.75rem;
       box-sizing: border-box;
     }
-    #flashcard .flip-card-back .dialogue-box {
-      max-height: clamp(120px, 20dvh, 180px);
+    .word-card-back {
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
     }
 
-    /* 英文學習頁：保留活潑感，同時降低粗框與陰影造成的視覺負擔。 */
-    body.english-page { padding-bottom: 96px; }
-    #global-header {
-      position: sticky;
-      top: 12px;
-      z-index: 35;
-      border-width: 2px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
-      backdrop-filter: blur(14px);
-      background: rgba(255, 255, 255, .94);
-    }
-    .learning-shell {
-      border-width: 2px !important;
-      box-shadow: 0 22px 55px rgba(30, 64, 175, .13) !important;
-      overflow: hidden;
-      position: relative;
-    }
-    .learning-shell::before {
-      content: "";
-      position: absolute;
-      inset: 0 0 auto;
-      height: 9px;
-      background: linear-gradient(90deg, #3b82f6 0 42%, #fbbf24 42% 70%, #34d399 70%);
-    }
-    .learning-intro {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 10px 2px 18px;
-    }
-    .learning-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      margin-bottom: 7px;
-      color: #2563eb;
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-    .learning-title { font-size: clamp(1.55rem, 4vw, 2.25rem); line-height: 1.08; }
-    .learning-subtitle { color: #64748b; font-size: 13px; font-weight: 700; margin-top: 7px; }
-    .daily-goal {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 13px;
-      border: 1px solid #fde68a;
-      border-radius: 16px;
-      background: #fffbeb;
-    }
-    .daily-goal-icon {
-      width: 35px;
-      height: 35px;
-      display: grid;
-      place-items: center;
-      border-radius: 12px;
-      color: #b45309;
-      background: #fde68a;
-    }
-    .daily-goal strong, .daily-goal span { display: block; }
-    .daily-goal strong { font-size: 12px; color: #92400e; }
-    .daily-goal span { font-size: 10px; color: #b45309; font-weight: 700; }
-    .subject-toolbar { border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
-    #progress-container {
-      padding: 14px 16px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #eff6ff, #fffbeb);
-      border: 1px solid #dbeafe;
-    }
-    #progress-container > div:last-child { height: 10px; border-width: 0; background: #dbeafe; }
-    #progress-bar { border-width: 0; border-radius: 999px; }
-    #flashcard { isolation: isolate; }
-    #flashcard .flip-card-front,
-    #flashcard .flip-card-back {
-      border-width: 2px;
-      box-shadow: 0 18px 38px rgba(15, 23, 42, .14);
-    }
-    #card-word { line-height: 1; text-wrap: balance; }
-    #btn-prev-word, #btn-next-word { min-height: 54px; }
-    .learn-actions {
-      padding: 10px;
-      border: 1px solid #e2e8f0;
-      border-radius: 20px;
-      background: #f8fafc;
-    }
-    .keyboard-hint { color: #94a3b8; font-size: 10px; font-weight: 700; text-align: center; margin-top: 10px; }
-    .tab-btn { min-height: 48px; }
-    .tab-btn:focus-visible,
-    button:focus-visible {
-      outline: 4px solid rgba(59, 130, 246, .35);
-      outline-offset: 3px;
-    }
-
-    @media (min-width: 640px) {
-      body.english-page { padding-bottom: 24px; }
-      #english-tabs { position: static; box-shadow: none; }
-    }
-
-    @media (max-width: 639px) {
-      body.english-page { padding: 10px 10px 98px; }
-      #global-header { top: 8px; padding: 10px 12px; margin-bottom: 10px; border-radius: 8px; }
-      #global-header h1 { font-size: 14px; }
-      #global-header p { display: none; }
-      #global-header #btn-go-home > div:first-child { width: 36px; height: 36px; box-shadow: none; }
-      #user-profile-badge { gap: 8px; }
-      .learning-shell { min-height: calc(100vh - 92px) !important; padding: 14px !important; border-radius: 8px !important; }
-      .subject-toolbar { margin-bottom: 12px !important; }
-      .learning-intro { align-items: center; padding: 6px 2px 13px; }
-      .learning-title { font-size: 1.45rem; }
-      .learning-subtitle { margin-top: 4px; font-size: 11px; }
-      .learning-eyebrow { margin-bottom: 4px; font-size: 9px; }
-      .daily-goal { padding: 8px; }
-      .daily-goal-icon { width: 34px; height: 34px; }
-      .daily-goal > div:last-child { display: none; }
-      .subject-toolbar .home-label { display: none; }
-      #progress-container { margin-bottom: 14px !important; }
-      #flashcard { height: 390px !important; margin-bottom: 14px; }
-      #flashcard .flip-card-front,
-      #flashcard .flip-card-back { padding: 16px; border-radius: 8px; }
-      #flashcard .flip-card-front > div:nth-of-type(1) { width: auto; height: auto; }
-      #card-word { font-size: clamp(2.25rem, 12vw, 3.25rem); max-width: 250px; overflow-wrap: anywhere; }
-      #card-chinese { font-size: 1.05rem; padding: 8px 20px; border-width: 2px; box-shadow: none; }
-      .learn-actions { padding: 7px; }
-      .keyboard-hint { display: none; }
-      #english-tabs {
-        position: fixed;
-        left: 10px;
-        right: 10px;
-        bottom: max(10px, env(safe-area-inset-bottom));
-        z-index: 40;
-        margin: 0;
-        padding: 7px;
-        border-width: 1px;
-        border-color: #cbd5e1;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, .96);
-        box-shadow: 0 14px 35px rgba(15, 23, 42, .22);
-        backdrop-filter: blur(16px);
-      }
-      #english-tabs .tab-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        min-height: 54px;
-        padding: 6px 2px;
-        border: 0;
-        box-shadow: none !important;
-        transform: none !important;
-        font-size: 10px;
-      }
-      #english-tabs .tab-btn i { margin: 0; font-size: 17px; }
-    }
-
-    /* Japanese animation inspired visual system — soft light, ink blue and sakura accents. */
-    :root {
-      --anime-ink: #172554;
-      --anime-blue: #6366f1;
-      --anime-sky: #7dd3fc;
-      --anime-pink: #f9a8d4;
-      --anime-cream: #fffaf5;
-    }
-    body.english-page {
-      color: var(--anime-ink);
-      background-color: #eef6ff;
-      background-image:
-        radial-gradient(circle at 8% 8%, rgba(249, 168, 212, .28), transparent 24%),
-        radial-gradient(circle at 88% 16%, rgba(125, 211, 252, .34), transparent 25%),
-        linear-gradient(155deg, #fdf4ff 0%, #eff6ff 42%, #fffaf5 100%);
-      background-attachment: fixed;
-    }
-    #global-header {
-      border: 1px solid rgba(99, 102, 241, .18) !important;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .78);
-      box-shadow: 0 16px 45px rgba(49, 46, 129, .12);
-    }
-    #global-header #btn-go-home > div:first-child {
-      border: 0;
-      background: linear-gradient(145deg, #818cf8, #4f46e5);
-      box-shadow: 0 8px 20px rgba(79, 70, 229, .25);
-    }
-    #btn-logout { border: 0 !important; box-shadow: none !important; }
-    .learning-shell {
-      border: 1px solid rgba(99, 102, 241, .16) !important;
-      border-radius: 8px !important;
-      background: rgba(255, 255, 255, .84) !important;
-      box-shadow: 0 30px 80px rgba(49, 46, 129, .14) !important;
-      backdrop-filter: blur(18px);
-    }
-    .learning-shell::before {
-      height: 5px;
-      background: linear-gradient(90deg, #818cf8, #7dd3fc 45%, #f9a8d4);
-    }
-    .subject-toolbar { border-color: rgba(99, 102, 241, .12); }
-    .subject-toolbar button,
-    .subject-toolbar > div {
-      border: 1px solid rgba(99, 102, 241, .18) !important;
-      box-shadow: none !important;
-    }
-    .learning-eyebrow { color: #6366f1; }
-    .daily-goal {
-      border-color: rgba(249, 168, 212, .45);
-      background: linear-gradient(135deg, #fdf2f8, #fff7ed);
-    }
-    .daily-goal-icon { color: #db2777; background: #fce7f3; }
-    .daily-goal strong { color: #9d174d; }
-    .daily-goal span { color: #be185d; }
-    #english-tabs {
-      border: 1px solid rgba(99, 102, 241, .14);
-      background: rgba(238, 242, 255, .72);
-    }
-    #english-tabs .tab-btn { border: 0; box-shadow: none; }
-    #english-tabs .tab-btn.bg-brand-500 {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      box-shadow: 0 8px 18px rgba(99, 102, 241, .24);
-      transform: none;
-    }
-    #progress-container {
-      border: 1px solid rgba(125, 211, 252, .38);
-      background: linear-gradient(120deg, rgba(239, 246, 255, .95), rgba(253, 242, 248, .82));
-    }
-    #progress-container > div:last-child { background: #e0e7ff; }
-    #progress-bar { background: linear-gradient(90deg, #818cf8, #38bdf8 55%, #f9a8d4); }
-    #flashcard .flip-card-front,
-    #flashcard .flip-card-back {
-      overflow: hidden;
-      border: 1px solid rgba(99, 102, 241, .20);
-      background:
-        radial-gradient(circle at 88% 12%, rgba(249, 168, 212, .20), transparent 24%),
-        radial-gradient(circle at 10% 90%, rgba(125, 211, 252, .20), transparent 25%),
-        rgba(255, 255, 255, .96);
-      box-shadow: 0 22px 55px rgba(49, 46, 129, .13);
-    }
-    #flashcard .flip-card-front::before,
-    #flashcard .flip-card-front::after {
-      content: "";
-      position: absolute;
-      border-radius: 999px;
-      pointer-events: none;
-    }
-    #flashcard .flip-card-front::before {
-      width: 180px; height: 180px; right: -95px; top: -95px;
-      border: 24px solid rgba(129, 140, 248, .08);
-    }
-    #flashcard .flip-card-front::after {
-      width: 90px; height: 90px; left: -45px; bottom: -45px;
-      background: rgba(249, 168, 212, .10);
-    }
-    .word-chapter {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 28px;
-      padding: 7px 13px;
-      border: 1px solid rgba(99, 102, 241, .18);
-      border-radius: 999px;
-      color: #6366f1;
-      background: rgba(238, 242, 255, .85);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
-    .word-chapter i { color: #ec4899; }
-    #card-word { color: var(--anime-ink); letter-spacing: .06em; }
-    #btn-speak-word {
-      border: 1px solid rgba(99, 102, 241, .24) !important;
-      color: #4f46e5;
-      background: #eef2ff;
-      box-shadow: 0 8px 18px rgba(99, 102, 241, .16);
-    }
-    #card-phonetic { border: 0; color: #64748b; background: #f1f5f9; }
-    #card-chinese {
-      border: 0;
-      color: #9d174d;
-      background: linear-gradient(135deg, #fce7f3, #fff7ed);
-      box-shadow: none;
-    }
-    #star-btn { color: #c7d2fe; filter: none; }
-    #star-btn:hover { color: #f472b6; }
-    #star-btn.is-starred { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245,158,11,.45)) !important; }
-    #star-btn.is-starred i { color: #f59e0b !important; }
-    #flashcard .flip-card-back { background: linear-gradient(145deg, #eef2ff, #fdf2f8); }
-    #flashcard .flip-card-back > div:not(.dialogue-box),
-    #flashcard .flip-card-back h3,
-    #flashcard .flip-card-back button { border-width: 1px !important; box-shadow: none !important; }
-    .learn-actions {
-      border: 0;
-      background: transparent;
-      padding: 0;
-    }
-    #btn-prev-word, #btn-next-word {
-      min-height: 50px;
-      border-width: 1px !important;
-      box-shadow: none !important;
-    }
-    #btn-next-word { border: 0 !important; background: linear-gradient(135deg, #6366f1, #8b5cf6); }
-
-    @media (max-width: 639px) {
-      body.english-page { padding: 6px 8px calc(142px + env(safe-area-inset-bottom)); }
-      #global-header { top: 5px; min-height: 58px; padding: 8px 10px; margin-bottom: 7px; border-radius: 8px; }
-      #global-header #btn-go-home > div:first-child { width: 32px; height: 32px; border-radius: 6px; }
-      #global-header h1 { font-size: 13px; letter-spacing: 0; }
-      #header-user-name { font-size: 12px; }
-      #header-user-seat, #sync-status { font-size: 9px; }
-      #btn-logout { width: 32px; height: 32px; }
-      .learning-shell { min-height: 0 !important; padding: 12px !important; border-radius: 8px !important; overflow: visible; }
-      .subject-toolbar { min-height: 38px; padding-bottom: 9px; margin-bottom: 7px !important; }
-      .subject-toolbar button, .subject-toolbar > div { padding-top: 5px; padding-bottom: 5px; }
-      .learning-intro { min-height: 52px; padding: 4px 2px 7px; gap: 8px; }
-      .learning-eyebrow { font-size: 8px; margin-bottom: 3px; }
-      .learning-title { font-size: clamp(1.08rem, 5vw, 1.3rem); white-space: nowrap; }
-      .learning-subtitle { display: none; }
-      .daily-goal { padding: 5px; border-radius: 6px; }
-      .daily-goal-icon { width: 30px; height: 30px; }
-      #progress-container { padding: 9px 11px; margin-bottom: 9px !important; border-radius: 8px; }
-      #progress-container > div:first-child { margin-bottom: 4px; font-size: 10px; }
-      #progress-container > div:last-child { height: 7px; }
-      #flashcard { height: min(42dvh, 315px) !important; min-height: 270px; margin-bottom: 9px; }
-      #flashcard .flip-card-front,
-      #flashcard .flip-card-back { padding: 13px; border-radius: 8px; }
-      .word-chapter { margin-bottom: 18px; padding: 5px 10px; font-size: 8px; }
-      #flashcard .flip-card-front > .word-chapter {
-        width: fit-content !important;
-        height: auto !important;
-        min-height: 0;
-        margin-bottom: 18px;
-        aspect-ratio: auto;
-        flex-shrink: 0;
-      }
-      #card-word { max-width: 230px; font-size: clamp(2rem, 11vw, 3rem); }
-      #btn-speak-word { width: 42px; height: 42px; border-width: 1px; }
-      #card-phonetic { margin-bottom: 9px; padding: 4px 10px; font-size: 11px; }
-      #card-chinese { padding: 7px 18px; font-size: 1rem; }
-      #flashcard .flip-card-front > div:last-child { bottom: 9px; font-size: 9px; }
-      #btn-prev-word, #btn-next-word { min-height: 45px; padding: 9px 12px; border-radius: 8px; }
-      #app-view-learn .learn-actions {
-        position: fixed;
-        left: 8px;
-        right: 8px;
-        bottom: calc(65px + max(6px, env(safe-area-inset-bottom)));
-        z-index: 41;
-        gap: 7px;
-        padding: 5px;
-        border: 1px solid rgba(99, 102, 241, .14);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, .94);
-        box-shadow: 0 10px 28px rgba(49, 46, 129, .16);
-        backdrop-filter: blur(16px);
-      }
-      #app-view-learn .learn-actions #btn-prev-word,
-      #app-view-learn .learn-actions #btn-next-word {
-        min-height: 42px;
-        padding: 8px 12px;
-        font-size: 13px;
-      }
-      #english-tabs { left: 8px; right: 8px; bottom: max(6px, env(safe-area-inset-bottom)); padding: 5px; border-radius: 8px; }
-      #english-tabs .tab-btn { min-height: 48px; padding: 4px 2px; }
-    }
-
-    @media (max-width: 639px) and (max-height: 700px) {
-      .learning-intro { min-height: 0; padding: 2px 2px 5px; }
-      .learning-eyebrow, .daily-goal { display: none; }
-      .learning-title { font-size: 1rem; }
-      #flashcard { height: 250px !important; min-height: 250px; }
-      .word-chapter { margin-bottom: 10px; }
-      #flashcard .flip-card-front > div:last-child { display: none; }
-      #card-word { font-size: 2.2rem; }
-    }
-
-    @media (max-height: 520px) and (orientation: landscape) {
-      #global-header, .learning-intro, #progress-container { display: none; }
-      body.english-page { padding-top: 6px; }
-      .learning-shell { min-height: 0 !important; }
-      #flashcard { height: 300px !important; }
-    }
-
-    /* Unified learning panels and vocabulary hierarchy. */
-    .tab-btn {
-      width: 100%;
-      height: 48px;
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border: 1px solid transparent !important;
-      color: #64748b;
-      background: transparent;
-      box-shadow: none !important;
-      transform: none !important;
-    }
-    .tab-btn:hover { color: #4f46e5; background: rgba(255,255,255,.72); }
-    .tab-btn.is-active,
-    .tab-btn.bg-brand-500 {
-      border-color: rgba(99, 102, 241, .18) !important;
-      color: white !important;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-      box-shadow: 0 8px 18px rgba(99, 102, 241, .22) !important;
-    }
-    .tab-view {
-      width: 100%;
-      height: 430px;
-      min-height: 430px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(99,102,241,.25) transparent;
-    }
-    .tab-view:not(#app-view-learn) { padding: 4px 2px; }
-    .tab-view .border-4 {
-      border-width: 1px !important;
-      border-color: rgba(99, 102, 241, .18) !important;
-    }
-    .tab-view .shadow-comic,
-    .tab-view .shadow-comic-lg { box-shadow: none !important; }
-    .tab-view .transform { transform: none !important; }
-    #starred-list-container > div,
-    #quiz-screen-active > div > div,
-    #today-status-card {
-      border-color: rgba(99, 102, 241, .16) !important;
-      background-color: rgba(255, 255, 255, .82) !important;
-    }
-    #app-view-learn { overflow: visible; }
-    #app-view-learn #flashcard { height: 360px; flex: 0 0 360px; }
-    #flashcard .flip-card-front { gap: 0; }
     #card-word {
-      --word-size: 3.6rem;
-      width: 100%;
-      max-width: 100%;
-      margin: 0 0 10px;
-      color: #172554;
-      font-family: "Fredoka", "Avenir Next Rounded", "Nunito", sans-serif;
-      font-size: min(var(--word-size), 11vw);
-      font-weight: 600;
-      line-height: 1.05;
-      letter-spacing: .015em;
-      text-align: center;
-      text-transform: lowercase;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    .word-part-of-speech {
-      margin-bottom: 15px;
-      color: #8b5cf6;
-      font-size: 12px;
-      font-weight: 700;
-      font-style: italic;
-      letter-spacing: .08em;
-      text-transform: lowercase;
-    }
-    .pronunciation-row {
-      width: auto !important;
-      height: auto !important;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 9px;
-      margin: 0 0 17px;
-    }
-    #btn-speak-word {
-      width: 38px;
-      height: 38px;
-      flex: 0 0 38px;
-      border: 1px solid rgba(99, 102, 241, .22) !important;
-      color: #4f46e5;
-      background: #eef2ff;
-      box-shadow: none;
-    }
-    #btn-speak-word:hover { color: white; background: #6366f1; }
-    #card-phonetic {
-      margin: 0;
-      padding: 7px 13px;
-      border: 0;
-      border-radius: 999px;
-      color: #64748b;
-      background: #f1f5f9;
-      font-family: "Noto Sans TC", sans-serif;
-      font-size: 13px;
-      line-height: 1;
-    }
-    #card-chinese { margin-bottom: 4px; }
-
-    @media (max-width: 639px) {
-      .tab-view {
-        height: min(43dvh, 340px);
-        min-height: 285px;
-        overflow-y: auto;
-      }
-      #app-view-learn { overflow: visible; }
-      #app-view-learn #flashcard {
-        height: min(43dvh, 340px) !important;
-        min-height: 285px;
-        flex-basis: auto;
-      }
-      #card-word { margin-bottom: 7px; font-size: min(var(--word-size), 12vw); }
-      .word-part-of-speech { margin-bottom: 10px; font-size: 10px; }
-      .pronunciation-row { margin-bottom: 11px; gap: 7px; }
-      #btn-speak-word { width: 34px; height: 34px; flex-basis: 34px; }
-      #card-phonetic { padding: 6px 11px; font-size: 11px; }
-      #card-chinese { font-size: .95rem; }
+      line-height: 1.1;
+      text-wrap: balance;
     }
 
-    /* Lively Coral Rose Theme: energetic colors, semi-transparent dynamic glass, rounded-lg styles */
-    :root {
-      --rose-ink: #1e293b;
-      --rose-primary: #f43f5e;
-      --rose-deep: #e11d48;
-      --rose-light: #fb7185;
-      --rose-soft: #fff1f2;
-      --rose-border: rgba(244, 63, 94, .25);
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
     }
-    body.english-page {
-      color: var(--rose-ink);
-      background: radial-gradient(circle at top left, #fff1f2, #f8fafc 45%, #fef2f2);
-      background-attachment: fixed;
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgba(244, 63, 94, 0.25);
+      border-radius: 9999px;
     }
-    #global-header {
-      border: 1px solid rgba(244, 63, 94, .20) !important;
-      color: var(--rose-ink);
-      background: rgba(255, 255, 255, .90) !important;
-      backdrop-filter: blur(12px) !important;
-      box-shadow: 0 10px 30px rgba(244, 63, 94, .08) !important;
-    }
-    #global-header #btn-go-home > div:first-child {
-      background: linear-gradient(135deg, #f43f5e, #e11d48) !important;
-      box-shadow: 0 8px 18px rgba(244, 63, 94, .3) !important;
-      border: none !important;
-    }
-    .learning-shell {
-      border: 1px solid rgba(244, 63, 94, .20) !important;
-      background: rgba(255, 255, 255, .94) !important;
-      backdrop-filter: blur(16px) !important;
-      box-shadow: 0 20px 50px rgba(244, 63, 94, .08) !important;
-    }
-    .learning-shell::before {
-      background: linear-gradient(90deg, #f43f5e, #fb7185 48%, #fda4af) !important;
-    }
-    .learning-shell::after {
-      display: none;
-    }
-    .learning-eyebrow, .word-part-of-speech { color: #e11d48; }
-    .daily-goal {
-      border-color: rgba(244, 63, 94, .30);
-      background: linear-gradient(135deg, rgba(255, 241, 242, .9), rgba(255, 228, 230, .6));
-    }
-    .daily-goal-icon { color: #e11d48; background: #ffe4e6; }
-    .daily-goal strong { color: #9f1239; }
-    .daily-goal span { color: #be123c; }
-    #english-tabs {
-      background: rgba(255, 241, 242, .65);
-      border-color: rgba(244, 63, 94, .20);
-    }
-    .tab-btn:hover { color: #e11d48; background: rgba(255, 255, 255, .85); }
-    .tab-btn.is-active,
-    .tab-btn.bg-brand-500 {
-      border-color: rgba(225, 29, 72, .3) !important;
-      background: linear-gradient(135deg, #f43f5e, #e11d48) !important;
-      color: #ffffff !important;
-      box-shadow: 0 8px 18px rgba(244, 63, 94, .25) !important;
-    }
-    #progress-container {
-      border-color: rgba(244, 63, 94, .25);
-      background: linear-gradient(120deg, rgba(255, 241, 242, .95), rgba(255, 228, 230, .85));
-    }
-    #progress-container > div:last-child { background: #ffe4e6; }
-    #progress-bar { background: linear-gradient(90deg, #f43f5e, #fb7185, #fda4af) !important; }
-    #flashcard .flip-card-front,
-    #flashcard .flip-card-back {
-      border-color: rgba(244, 63, 94, .25) !important;
-      background:
-        radial-gradient(circle at 90% 10%, rgba(244, 63, 94, .08), transparent 25%),
-        radial-gradient(circle at 8% 92%, rgba(251, 113, 133, .08), transparent 25%),
-        rgba(255, 255, 255, .98) !important;
-      box-shadow: 0 16px 38px rgba(244, 63, 94, .08) !important;
-    }
-    #flashcard .flip-card-back {
-      background:
-        radial-gradient(circle at 90% 10%, rgba(244, 63, 94, .12), transparent 25%),
-        radial-gradient(circle at 8% 92%, rgba(251, 113, 133, .12), transparent 25%),
-        rgba(255, 241, 242, .98) !important;
-    }
-    #card-word { color: #1e293b; }
-    #btn-speak-word { color: #f43f5e; border-color: rgba(244, 63, 94, .28) !important; background: #fff1f2; }
-    #btn-speak-word:hover { color: white; background: #f43f5e; }
-    #card-phonetic { color: #be123c; background: #ffe4e6; }
-    #card-chinese { color: #881337; background: #fecdd3; border-color: rgba(244, 63, 94, .35) !important; }
-    #star-btn { color: #cbd5e1; }
-    #star-btn:hover { color: #f59e0b; }
-    #star-btn.is-starred { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245,158,11,.45)) !important; }
-    #star-btn.is-starred i { color: #f59e0b !important; }
-    #btn-next-word { background: linear-gradient(135deg, #f43f5e, #e11d48) !important; }
-    .anime-decor {
-      position: absolute;
-      z-index: 0;
-      display: grid;
-      place-items: center;
-      pointer-events: none;
-      user-select: none;
-    }
-    .anime-decor-cloud {
-      left: 8%; top: 14%;
-      color: rgba(244, 63, 94, .15);
-      font-size: 34px;
-    }
-    .anime-decor-sakura {
-      right: 10%; bottom: 18%;
-      color: rgba(244, 63, 94, .25);
-      font-size: 25px;
-      transform: rotate(12deg);
-    }
-    .anime-decor-star {
-      left: 12%; bottom: 16%;
-      color: rgba(245, 158, 11, .35);
-      font-size: 16px;
-    }
-    #flashcard .flip-card-front > :not(.anime-decor),
-    #flashcard .flip-card-back > :not(.anime-decor) { z-index: 1; }
-
-    @media (max-width: 639px) {
-      html { width: 100%; height: 100%; overflow: hidden; }
-      body.english-page {
-        width: 100%;
-        height: 100dvh;
-        min-height: 100dvh !important;
-        max-height: 100dvh;
-        overflow: hidden;
-        justify-content: flex-start;
-        gap: clamp(4px, .8dvh, 8px);
-        padding: max(5px, env(safe-area-inset-top)) 7px max(5px, env(safe-area-inset-bottom));
-      }
-      #global-header {
-        position: relative;
-        top: auto;
-        flex: 0 0 clamp(54px, 8.5dvh, 68px);
-        width: 100%;
-        min-height: 0;
-        margin: 0 auto;
-        padding: clamp(6px, 1dvh, 9px) 10px;
-      }
-      #view-english-app {
-        flex: 1 1 auto;
-        min-height: 0;
-        margin: 0 auto;
-      }
-      .learning-shell {
-        height: 100%;
-        min-height: 0 !important;
-        padding: clamp(8px, 1.4dvh, 12px) !important;
-        padding-bottom: calc(clamp(112px, 16dvh, 128px) + env(safe-area-inset-bottom)) !important;
-        overflow: hidden;
-      }
-      .learning-shell > div:first-child { flex: 0 0 auto; min-height: 0; }
-      .subject-toolbar {
-        min-height: 0;
-        padding-bottom: clamp(5px, .8dvh, 9px);
-        margin-bottom: clamp(3px, .7dvh, 7px) !important;
-      }
-      .learning-intro {
-        min-height: 0;
-        padding: clamp(2px, .5dvh, 5px) 2px clamp(4px, .8dvh, 8px);
-      }
-      .learning-eyebrow { display: none; }
-      .learning-title { font-size: clamp(.95rem, 2.6dvh, 1.22rem); }
-      .daily-goal-icon { width: clamp(27px, 4.5dvh, 32px); height: clamp(27px, 4.5dvh, 32px); }
-      #progress-container {
-        padding: clamp(6px, 1dvh, 9px) 10px;
-        margin-bottom: clamp(5px, .8dvh, 9px) !important;
-      }
-      .tab-view {
-        flex: 1 1 auto;
-        width: 100%;
-        height: auto;
-        min-height: 0;
-        overflow: hidden;
-      }
-      #app-view-learn { display: flex; min-height: 0; }
-      #app-view-learn.hidden { display: none; }
-      #app-view-learn #flashcard {
-        flex: 1 1 auto;
-        width: 100%;
-        height: auto !important;
-        min-height: 0;
-        margin: 0;
-      }
-      #flashcard .flip-card-front,
-      #flashcard .flip-card-back { padding: clamp(10px, 1.8dvh, 16px); }
-      #card-word { margin-bottom: clamp(4px, .8dvh, 8px); }
-      .word-part-of-speech { margin-bottom: clamp(5px, .8dvh, 10px); }
-      .pronunciation-row { margin-bottom: clamp(6px, 1dvh, 11px); }
-      #flashcard .flip-card-front > div:last-child { bottom: 7px; }
-      #app-view-learn .learn-actions {
-        left: 7px;
-        right: 7px;
-        bottom: calc(clamp(58px, 8.5dvh, 68px) + max(7px, env(safe-area-inset-bottom)));
-        height: clamp(47px, 7.2dvh, 55px);
-        padding: 4px;
-      }
-      #app-view-learn .learn-actions #btn-prev-word,
-      #app-view-learn .learn-actions #btn-next-word { min-height: 0; height: 100%; }
-      #english-tabs {
-        left: 7px;
-        right: 7px;
-        bottom: max(5px, env(safe-area-inset-bottom));
-        height: clamp(54px, 8.5dvh, 64px);
-        padding: 4px;
-      }
-      #english-tabs .tab-btn { height: 100%; min-height: 0; }
-      body:not([data-english-tab="learn"]) .learning-intro,
-      body:not([data-english-tab="learn"]) #progress-container { display: none; }
-      body:not([data-english-tab="learn"]) .learning-shell {
-        padding-bottom: calc(clamp(62px, 9.5dvh, 72px) + env(safe-area-inset-bottom)) !important;
-      }
-      #app-view-starred,
-      #app-view-quiz,
-      #app-view-calendar { height: auto; min-height: 0; overflow: hidden; }
-      #app-view-starred > div,
-      #quiz-screen-active,
-      #app-view-calendar > div:first-child { height: 100%; min-height: 0; }
-      #starred-list-container {
-        height: calc(100% - 42px);
-        max-height: none;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-      }
-      #quiz-screen-active { overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
-    }
-
-    @media (max-width: 639px) and (max-height: 690px) {
-      #global-header { flex-basis: 50px; }
-      #global-header p, #sync-status { display: none; }
-      .learning-intro { display: none; }
-      #progress-container { padding: 5px 9px; }
-      #progress-container > div:first-child { margin-bottom: 2px; }
-      #flashcard .flip-card-front > div:last-child,
-      #flashcard .flip-card-back > div:last-child { display: none; }
-    }
-
-    /* Enhanced study-card scale & Coral Rose Theme variables */
-    :root, body {
-      --theme-primary: #f43f5e;
-      --theme-soft: #ffe4e6;
-      --theme-accent: #e11d48;
-    }
-    #theme-switcher {
-      display: none !important;
-    }
-    #global-header {
-      display: grid !important;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      column-gap: 12px;
-    }
-    #btn-go-home { justify-self: start; min-width: 0; }
-    #user-profile-badge { justify-self: end; }
-    .brand-lockup { min-width: 0; text-align: left; }
-    .brand-zh,
-    .brand-en { display: block; margin: 0; white-space: nowrap; }
-    .brand-zh { color: #1e293b; font-size: 17px; font-weight: 900; line-height: 1.05; letter-spacing: .06em; }
-    .brand-en { margin-top: 3px; color: #64748b; font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: .035em; }
-    #global-header #btn-go-home > div:first-child,
-    .tab-btn.is-active,
-    .tab-btn.bg-brand-500,
-    #btn-next-word { background: linear-gradient(135deg, #f43f5e, #e11d48) !important; }
-    #btn-speak-word { color: #f43f5e; background: #ffe4e6; }
-    #btn-speak-word:hover { color: white; background: #f43f5e; }
-    #progress-container > div:last-child { height: 14px !important; }
-    #card-word {
-      font-size: min(var(--word-size), 13vw);
-      font-weight: 650;
-      line-height: 1;
-    }
-    .word-part-of-speech { font-size: 14px; }
-    #card-phonetic { padding: 9px 15px; font-size: 15px; }
-    #btn-speak-word { width: 43px; height: 43px; flex-basis: 43px; font-size: 17px; }
-    #card-chinese { padding: 10px 24px; font-size: 1.35rem; }
-
-    @media (max-width: 639px) {
-      #global-header { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 6px; }
-      #btn-go-home { gap: 7px; }
-      #global-header .brand-zh { display: block; font-size: clamp(12px, 3.5vw, 15px); }
-      #global-header .brand-en { display: block; margin-top: 2px; font-size: clamp(8px, 2.35vw, 10px); }
-      .theme-switcher { gap: 5px; padding: 4px 6px; }
-      .theme-swatch { width: clamp(19px, 5.5vw, 23px); height: clamp(19px, 5.5vw, 23px); border-width: 2px; }
-      #user-profile-badge { gap: 5px; }
-      #card-word { font-size: min(var(--word-size), 15vw); }
-      .word-part-of-speech { font-size: clamp(12px, 2dvh, 14px); }
-      #card-phonetic { padding: 8px 13px; font-size: clamp(13px, 2.1dvh, 15px); }
-      #btn-speak-word { width: clamp(38px, 5.5dvh, 43px); height: clamp(38px, 5.5dvh, 43px); flex-basis: clamp(38px, 5.5dvh, 43px); }
-      #card-chinese { padding: 9px 21px; font-size: clamp(1.12rem, 3dvh, 1.35rem); }
-      #progress-container > div:last-child { height: clamp(10px, 1.7dvh, 14px) !important; }
-    }
-
-    @media (display-mode: standalone) {
-      body.english-page { padding-top: max(7px, env(safe-area-inset-top)); }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
     }
   </style>
 </head>
-<body class="english-page text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen comic-bg" data-english-tab="learn">
+<body class="english-page text-slate-800 min-h-screen p-3 sm:p-6" data-english-tab="learn">
 
   <!-- Toast 訊息通知 (畫面正中央，現代半透明毛玻璃感) -->
   <div id="toast-container" class="fixed left-1/2 top-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; transform: translate(-50%, -50%) scale(0.9);">
-    <div id="toast-inner" style="background: rgba(15, 23, 42, 0.78) !important; -webkit-backdrop-filter: blur(16px) saturate(180%) !important; backdrop-filter: blur(16px) saturate(180%) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) !important; border-radius: 8px !important; padding: 14px 26px !important; display: flex; align-items: center; gap: 14px;">
+    <div id="toast-inner" style="background: rgba(15, 23, 42, 0.82) !important; -webkit-backdrop-filter: blur(16px) saturate(180%) !important; backdrop-filter: blur(16px) saturate(180%) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) !important; border-radius: 16px !important; padding: 14px 26px !important; display: flex; align-items: center; gap: 14px;">
       <i id="toast-icon" class="fa-solid fa-circle-info text-amber-300" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;"></i>
       <span id="toast-text" style="color: #ffffff !important; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; line-height: 1.5; max-width: min(75vw, 360px); text-align: left;">訊息通知</span>
     </div>
@@ -891,21 +90,20 @@
 
   <!-- 確認對話框 -->
   <div id="custom-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg p-6 max-w-sm w-full border-4 border-slate-800 shadow-comic-lg text-center card-flip-enter">
-      <div class="w-14 h-14 bg-amber-200 text-amber-600 rounded-md flex items-center justify-center text-2xl mx-auto mb-3 border-4 border-slate-800 shadow-comic">
+    <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
+      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-md flex items-center justify-center text-2xl mx-auto mb-3">
         <i id="modal-icon" class="fa-solid fa-triangle-exclamation"></i>
       </div>
-      <h3 id="modal-title" class="text-xl font-black text-slate-800 mb-2">確定要執行嗎？</h3>
-      <p id="modal-desc" class="text-sm font-bold text-slate-500 mb-6">此動作無法復原，請確認是否繼續。</p>
+      <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2">確定要執行嗎？</h3>
+      <p id="modal-desc" class="text-xs text-slate-500 mb-6">此動作無法復原，請確認是否繼續。</p>
       <div class="flex gap-3">
-        <button id="modal-cancel-btn" class="flex-1 py-2.5 rounded-lg border-4 border-slate-800 text-slate-700 font-black text-sm bg-white hover:bg-slate-100 shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all">取消</button>
-        <button id="modal-confirm-btn" class="flex-1 py-2.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white border-4 border-slate-800 font-black text-sm shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all">確認</button>
+        <button id="modal-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">取消</button>
+        <button id="modal-confirm-btn" class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md transition">確認</button>
       </div>
     </div>
   </div>
 
-  <!-- 全域頂部導覽列 -->
-  <!-- 全域頂部導覽列 -->
+  <!-- 全域頂部導覽列 (與成語200/國語文學完全一致) -->
   <header id="global-header" class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-4 sm:px-5 py-3 rounded-lg border border-white/70 shadow-sm mb-4">
     <!-- 1. 左上角：科目與 Logo (點擊回到首頁大廳) -->
     <div id="btn-go-home" class="flex items-center gap-3 cursor-pointer group select-none" onclick="window.location.assign('index.html')">
@@ -914,7 +112,7 @@
       </div>
       <div>
         <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight group-hover:text-rose-700 transition-colors">英文單字天地</h1>
-        <p class="text-[11px] text-slate-500 font-medium">酷學習・每日30字常用字庫</p>
+        <p class="text-[11px] text-slate-500 font-medium">115 學年度・國小六年級常用字庫</p>
       </div>
     </div>
 
@@ -939,254 +137,314 @@
     </div>
   </header>
 
-  <!-- 英文學習區塊 -->
-  <section id="view-english-app" class="w-full max-w-2xl mx-auto my-auto card-flip-enter">
-    <div class="learning-shell w-full bg-white rounded-lg shadow-comic-lg border-4 border-slate-800 p-4 sm:p-6 flex flex-col justify-between min-h-[640px]">
-      <div>
-        <div class="subject-toolbar flex items-center justify-between mb-4">
-          <!-- 返回科目大廳跳轉按鈕 -->
-          <button onclick="window.location.assign('index.html')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-800 shadow-comic transform active:translate-y-1 active:shadow-none text-slate-800 font-black rounded-lg text-xs flex items-center gap-1.5 transition-all">
-            <i class="fa-solid fa-house"></i><span class="home-label">科目大廳</span>
-          </button>
-          <div class="flex items-center gap-2 bg-rose-50 px-3 py-1.5 rounded-lg border-2 border-rose-300 shadow-comic">
-            <i class="fa-solid fa-graduation-cap text-rose-600"></i>
-            <span class="text-sm font-black text-rose-700">English 6</span>
+  <!-- 子功能導引列：位於頂端列正下方 (與成語200頂部導引一致) -->
+  <nav id="english-tabs" aria-label="英文學習子功能導引" class="w-full max-w-5xl mx-auto mb-5 flex gap-2 p-1.5 bg-rose-100/70 rounded-lg border border-rose-200/60 shadow-inner">
+    <button id="nav-learn" type="button" class="tab-btn flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-rose-700 shadow-md is-active" aria-selected="true">
+      <i class="fa-solid fa-book-open"></i> 每日學習 (單字卡)
+    </button>
+    <button id="nav-starred" type="button" class="tab-btn flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50" aria-selected="false">
+      <i class="fa-solid fa-bookmark"></i> 難字本 (<span id="starred-count-badge">0</span>)
+    </button>
+    <button id="nav-quiz" type="button" class="tab-btn flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50" aria-selected="false">
+      <i class="fa-solid fa-circle-check"></i> 每日測驗
+    </button>
+    <!-- 相容原本JS的日曆按鈕 (隱藏或備用) -->
+    <button id="nav-calendar" type="button" class="hidden"></button>
+  </nav>
+
+  <!-- 主內容區域 (與成語200版面相同：字卡在左、學習日曆在右) -->
+  <main class="w-full max-w-5xl mx-auto space-y-6">
+
+    <!-- ============================================== -->
+    <!-- 模組 1: 每日學習 (字卡在左，學習日曆在右)         -->
+    <!-- ============================================== -->
+    <div id="app-view-learn" class="tab-view grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- 左側/主欄: 3D 翻轉字卡學習區 (lg:col-span-8) -->
+      <div class="lg:col-span-8 space-y-4">
+
+        <!-- 今日單字進度條 -->
+        <div id="progress-container" class="bg-white/95 rounded-lg p-4 sm:p-5 shadow-lg border border-white">
+          <div class="flex justify-between items-center text-xs font-black text-slate-600 mb-2">
+            <span class="flex items-center gap-1.5 text-rose-700">
+              <i class="fa-solid fa-graduation-cap"></i> 今日單字學習進度
+            </span>
+            <span id="progress-text" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">1 / 30</span>
           </div>
-          <div class="bg-amber-300 text-amber-900 border-2 border-slate-800 px-3 py-1 rounded-lg text-xs font-black shadow-comic flex items-center gap-1">
-            <i class="fa-solid fa-star text-amber-600"></i>
-            <span id="starred-count-badge">0 難字</span>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-300" style="width: 3.33%;"></div>
           </div>
         </div>
 
-        <div class="learning-intro">
-          <div>
-            <div class="learning-eyebrow"><i class="fa-solid fa-sparkles"></i> Vocabulary journey</div>
-            <h2 class="learning-title font-black text-slate-800">今天，再記住一個新單字</h2>
-            <p class="learning-subtitle">看圖、聽發音、翻卡片，用自己的節奏累積實力。</p>
-          </div>
-          <div class="daily-goal" aria-label="今日學習目標">
-            <div class="daily-goal-icon"><i class="fa-solid fa-bolt"></i></div>
-            <div>
-              <strong>今日小目標</strong>
-              <span>完成一輪單字練習</span>
+        <!-- 3D 翻轉字卡容器 (word-card-perspective) -->
+        <div id="flashcard-container" class="w-full max-w-2xl mx-auto word-card-perspective">
+          <div id="flashcard" class="word-card-inner shadow-2xl cursor-pointer" onclick="this.classList.toggle('is-flipped')">
+            
+            <!-- 【正面】字卡正面 -->
+            <div class="word-card-face bg-gradient-to-br from-white via-rose-50/40 to-pink-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl">
+              <!-- 頂部資訊列：標籤與收藏按鈕 -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-black text-xs tracking-wider">English 6</span>
+                  <span id="card-part-of-speech" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px] italic">word</span>
+                </div>
+                <!-- 難字星號按鈕：點擊加入難字本 -->
+                <button id="star-btn" title="加入難字本" class="w-10 h-10 rounded-md bg-white/80 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition" onclick="event.stopPropagation();">
+                  <i class="fa-solid fa-star"></i>
+                </button>
+              </div>
+
+              <!-- 隱藏圖片節點相容舊程式碼 -->
+              <img id="card-image" src="https://placehold.co/1x1/transparent/transparent" alt="" class="hidden" aria-hidden="true">
+
+              <!-- 中間核心英文單字、發音與釋義 -->
+              <div class="text-center my-auto py-6">
+                <h2 id="card-word" class="text-4xl sm:text-6xl font-black text-slate-800 tracking-wider font-['Fredoka','Noto_Sans_TC'] mb-3">word</h2>
+                
+                <div class="inline-flex items-center justify-center gap-2 mb-4">
+                  <button id="btn-speak-word" aria-label="播放單字發音" title="聽發音 (TTS)" class="px-3.5 py-1.5 rounded-xl bg-white/90 hover:bg-white text-rose-600 font-bold text-xs shadow-sm border border-rose-200/80 flex items-center gap-1.5 transition" onclick="event.stopPropagation();">
+                    <i class="fa-solid fa-volume-high"></i> 聽發音
+                  </button>
+                  <span id="card-phonetic" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-mono font-bold">[phonetic]</span>
+                </div>
+                
+                <div class="mt-2">
+                  <span id="card-chinese" class="inline-block bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-xl sm:text-2xl px-8 py-2.5 rounded-full shadow-md">中文釋義</span>
+                </div>
+              </div>
+
+              <!-- 底部翻面提示 -->
+              <div class="flex items-center justify-center pt-4 border-t border-rose-100/60">
+                <span class="text-xs text-slate-400 font-bold flex items-center gap-1 animate-pulse">
+                  <i class="fa-solid fa-arrows-rotate"></i> 點擊卡片翻面看例句
+                </span>
+              </div>
+            </div>
+
+            <!-- 【背面】字卡背面 (實用例句) -->
+            <div class="word-card-face word-card-back bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto custom-scrollbar">
+              <div class="space-y-4">
+                <!-- 背面頂部標題列 -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-lightbulb"></i></span>
+                    <h3 class="text-lg font-black text-slate-800">Example 例句學習</h3>
+                  </div>
+                  <button type="button" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation(); document.getElementById('flashcard').classList.remove('is-flipped');">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
+                </div>
+
+                <!-- 實用生活例句框 -->
+                <div class="bg-rose-50/70 p-4 sm:p-5 rounded-lg border border-rose-100/80">
+                  <div class="flex items-start justify-between gap-3 mb-2">
+                    <strong class="block text-xs font-black text-rose-800"><i class="fa-solid fa-pen-nib mr-1"></i>例句與對話</strong>
+                    <button id="btn-speak-sentence" title="朗讀例句" class="px-3 py-1 rounded-lg bg-white text-rose-600 hover:bg-rose-100 font-bold text-xs shadow-sm border border-rose-200/80 flex items-center gap-1 transition" onclick="event.stopPropagation();">
+                      <i class="fa-solid fa-volume-low"></i> 朗讀例句
+                    </button>
+                  </div>
+                  <p id="card-sentence" class="text-base sm:text-lg font-black text-slate-800 leading-relaxed mb-3">Example sentence here.</p>
+                  <div class="w-full h-px bg-rose-200/60 mb-2"></div>
+                  <p id="card-translate" class="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">Example translate here.</p>
+                </div>
+              </div>
+
+              <!-- 背面翻轉回正面提示 -->
+              <div class="pt-3 text-center text-[11px] font-bold text-slate-400">
+                <i class="fa-solid fa-arrow-left mr-1"></i> 點擊任意處翻回正面
+              </div>
             </div>
           </div>
-        </div>
 
-        <nav id="english-tabs" aria-label="英文學習功能" class="grid grid-cols-4 gap-2 p-2 bg-slate-100 border-2 border-slate-800 rounded-lg mb-5">
-          <button id="nav-learn" class="tab-btn is-active py-2.5 rounded-lg font-black text-xs sm:text-sm transition-all" aria-selected="true"><i class="fa-solid fa-book-open mr-1"></i>每日學習</button>
-          <button id="nav-starred" class="tab-btn py-2.5 rounded-lg font-black text-xs sm:text-sm" aria-selected="false"><i class="fa-solid fa-bookmark mr-1"></i>難字本</button>
-          <button id="nav-quiz" class="tab-btn py-2.5 rounded-lg font-black text-xs sm:text-sm" aria-selected="false"><i class="fa-solid fa-circle-check mr-1"></i>每日測驗</button>
-          <button id="nav-calendar" class="tab-btn py-2.5 rounded-lg font-black text-xs sm:text-sm" aria-selected="false"><i class="fa-solid fa-calendar-days mr-1"></i>學習日曆</button>
-        </nav>
+          <!-- 翻卡控制列 (上一則 / 計數器 / 下一則) -->
+          <div class="mt-5 flex items-center justify-between gap-4">
+            <button id="btn-prev-word" class="w-12 h-12 rounded-lg bg-white shadow-md border border-slate-200/80 text-slate-700 hover:text-rose-600 hover:scale-105 active:scale-95 transition flex items-center justify-center font-bold">
+              <i class="fa-solid fa-chevron-left text-base"></i>
+            </button>
+            
+            <div class="flex items-center gap-3">
+              <span id="word-counter-badge" class="text-sm font-black text-slate-600 bg-white/90 px-4 py-2 rounded-xl shadow-sm border border-slate-200/60">
+                01 / 30
+              </span>
+            </div>
 
-        <div id="progress-container" class="mb-5">
-          <div class="flex justify-between text-xs font-black text-slate-600 mb-1">
-            <span>今日學習進度</span>
-            <span id="progress-text">1 / 30</span>
+            <button id="btn-next-word" class="flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm">
+              下一個單字 <i class="fa-solid fa-chevron-right text-base ml-1"></i>
+            </button>
           </div>
-          <div class="w-full h-4 bg-slate-100 rounded-full overflow-hidden border-2 border-slate-800">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-rose-500 to-pink-500 border-r-2 border-slate-800 transition-all duration-300 w-[3.33%]"></div>
-          </div>
+          <p class="text-center text-[11px] text-slate-400 font-bold mt-2">
+            <i class="fa-regular fa-keyboard mr-1"></i>支援鍵盤左右方向鍵切換，點擊字卡任意處翻面
+          </p>
         </div>
       </div>
 
-      <!-- 每日學習：3D翻轉漫畫字卡 -->
-      <main id="app-view-learn" class="tab-view flex-1 flex flex-col justify-between">
-        
-        <!-- 卡片外層 (負責監聽點擊與產生透視) -->
-        <!-- onclick: 點擊整張卡片即切換 .is-flipped 翻面 -->
-        <div id="flashcard" class="relative perspective-1000 w-full h-[380px] sm:h-[420px] mb-4 cursor-pointer group" onclick="this.classList.toggle('is-flipped')">
-          
-          <!-- 難字星號按鈕：設定絕對定位在最上層，且使用 event.stopPropagation() 防止點擊時卡片翻轉 -->
-          <button id="star-btn" class="absolute top-3 right-3 text-3xl text-slate-300 hover:text-amber-400 p-2 z-30 transition-transform transform hover:scale-110 active:scale-95 drop-shadow-md" onclick="event.stopPropagation();">
-            <i class="fa-solid fa-star"></i>
+      <!-- 右側/側欄: 學習日曆與累計進度 (lg:col-span-4) -->
+      <aside class="lg:col-span-4 space-y-5">
+        <!-- 學習打卡日曆 (置頂) -->
+        <div id="calendar-card" class="bg-white/95 rounded-lg p-5 shadow-lg border border-white">
+          <div class="flex justify-between items-center">
+            <h2 class="font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-rose-500"></i>學習打卡日曆
+            </h2>
+            <span class="text-xs font-bold text-rose-600">每日 30 字</span>
+          </div>
+          <div class="flex justify-between items-center my-4">
+            <button id="btn-prev-month" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 transition flex items-center justify-center"><i class="fa-solid fa-chevron-left"></i></button>
+            <strong id="cal-month-title" class="text-sm font-black text-slate-700"></strong>
+            <button id="btn-next-month" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 transition flex items-center justify-center"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          <p id="calendar-detail" class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選過去日期可複習或補學當日單字</p>
+          <div id="today-status-card" class="mt-4 py-2.5 rounded-xl bg-rose-50 text-rose-800 text-center text-xs font-bold">
+            <i class="fa-solid fa-clock mr-1"></i>完成今日 30 字將自動打卡
+          </div>
+        </div>
+
+        <!-- 學習成就與記憶卡片 -->
+        <div class="bg-gradient-to-br from-rose-50 to-pink-50/60 rounded-lg p-5 border border-rose-200/80 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-rose-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-fire text-rose-600"></i>學習累積成就
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full bg-rose-200/80 text-rose-900 text-[11px] font-black">每日打卡</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="bg-white/80 p-3 rounded-xl border border-rose-100 shadow-sm">
+              <small class="block text-[10px] font-bold text-slate-500 mb-0.5">連續打卡</small>
+              <strong id="streak-count" class="text-xl font-black text-rose-600">0 天</strong>
+            </div>
+            <div class="bg-white/80 p-3 rounded-xl border border-rose-100 shadow-sm">
+              <small class="block text-[10px] font-bold text-slate-500 mb-0.5">累積完成</small>
+              <strong id="total-days-count" class="text-xl font-black text-slate-800">0 天</strong>
+            </div>
+          </div>
+          <p class="text-xs font-bold text-slate-600 leading-relaxed">
+            每日固定練習 30 個核心字詞，翻卡、聽音、看句型，循序累積國小六年級必備英文字彙力！
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 模組 2: 難字本 (難字複習)                         -->
+    <!-- ============================================== -->
+    <div id="app-view-starred" class="tab-view hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
+        <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-5">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-bookmark text-rose-500"></i>難字複習寶典
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">需在「難字本拼字特訓」連續拼對 3 次才能移除</p>
+          </div>
+          <button type="button" onclick="switchAppTab('learn')" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-arrow-left"></i> 返回單字卡
           </button>
+        </div>
+        <div id="starred-list-container" class="space-y-3 max-h-[480px] overflow-y-auto custom-scrollbar pr-1"></div>
+      </div>
+    </div>
 
-          <!-- 翻轉內層 (保留 3D 結構) -->
-          <div class="flip-card-inner relative w-full h-full transform-style-3d">
-            
-            <!-- 【正面】漫畫風圖卡 -->
-            <div class="flip-card-front absolute inset-0 w-full h-full backface-hidden bg-white border-4 border-slate-800 rounded-lg shadow-comic-lg flex flex-col items-center justify-center p-5">
-              <span class="anime-decor anime-decor-cloud" aria-hidden="true"><i class="fa-solid fa-cloud"></i></span>
-              <span class="anime-decor anime-decor-sakura" aria-hidden="true">✿</span>
-              <span class="anime-decor anime-decor-star" aria-hidden="true">★</span>
-              
-              <!-- 保留圖片資料節點供既有程式更新，但新版聚焦文字學習，不顯示不一致的外部插圖。 -->
-              <img id="card-image" src="https://placehold.co/1x1/transparent/transparent" alt="" class="hidden" aria-hidden="true">
-              <!-- 單字、詞性、發音與音標 -->
-              <h2 id="card-word" class="font-black text-slate-800">word</h2>
-              <p id="card-part-of-speech" class="word-part-of-speech">word</p>
-              <div class="pronunciation-row">
-                <button id="btn-speak-word" aria-label="播放單字發音" class="rounded-full flex items-center justify-center transition-all" onclick="event.stopPropagation();">
-                  <i class="fa-solid fa-volume-high"></i>
-                </button>
-                <p id="card-phonetic" class="font-bold">[phonetic]</p>
-              </div>
-              
-              <!-- 中文釋義 -->
-              <span id="card-chinese" class="inline-block bg-amber-300 text-slate-900 font-black text-xl px-6 py-2.5 rounded-full border-4 border-slate-800 shadow-comic">中文釋義</span>
-
-              <div class="absolute bottom-3 text-slate-400 text-xs font-black flex items-center gap-1 animate-pulse">
-                <i class="fa-solid fa-hand-pointer"></i> 點擊卡片翻面看例句
-              </div>
-            </div>
-
-            <!-- 【背面】實用例句漫畫對話框 -->
-            <div class="flip-card-back absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-rose-50 border-4 border-slate-800 rounded-lg shadow-comic-lg flex flex-col items-center justify-center p-3 sm:p-5 text-center overflow-hidden">
-              
-              <!-- 頂部精簡標題列：燈泡圖示 + Example 標籤橫向整併，節省垂直空間避免 iOS 擠壓破版 -->
-              <div class="flex items-center justify-center gap-2 mb-2 sm:mb-3">
-                <div class="w-7 h-7 sm:w-8 sm:h-8 bg-white border-2 border-slate-800 text-amber-500 rounded-full flex items-center justify-center text-xs sm:text-sm shadow-comic">
-                  <i class="fa-solid fa-lightbulb"></i>
-                </div>
-                <h3 class="text-xs sm:text-sm font-black text-slate-800 bg-white px-3 py-0.5 rounded-full border-2 border-slate-800 shadow-comic uppercase tracking-wider">Example 例句</h3>
-              </div>
-              
-              <!-- 漫畫對話框設計：支援內部彈性滾動，字級調優防溢出 -->
-              <div class="dialogue-box relative bg-white border-2 sm:border-4 border-slate-800 rounded-lg p-3 sm:p-4 w-full max-w-[95%] sm:max-w-[90%] mb-3 sm:mb-4 shadow-comic flex-shrink min-h-0 overflow-y-auto custom-scrollbar">
-                <p id="card-sentence" class="text-sm sm:text-base md:text-lg text-slate-800 font-black leading-snug sm:leading-relaxed mb-2">Example sentence here.</p>
-                <div class="w-full h-0.5 sm:h-1 bg-slate-200 rounded-full mb-2"></div>
-                <p id="card-translate" class="text-xs sm:text-sm text-slate-600 font-bold leading-snug">Example translate here.</p>
-                <!-- 對話框的尖角尾巴 (微縮尺寸避免遮擋按鈕) -->
-                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-b-2 sm:border-b-3 border-r-2 sm:border-r-3 border-slate-800 transform rotate-45 pointer-events-none"></div>
-              </div>
-
-              <!-- 背面朗讀按鈕 -->
-              <button id="btn-speak-sentence" class="px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-black border-2 sm:border-4 border-slate-800 shadow-comic text-xs sm:text-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-comic-active flex items-center gap-2 cursor-pointer" onclick="event.stopPropagation();">
-                <i class="fa-solid fa-volume-low text-sm sm:text-base"></i> 朗讀例句
-              </button>
-
-              <div class="mt-2 text-rose-600 text-[10px] sm:text-xs font-black flex items-center gap-1 select-none">
-                <i class="fa-solid fa-rotate-left"></i> 點擊翻回正面
-              </div>
-            </div>
-
+    <!-- ============================================== -->
+    <!-- 模組 3: 每日測驗 (隨堂測驗評量)                   -->
+    <!-- ============================================== -->
+    <div id="app-view-quiz" class="tab-view hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
+        
+        <!-- 測驗起始選單 -->
+        <div id="quiz-screen-start" class="text-center py-6">
+          <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm">
+            <i class="fa-solid fa-bullseye"></i>
           </div>
-        </div>
-
-        <div class="learn-actions flex items-center gap-3">
-          <button id="btn-prev-word" class="flex-1 py-3.5 px-4 rounded-lg bg-white border-4 border-slate-800 font-black text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all"><i class="fa-solid fa-arrow-left"></i> 上一個</button>
-          <button id="btn-next-word" class="flex-1 py-3.5 px-4 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-black border-4 border-slate-800 flex items-center justify-center gap-2 shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all">下一個 <i class="fa-solid fa-arrow-right"></i></button>
-        </div>
-        <p class="keyboard-hint"><i class="fa-regular fa-keyboard mr-1"></i>可使用鍵盤左右方向鍵切換單字，點擊卡片查看例句</p>
-      </main>
-
-      <!-- 難字本區塊 -->
-      <main id="app-view-starred" class="tab-view hidden flex-1 flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-black text-slate-800 text-lg border-l-4 border-rose-500 pl-2">難字複習寶典</h3>
-          </div>
-          <div id="starred-list-container" class="max-h-[360px] overflow-y-auto custom-scrollbar pr-2 space-y-3 mb-4"></div>
-        </div>
-      </main>
-
-      <!-- 測驗區塊 -->
-      <main id="app-view-quiz" class="tab-view hidden flex-1 flex flex-col justify-between">
-        <div id="quiz-screen-start" class="text-center my-auto py-3">
-          <div class="w-16 h-16 bg-amber-300 text-slate-900 border-4 border-slate-800 rounded-md flex items-center justify-center text-3xl mx-auto mb-4 shadow-comic transform -rotate-3"><i class="fa-solid fa-bullseye"></i></div>
           <h3 class="text-2xl font-black text-slate-800 mb-1">每日總結測驗</h3>
-          <p class="text-sm font-bold text-slate-500 mb-6 max-w-xs mx-auto">挑戰自我，強化單字記憶力！</p>
+          <p class="text-sm font-bold text-slate-500 mb-6 max-w-xs mx-auto">挑戰自我，強化英文單字記憶力！</p>
           
           <div class="space-y-3 max-w-xs mx-auto">
-            <button id="btn-quiz-mode-choice" class="w-full py-3 px-5 bg-rose-500 hover:bg-rose-600 text-white font-black border-4 border-slate-800 rounded-lg shadow-comic transform hover:-translate-y-1 active:translate-y-1 active:shadow-comic-active transition-all flex items-center justify-between text-sm">
+            <button id="btn-quiz-mode-choice" class="w-full py-3.5 px-5 bg-gradient-to-r from-rose-500 to-pink-600 hover:brightness-105 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
               <div class="flex items-center gap-2"><i class="fa-solid fa-list-check"></i><span>基礎選擇題測驗</span></div>
               <i class="fa-solid fa-chevron-right text-xs"></i>
             </button>
-            <button id="btn-quiz-mode-spelling" class="w-full py-3 px-5 bg-amber-400 text-slate-900 font-black border-4 border-slate-800 rounded-lg shadow-comic transform hover:-translate-y-1 active:translate-y-1 active:shadow-comic-active transition-all flex items-center justify-between text-sm">
+            <button id="btn-quiz-mode-spelling" class="w-full py-3.5 px-5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
               <div class="flex items-center gap-2"><i class="fa-solid fa-keyboard"></i><span>進階拼字特訓</span></div>
               <span class="bg-slate-900 text-white text-[10px] px-2 py-0.5 rounded-full font-black">手動輸入</span>
             </button>
-            <button id="btn-quiz-mode-starred" class="w-full py-3 px-5 bg-emerald-400 text-slate-900 font-black border-4 border-slate-800 rounded-lg shadow-comic transform hover:-translate-y-1 active:translate-y-1 active:shadow-comic-active transition-all flex items-center justify-between text-sm">
+            <button id="btn-quiz-mode-starred" class="w-full py-3.5 px-5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
               <div class="flex items-center gap-2"><i class="fa-solid fa-star"></i><span>難字本選擇題</span></div>
-              <span class="bg-slate-900 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-black">專攻難字</span>
+              <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full font-black">專攻難字</span>
             </button>
-            <button id="btn-quiz-mode-starred-spelling" class="w-full py-3 px-5 bg-purple-400 text-slate-900 font-black border-4 border-slate-800 rounded-lg shadow-comic transform hover:-translate-y-1 active:translate-y-1 active:shadow-comic-active transition-all flex items-center justify-between text-sm">
+            <button id="btn-quiz-mode-starred-spelling" class="w-full py-3.5 px-5 bg-purple-500 hover:bg-purple-600 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
               <div class="flex items-center gap-2"><i class="fa-solid fa-spell-check"></i><span>難字本拼字特訓</span></div>
-              <span class="bg-slate-900 text-purple-300 text-[10px] px-2 py-0.5 rounded-full font-black">連對3次消除</span>
+              <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full font-black">連對3次消除</span>
             </button>
           </div>
         </div>
 
         <!-- 測驗進行中 -->
-        <div id="quiz-screen-active" class="hidden flex-1 flex flex-col justify-between">
-          <div>
-            <div class="flex justify-between items-center text-xs font-black text-slate-500 mb-3 border-b-2 border-slate-200 pb-2">
-              <span id="quiz-mode-badge" class="bg-slate-800 text-white px-2.5 py-1 rounded-lg border-2 border-slate-800 shadow-comic">基礎選擇題</span>
-              <span id="quiz-progress-num">第 1 / 10 題</span>
-              <span id="quiz-score-num" class="text-rose-600">得分: 0</span>
-            </div>
-            
-            <div class="bg-white rounded-lg p-5 border-4 border-slate-800 text-center mb-4 shadow-comic">
-              <p id="quiz-instruction-text" class="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">請選擇正確對應單字</p>
-              <h4 id="quiz-question-chinese" class="text-3xl font-black text-slate-800">「釋義」</h4>
-              <p id="quiz-hint-phonetic" class="text-sm font-bold text-slate-400 mt-2 bg-slate-50 inline-block px-3 py-1 rounded-full border-2 border-slate-100"></p>
-            </div>
-
-            <div id="quiz-options-grid" class="grid grid-cols-1 gap-3"></div>
-            
-            <div id="quiz-spelling-container" class="hidden space-y-3">
-              <input type="text" id="quiz-spelling-input" placeholder="Type English here..." autocomplete="off" spellcheck="false" class="w-full py-4 px-5 rounded-lg border-4 border-slate-800 focus:outline-none focus:border-rose-500 font-black text-xl text-center shadow-comic">
-              <button id="quiz-submit-spelling-btn" class="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 border-4 border-slate-800 font-black rounded-lg shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-paper-plane"></i> 送出答案
-              </button>
-            </div>
+        <div id="quiz-screen-active" class="hidden">
+          <div class="flex justify-between items-center text-xs font-black text-slate-500 mb-3 border-b border-slate-100 pb-3">
+            <span id="quiz-mode-badge" class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-bold">基礎選擇題</span>
+            <span id="quiz-progress-num" class="font-bold">第 1 / 10 題</span>
+            <span id="quiz-score-num" class="text-rose-600 font-bold">得分: 0</span>
           </div>
+          
+          <div class="bg-rose-50/60 rounded-xl p-6 text-center mb-5 border border-rose-100">
+            <p id="quiz-instruction-text" class="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">請選擇正確對應單字</p>
+            <h4 id="quiz-question-chinese" class="text-3xl font-black text-slate-800">「釋義」</h4>
+            <p id="quiz-hint-phonetic" class="text-sm font-bold text-slate-500 mt-2 bg-white inline-block px-3 py-1 rounded-full shadow-sm"></p>
+          </div>
+
+          <div id="quiz-options-grid" class="grid grid-cols-1 gap-3"></div>
+          
+          <div id="quiz-spelling-container" class="hidden space-y-3">
+            <input type="text" id="quiz-spelling-input" placeholder="Type English here..." autocomplete="off" spellcheck="false" class="w-full py-3.5 px-5 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-rose-500 font-black text-xl text-center shadow-sm">
+            <button id="quiz-submit-spelling-btn" class="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> 送出答案
+            </button>
+          </div>
+
           <div id="quiz-feedback" class="text-center font-black text-base min-h-[28px] my-3"></div>
-          <button id="quiz-next-btn" class="hidden w-full py-3.5 bg-slate-800 text-white font-black border-4 border-slate-800 rounded-lg shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all">下一題</button>
+          <button id="quiz-next-btn" class="hidden w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl shadow-md transition-all">下一題 <i class="fa-solid fa-arrow-right ml-1"></i></button>
         </div>
 
         <!-- 測驗結果 -->
-        <div id="quiz-screen-results" class="hidden text-center my-auto py-6">
-          <div class="w-24 h-24 bg-emerald-300 text-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center text-5xl mx-auto mb-5 shadow-comic transform rotate-6"><i class="fa-solid fa-trophy"></i></div>
-          <h3 class="text-3xl font-black text-slate-800 mb-2">測驗完成！</h3>
-          <div class="inline-block bg-white border-4 border-slate-800 rounded-lg px-8 py-4 shadow-comic mb-5 mt-2 transform -rotate-2">
+        <div id="quiz-screen-results" class="hidden text-center py-8">
+          <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-inner">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <h3 class="text-2xl sm:text-3xl font-black text-slate-800 mb-2">測驗完成！</h3>
+          <div class="inline-block bg-rose-50 border border-rose-200 rounded-xl px-8 py-4 mb-4 mt-2">
             <p id="quiz-final-score" class="text-4xl font-black text-rose-600">0 / 100 分</p>
           </div>
-          <p id="quiz-evaluation-text" class="text-base font-bold text-slate-600 mb-8">做得好！持續練習！</p>
-          <button id="btn-reset-quiz-menu" class="w-full py-4 bg-slate-800 text-white font-black border-4 border-slate-800 rounded-lg shadow-comic transform hover:-translate-y-1 active:translate-y-1 active:shadow-comic-active transition-all flex items-center justify-center gap-2">
+          <p id="quiz-evaluation-text" class="text-base font-bold text-slate-600 mb-6">做得好！持續練習！</p>
+          <button id="btn-reset-quiz-menu" class="w-full max-w-xs mx-auto py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
             <i class="fa-solid fa-arrow-rotate-left"></i> 返回測驗選單
           </button>
         </div>
-      </main>
-
-      <!-- 學習日曆 -->
-      <main id="app-view-calendar" class="tab-view hidden flex-1 flex flex-col justify-between">
-        <div>
-          <div class="grid grid-cols-2 gap-4 mb-5">
-            <div class="bg-amber-100 border-4 border-slate-800 rounded-lg p-4 text-center shadow-comic transform -rotate-1">
-              <span class="text-xs text-slate-700 font-black block mb-1">🔥 連續打卡</span>
-              <span id="streak-count" class="text-3xl font-black text-slate-900">0 天</span>
-            </div>
-            <div class="bg-rose-100 border-4 border-slate-800 rounded-lg p-4 text-center shadow-comic transform rotate-1">
-              <span class="text-xs text-slate-700 font-black block mb-1">🏆 累積完成</span>
-              <span id="total-days-count" class="text-3xl font-black text-slate-900">0 天</span>
-            </div>
-          </div>
-          <div class="flex items-center justify-between mb-4 px-2 border-b-4 border-slate-800 pb-3">
-            <button id="btn-prev-month" class="w-10 h-10 rounded-md bg-white border-4 border-slate-800 text-slate-800 font-black flex items-center justify-center shadow-comic transform active:translate-y-1 active:shadow-comic-active"><i class="fa-solid fa-chevron-left"></i></button>
-            <h3 id="cal-month-title" class="font-black text-slate-800 text-lg">2026 年 8 月</h3>
-            <button id="btn-next-month" class="w-10 h-10 rounded-md bg-white border-4 border-slate-800 text-slate-800 font-black flex items-center justify-center shadow-comic transform active:translate-y-1 active:shadow-comic-active"><i class="fa-solid fa-chevron-right"></i></button>
-          </div>
-          <div class="grid grid-cols-7 gap-1 text-center font-black text-slate-400 text-xs mb-2">
-            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
-          </div>
-          <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center mb-4"></div>
-        </div>
-        <div id="today-status-card" class="w-full py-4 px-4 bg-white rounded-lg text-sm flex items-center justify-center gap-2 border-4 border-slate-800 font-black text-center shadow-comic"></div>
-      </main>
+      </div>
     </div>
-  </section>
+  </main>
 
-<script src="assets/js/config.js"></script>
-<script src="assets/js/app.js?v=20260904-fix-guardian-summary"></script>
-  <script src="assets/js/quiz.js?v=20260904-starred-spelling"></script> 
+  <!-- 載入腳本 -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/app.js?v=20260924-layout-sync"></script>
+  <script src="assets/js/quiz.js?v=20260924-layout-sync"></script> 
   
-  <!-- 新增：網頁載入完成後的初始化邏輯 -->
+  <!-- 網頁載入完成後的初始化邏輯 -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // 1. 檢查是否有登入的使用者
+      // 1. 檢查是否有登入的使用者 (同時從 sessionStorage 與 localStorage 讀取)
+      if (!currentUser) {
+        const stored = sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user');
+        if (stored) {
+          try {
+            currentUser = JSON.parse(stored);
+            sessionStorage.setItem('g6_portal_user', stored);
+          } catch(e) {}
+        }
+      }
+
       if (!currentUser) {
         // 如果沒有登入，將使用者導回首頁
         window.location.assign('index.html');
@@ -1197,7 +455,7 @@
       const hName = document.getElementById('header-user-name');
       const hSeat = document.getElementById('header-user-seat');
       if (hName) hName.textContent = currentUser.name;
-      if (hSeat) hSeat.textContent = `座號: ${currentUser.seatNo}`;
+      if (hSeat) hSeat.textContent = currentUser.isAdmin ? '系統管理員' : `座號: ${currentUser.seatNo}`;
       
       // 3. 確保單字卡區塊有顯示
       switchAppTab('learn');
@@ -1207,7 +465,10 @@
     });
 
     function logoutEnglishStudent() {
-      sessionStorage.removeItem('g6_portal_user');
+      try {
+        localStorage.removeItem('g6_portal_user');
+        sessionStorage.removeItem('g6_portal_user');
+      } catch(e) {}
       window.location.assign('index.html');
     }
   </script>
@@ -1227,43 +488,12 @@
       container.style.opacity = '1';
       container.style.pointerEvents = 'auto';
 
-      const inner = container.firstElementChild;
-      if (inner) {
-        inner.style.background = 'rgba(15, 23, 42, 0.78)';
-        inner.style.backdropFilter = 'blur(16px) saturate(180%)';
-        inner.style.webkitBackdropFilter = 'blur(16px) saturate(180%)';
-        inner.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-        inner.style.borderRadius = '8px';
-        inner.style.padding = '14px 26px';
-        inner.style.display = 'flex';
-        inner.style.alignItems = 'center';
-        inner.style.gap = '14px';
-        inner.style.boxShadow = '0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)';
-        inner.style.color = '#ffffff';
-      }
-
       if (iconEl) {
         iconEl.className = `fa-solid ${iconClass} text-amber-300`;
-        iconEl.style.width = '36px';
-        iconEl.style.height = '36px';
-        iconEl.style.borderRadius = '50%';
-        iconEl.style.background = 'rgba(255, 255, 255, 0.12)';
-        iconEl.style.display = 'inline-flex';
-        iconEl.style.alignItems = 'center';
-        iconEl.style.justifyContent = 'center';
-        iconEl.style.fontSize = '16px';
-        iconEl.style.flexShrink = '0';
       }
 
       if (textEl) {
         textEl.textContent = text;
-        textEl.style.color = '#ffffff';
-        textEl.style.fontSize = '15px';
-        textEl.style.fontWeight = '600';
-        textEl.style.letterSpacing = '0.3px';
-        textEl.style.lineHeight = '1.5';
-        textEl.style.maxWidth = 'min(75vw, 360px)';
-        textEl.style.textAlign = 'left';
       }
 
       if (window._toastTimer) clearTimeout(window._toastTimer);
@@ -1277,27 +507,24 @@
 
   <!-- 付費解鎖彈窗 -->
   <div id="paywall-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full border-4 border-slate-800 shadow-comic-lg text-center card-flip-enter relative overflow-hidden">
-      <!-- 裝飾背景 -->
-      <div class="absolute top-0 left-0 w-full h-32 bg-amber-400 border-b-4 border-slate-800 -z-10"></div>
-      
-      <div class="w-20 h-20 bg-white border-4 border-slate-800 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-comic mt-6 text-amber-500">
+    <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center card-flip-enter relative overflow-hidden">
+      <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
         <i class="fa-solid fa-crown"></i>
       </div>
       
       <h3 class="text-2xl font-black text-slate-800 mb-2">試用期已屆滿</h3>
       <p class="text-sm font-bold text-slate-500 mb-6">您的 7 天體驗已結束。<br>立即升級 VIP，解鎖無限制學習！</p>
       
-      <div class="bg-amber-100 border-4 border-slate-800 rounded-lg p-4 mb-6 text-left space-y-3 shadow-comic">
-        <div class="flex items-center gap-2 text-sm font-black text-slate-800"><i class="fa-solid fa-check text-emerald-500 text-lg"></i> 無限制英文 2000 字測驗</div>
-        <div class="flex items-center gap-2 text-sm font-black text-slate-800"><i class="fa-solid fa-check text-emerald-500 text-lg"></i> 解鎖每日動態數學天地</div>
-        <div class="flex items-center gap-2 text-sm font-black text-slate-800"><i class="fa-solid fa-check text-emerald-500 text-lg"></i> 跨平台進度雲端即時同步</div>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left space-y-2 text-xs font-bold text-slate-700">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 無限制英文 2000 字測驗</div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 解鎖每日動態數學天地</div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 跨平台進度雲端即時同步</div>
       </div>
 
-      <button id="btn-subscribe" class="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black border-4 border-slate-800 rounded-lg shadow-comic transform active:translate-y-1 active:shadow-comic-active transition-all text-lg flex items-center justify-center gap-2">
+      <button id="btn-subscribe" class="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl shadow-md transition-all text-base flex items-center justify-center gap-2">
         立即訂閱升級 <i class="fa-solid fa-cart-shopping"></i>
       </button>
-      <button onclick="logout()" class="mt-4 text-xs font-bold text-slate-400 hover:text-slate-700 underline">切換其他帳號</button>
+      <button onclick="logoutEnglishStudent()" class="mt-4 text-xs font-bold text-slate-400 hover:text-slate-700 underline">切換其他帳號</button>
     </div>
   </div>
 </body>
