@@ -458,6 +458,8 @@
 
       if (scoreEl) scoreEl.textContent = this.score;
       if (countEl) countEl.textContent = this.rescuedCount;
+      const levelEl = document.getElementById('rescue-level');
+      if (levelEl) levelEl.textContent = `第 ${this.rescuedCount + 1} 關`;
 
       if (heartsContainer) {
         heartsContainer.innerHTML = '';
@@ -486,9 +488,10 @@
       const radius = 26;
       const x = radius + Math.random() * (this.width - radius * 2);
 
-      // 每過一關(完成一個單字)，速度提升 30%
+      // 速度計算：進入第九關後不再提速 (前 8 關每關提速 30%，第 9 關及以後速度固定)
       const baseSpeed = 2.0;
-      const speed = baseSpeed * Math.pow(1.30, this.rescuedCount);
+      const speedTier = Math.min(this.rescuedCount, 8);
+      const speed = baseSpeed * Math.pow(1.30, speedTier);
 
       const colors = [
         { bg: '#38bdf8', border: '#0284c7', text: '#ffffff' },
@@ -537,8 +540,15 @@
       }
 
       this.spawnTimer++;
-      // 隨關卡提升，掉落間隔略微縮短，節奏更緊湊
-      const currentInterval = Math.max(38, Math.round(this.spawnInterval / Math.pow(1.08, this.rescuedCount)));
+      // 字母數量：進入第九關後不再提速，改為增加字母數量，每過一關增加 10% 的字母數量，直到第 19 關後不再變化
+      let densityMultiplier = 1.0;
+      if (this.rescuedCount > 8) {
+        // 從第 9 關完成後開始增加，第 10 關 ~ 第 19 關最多增加 10 關
+        const densitySteps = Math.min(this.rescuedCount - 8, 10);
+        densityMultiplier = Math.pow(1.10, densitySteps);
+      }
+      const currentInterval = Math.max(20, Math.round(this.spawnInterval / densityMultiplier));
+
       if (this.spawnTimer >= currentInterval) {
         this.spawnTimer = 0;
         this.spawnBubble();
@@ -659,7 +669,16 @@
         });
       }
 
-      this.addFloatingText(`PERFECT! +100 (速度+30%)`, this.width / 2, 220, '#f59e0b', 24);
+      const completedCount = this.rescuedCount;
+      let bonusMsg = "PERFECT! +100";
+      if (completedCount < 8) {
+        bonusMsg = `PERFECT! +100 (第 ${completedCount + 1} 關: 速度+30%)`;
+      } else if (completedCount < 18) {
+        bonusMsg = `PERFECT! +100 (第 ${completedCount + 1} 關: 字母數量+10%)`;
+      } else {
+        bonusMsg = `PERFECT! +100 (第 ${completedCount + 1} 關: 極限挑戰!)`;
+      }
+      this.addFloatingText(bonusMsg, this.width / 2, 220, '#f59e0b', 22);
 
       // 同時發音讀出該單字，朗讀結束後再進入下一關
       speakWord(this.currentWord, () => {
