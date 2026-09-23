@@ -329,6 +329,32 @@ async function initializeDatabaseSchema(pool, AUTH_SECRET) {
       await pool.query("ALTER TABLE math_quiz_logs ADD UNIQUE KEY uq_math_daily_attempt (seat_no, learning_date, attempt_no)");
     } catch (_) {}
   }
+
+  // 子女檔案性別與生日（生理成長曲線分析）
+  const [childGenderCols] = await pool.query("SHOW COLUMNS FROM child_profiles LIKE 'gender'");
+  if (childGenderCols.length === 0) {
+    await pool.query("ALTER TABLE child_profiles ADD COLUMN gender ENUM('boy', 'girl') NOT NULL DEFAULT 'boy' AFTER nickname");
+  }
+  const [childBirthdayCols] = await pool.query("SHOW COLUMNS FROM child_profiles LIKE 'birthday'");
+  if (childBirthdayCols.length === 0) {
+    await pool.query("ALTER TABLE child_profiles ADD COLUMN birthday DATE NULL AFTER gender");
+  }
+
+  // 生理成長記錄表 (身高、體重、BMI)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS child_growth_records (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      child_id INT UNSIGNED NOT NULL,
+      record_date DATE NOT NULL,
+      height_cm DECIMAL(5, 2) NOT NULL,
+      weight_kg DECIMAL(5, 2) NOT NULL,
+      bmi DECIMAL(4, 1) NULL,
+      note VARCHAR(100) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (child_id) REFERENCES child_profiles(id) ON DELETE CASCADE,
+      KEY ix_child_growth_date (child_id, record_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 module.exports = { createPool, initializeDatabaseSchema };

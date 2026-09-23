@@ -1206,7 +1206,7 @@ function initGuardianModule() {
   });
 
   // 家長儀表板分頁籤
-  const guardianTabs = ['children', 'tracking', 'growth', 'support', 'community'];
+  const guardianTabs = ['children', 'tracking', 'growth', 'physical', 'support', 'community'];
   guardianTabs.forEach(tab => {
     document.getElementById(`guardian-tab-${tab}`)?.addEventListener('click', () => {
       switchGuardianTab(tab);
@@ -1288,6 +1288,8 @@ function initGuardianModule() {
     const childId = document.getElementById('input-child-id').value;
     const nickname = document.getElementById('input-child-nickname').value.trim();
     const gradeLevel = document.getElementById('input-child-grade').value;
+    const gender = document.getElementById('input-child-gender')?.value || 'boy';
+    const birthday = document.getElementById('input-child-birthday')?.value || null;
     const childPassword = document.getElementById('input-child-password').value;
 
     if (childPassword && (childPassword.length < 6 || !/[A-Za-z]/.test(childPassword) || !/[0-9]/.test(childPassword))) {
@@ -1298,7 +1300,7 @@ function initGuardianModule() {
     try {
       const url = childId ? `/guardian/children/${childId}` : '/guardian/children';
       const method = childId ? 'PUT' : 'POST';
-      const payload = { nickname, gradeLevel };
+      const payload = { nickname, gradeLevel, gender, birthday };
       if (childPassword) payload.childPassword = childPassword;
 
       const response = await apiFetch(url, {
@@ -1384,28 +1386,24 @@ function initGuardianModule() {
     }
   });
 
-  // 學習追蹤與成長記錄之子女下拉選單連動
-  document.getElementById('tracking-child-select')?.addEventListener('change', (e) => {
-    const childId = e.target.value;
-    if (childId) {
-      const syncOther = document.getElementById('growth-child-select');
-      if (syncOther) syncOther.value = childId;
-      loadChildSummary(childId);
-    }
-  });
+  // 學習追蹤、學習成長與生理成長記錄之子女下拉選單連動
+  const syncAndLoadChild = (childId) => {
+    if (!childId) return;
+    ['tracking-child-select', 'growth-child-select', 'physical-child-select'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.value !== childId) el.value = childId;
+    });
+    loadChildSummary(childId);
+    loadChildGrowth(childId);
+  };
 
-  document.getElementById('growth-child-select')?.addEventListener('change', (e) => {
-    const childId = e.target.value;
-    if (childId) {
-      const syncOther = document.getElementById('tracking-child-select');
-      if (syncOther) syncOther.value = childId;
-      loadChildSummary(childId);
-    }
-  });
+  document.getElementById('tracking-child-select')?.addEventListener('change', (e) => syncAndLoadChild(e.target.value));
+  document.getElementById('growth-child-select')?.addEventListener('change', (e) => syncAndLoadChild(e.target.value));
+  document.getElementById('physical-child-select')?.addEventListener('change', (e) => syncAndLoadChild(e.target.value));
 }
 
 function switchGuardianTab(activeTab) {
-  const tabs = ['children', 'tracking', 'growth', 'support', 'community'];
+  const tabs = ['children', 'tracking', 'growth', 'physical', 'support', 'community'];
   tabs.forEach(tab => {
     const btn = document.getElementById(`guardian-tab-${tab}`);
     const panel = document.getElementById(`guardian-panel-${tab}`);
@@ -1419,9 +1417,16 @@ function switchGuardianTab(activeTab) {
       panel?.classList.add('hidden');
     }
   });
-  if (['tracking', 'growth'].includes(activeTab)) {
-    const activeChildId = document.getElementById('tracking-child-select')?.value || document.getElementById('growth-child-select')?.value;
-    if (activeChildId) loadChildSummary(activeChildId);
+
+  const activeChildId = document.getElementById('physical-child-select')?.value
+    || document.getElementById('tracking-child-select')?.value
+    || document.getElementById('growth-child-select')?.value;
+  if (activeChildId) {
+    if (activeTab === 'physical') {
+      loadChildGrowth(activeChildId);
+    } else if (['tracking', 'growth'].includes(activeTab)) {
+      loadChildSummary(activeChildId);
+    }
   }
 }
 
@@ -1453,18 +1458,22 @@ async function loadGuardianDashboard() {
     guardianChildren = data.data || [];
     renderGuardianChildren(guardianChildren);
 
-    // 填充追蹤與成長選單
+    // 填充追蹤、學習成長與生理成長選單
     const trackingSelect = document.getElementById('tracking-child-select');
     const growthSelect = document.getElementById('growth-child-select');
-    if (trackingSelect && growthSelect) {
+    const physicalSelect = document.getElementById('physical-child-select');
+    if (trackingSelect || growthSelect || physicalSelect) {
       if (guardianChildren.length === 0) {
-        trackingSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
-        growthSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
+        if (trackingSelect) trackingSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
+        if (growthSelect) growthSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
+        if (physicalSelect) physicalSelect.innerHTML = '<option value="">(尚未新增子女)</option>';
       } else {
         const optionsHtml = guardianChildren.map(c => `<option value="${c.id}">${c.nickname} (${c.linked_seat_no})</option>`).join('');
-        trackingSelect.innerHTML = optionsHtml;
-        growthSelect.innerHTML = optionsHtml;
+        if (trackingSelect) trackingSelect.innerHTML = optionsHtml;
+        if (growthSelect) growthSelect.innerHTML = optionsHtml;
+        if (physicalSelect) physicalSelect.innerHTML = optionsHtml;
         loadChildSummary(guardianChildren[0].id);
+        loadChildGrowth(guardianChildren[0].id);
       }
     }
   } catch (err) {
@@ -1595,6 +1604,12 @@ window.openEditChildModal = function(childId, nickname, gradeLevel) {
   document.getElementById('input-child-id').value = childId;
   document.getElementById('input-child-nickname').value = targetNickname;
   document.getElementById('input-child-grade').value = targetGrade;
+  if (document.getElementById('input-child-gender')) {
+    document.getElementById('input-child-gender').value = child?.gender || 'boy';
+  }
+  if (document.getElementById('input-child-birthday')) {
+    document.getElementById('input-child-birthday').value = child?.birthday ? String(child.birthday).slice(0, 10) : '';
+  }
   document.getElementById('input-child-password').value = '';
   document.getElementById('modal-child-form')?.classList.remove('hidden');
 };
@@ -1731,3 +1746,716 @@ window.showOauthGuidance = function(platform) {
     alert(`此 ${platform} 連動為家長端 App 專屬；學生課堂登入請使用上方姓名與座號。`);
   }
 };
+
+// ============================================================
+// 生理成長記錄與台灣 0-18 歲兒童生長曲線百分位常模系統
+// ============================================================
+
+const TAIWAN_GROWTH_NORMS = {
+  ages: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+  boy: {
+    height: {
+      p3:  [46.1, 71.0, 82.5, 90.7, 97.6, 104.0, 110.0, 115.5, 120.5, 125.0, 130.0, 134.5, 140.5, 148.0, 155.0, 160.0, 162.5, 163.5, 164.0],
+      p15: [47.9, 73.4, 85.1, 93.5, 100.5, 107.0, 113.5, 119.0, 124.5, 129.5, 135.0, 140.0, 147.0, 155.0, 161.5, 165.5, 167.5, 168.5, 169.0],
+      p50: [49.9, 75.7, 87.8, 96.1, 103.3, 110.0, 117.0, 123.0, 128.5, 134.0, 140.0, 146.0, 154.0, 162.0, 168.0, 171.0, 172.5, 173.5, 174.0],
+      p85: [51.8, 78.1, 90.4, 99.1, 106.4, 113.5, 121.0, 127.5, 133.5, 139.5, 146.0, 153.0, 161.5, 169.5, 174.5, 177.0, 178.5, 179.5, 180.0],
+      p97: [53.7, 80.5, 93.2, 102.1, 109.5, 117.0, 125.0, 132.0, 138.5, 145.0, 152.0, 160.0, 168.5, 175.5, 180.0, 182.0, 183.5, 184.5, 185.0]
+    },
+    weight: {
+      p3:  [2.5, 7.7,  9.7, 11.3, 12.7, 14.1, 16.0, 18.0, 20.5, 23.0, 26.0, 29.0, 33.0, 38.0, 43.0, 47.0, 50.0, 52.0, 53.0],
+      p15: [2.9, 8.6, 10.8, 12.7, 14.4, 16.1, 18.0, 20.5, 23.0, 26.0, 29.5, 34.0, 38.5, 44.0, 49.0, 53.0, 55.5, 57.5, 58.5],
+      p50: [3.3, 9.6, 12.2, 14.3, 16.3, 18.3, 20.5, 23.5, 26.5, 30.5, 35.0, 40.5, 46.5, 52.5, 57.5, 61.5, 64.0, 65.5, 66.5],
+      p85: [3.9, 10.8, 13.6, 16.2, 18.6, 21.2, 24.0, 28.0, 32.0, 37.0, 43.0, 49.5, 56.5, 63.0, 68.0, 71.5, 74.0, 76.0, 77.0],
+      p97: [4.4, 12.0, 15.3, 18.3, 21.2, 24.2, 28.0, 33.0, 38.0, 45.0, 52.0, 60.0, 67.5, 74.0, 79.0, 82.5, 85.0, 87.0, 88.0]
+    },
+    bmi: {
+      p3:  [11.5, 14.3, 14.1, 13.7, 13.5, 13.4, 13.5, 13.7, 14.0, 14.4, 14.9, 15.4, 16.0, 16.6, 17.2, 17.8, 18.2, 18.5, 18.7],
+      p15: [12.4, 15.1, 14.8, 14.5, 14.2, 14.1, 14.2, 14.4, 14.8, 15.3, 15.9, 16.5, 17.2, 17.9, 18.6, 19.2, 19.7, 20.0, 20.3],
+      p50: [13.4, 16.2, 15.7, 15.3, 15.1, 15.1, 15.2, 15.5, 16.0, 16.7, 17.4, 18.2, 19.0, 19.8, 20.6, 21.3, 21.9, 22.3, 22.5],
+      p85: [14.6, 17.3, 16.8, 16.5, 16.3, 16.4, 16.7, 17.3, 18.0, 18.9, 19.9, 20.9, 21.9, 22.8, 23.6, 24.3, 24.8, 25.2, 25.5],
+      p97: [15.8, 18.5, 18.0, 17.7, 17.6, 17.8, 18.3, 19.2, 20.2, 21.4, 22.6, 23.8, 24.9, 25.8, 26.6, 27.2, 27.8, 28.2, 28.5]
+    }
+  },
+  girl: {
+    height: {
+      p3:  [45.4, 68.9, 80.0, 88.7, 96.0, 102.5, 108.5, 114.0, 119.0, 124.0, 129.5, 135.5, 142.5, 147.0, 149.5, 150.5, 151.0, 151.5, 151.5],
+      p15: [47.2, 71.4, 83.2, 91.9, 99.1, 105.8, 112.0, 118.0, 123.0, 128.5, 134.5, 141.5, 148.0, 152.0, 154.0, 155.0, 155.5, 156.0, 156.0],
+      p50: [49.1, 74.0, 86.4, 95.1, 102.3, 109.0, 115.5, 121.5, 127.0, 133.0, 139.5, 147.0, 153.0, 156.5, 158.5, 159.5, 160.0, 160.5, 160.5],
+      p85: [51.0, 76.6, 89.6, 98.2, 105.5, 112.5, 119.5, 126.0, 132.0, 138.5, 145.5, 153.5, 158.5, 161.5, 163.0, 164.0, 164.5, 165.0, 165.0],
+      p97: [52.9, 79.2, 92.9, 101.4, 108.8, 116.0, 124.0, 130.5, 137.0, 144.0, 151.5, 159.0, 164.0, 166.5, 167.5, 168.0, 168.5, 169.0, 169.0]
+    },
+    weight: {
+      p3:  [2.4, 7.0,  9.0, 10.8, 12.3, 13.7, 15.3, 17.2, 19.3, 21.8, 24.8, 28.5, 33.0, 37.0, 40.0, 41.5, 42.5, 43.0, 43.0],
+      p15: [2.8, 7.9, 10.2, 12.2, 14.0, 15.6, 17.3, 19.5, 22.0, 25.0, 28.5, 33.0, 38.0, 42.0, 44.5, 46.0, 47.0, 47.5, 47.5],
+      p50: [3.2, 8.9, 11.5, 13.9, 16.0, 17.9, 19.9, 22.5, 25.5, 29.5, 34.0, 39.5, 44.5, 48.5, 51.0, 52.5, 53.5, 54.0, 54.0],
+      p85: [3.7, 10.1, 13.0, 15.8, 18.5, 20.8, 23.4, 27.0, 31.0, 36.0, 41.5, 47.5, 53.0, 56.5, 58.5, 60.0, 61.0, 61.5, 62.0],
+      p97: [4.2, 11.5, 14.8, 18.0, 21.3, 24.3, 27.6, 32.0, 37.0, 43.5, 50.0, 56.5, 62.0, 65.5, 67.5, 69.0, 70.0, 70.5, 71.0]
+    },
+    bmi: {
+      p3:  [11.2, 13.8, 13.7, 13.4, 13.2, 13.1, 13.2, 13.4, 13.7, 14.1, 14.7, 15.4, 16.1, 16.8, 17.3, 17.7, 17.9, 18.0, 18.0],
+      p15: [12.0, 14.6, 14.4, 14.1, 13.8, 13.8, 13.9, 14.2, 14.6, 15.1, 15.7, 16.4, 17.2, 17.9, 18.4, 18.8, 19.0, 19.2, 19.2],
+      p50: [13.1, 15.6, 15.3, 14.9, 14.7, 14.7, 14.9, 15.3, 15.8, 16.4, 17.2, 18.0, 18.8, 19.5, 20.0, 20.4, 20.6, 20.8, 20.8],
+      p85: [14.2, 16.8, 16.4, 16.1, 16.0, 16.1, 16.5, 17.1, 17.8, 18.7, 19.7, 20.7, 21.6, 22.4, 22.9, 23.3, 23.6, 23.8, 23.9],
+      p97: [15.4, 18.0, 17.6, 17.4, 17.3, 17.6, 18.2, 19.0, 20.0, 21.2, 22.4, 23.6, 24.6, 25.4, 26.0, 26.4, 26.7, 26.9, 27.0]
+    }
+  }
+};
+
+let currentGrowthChildId = null;
+let currentGrowthMetric = 'height'; // 'height' | 'weight' | 'bmi'
+let currentGrowthRecords = [];
+let currentChildBio = { gender: 'boy', birthday: null, nickname: '', grade_level: '國小六年級' };
+let growthChartInstance = null;
+
+// 計算年齡詳細資訊 (年、月、浮點數、文字)
+function calculateChildAge(birthdayStr, recordDateStr = null, gradeLevel = '國小六年級') {
+  const refDate = recordDateStr ? new Date(recordDateStr) : new Date();
+  if (birthdayStr) {
+    const bday = new Date(birthdayStr);
+    if (!isNaN(bday.getTime())) {
+      let years = refDate.getFullYear() - bday.getFullYear();
+      let months = refDate.getMonth() - bday.getMonth();
+      if (refDate.getDate() < bday.getDate()) months--;
+      if (months < 0) { years--; months += 12; }
+      years = Math.max(0, years);
+      months = Math.max(0, months);
+      const ageDecimal = Math.max(0, Math.min(18, years + months / 12));
+      return { years, months, ageDecimal, display: `${years} 歲 ${months} 個月`, isEstimated: false };
+    }
+  }
+
+  // 預設年齡推算 (國小六年級約 11 歲 8 個月)
+  let estYears = 11;
+  let estMonths = 8;
+  if (gradeLevel === '國小四年級') { estYears = 9; estMonths = 6; }
+  else if (gradeLevel === '國小五年級') { estYears = 10; estMonths = 6; }
+  else if (gradeLevel === '國中七年級') { estYears = 12; estMonths = 8; }
+
+  const ageDecimal = estYears + estMonths / 12;
+  return { years: estYears, months: estMonths, ageDecimal, display: `${estYears} 歲 ${estMonths} 個月 (預估)`, isEstimated: true };
+}
+
+// 線性內插計算指定年齡的常模百分位數值
+function interpolateNormValue(dataset, age) {
+  const ages = TAIWAN_GROWTH_NORMS.ages;
+  const clampedAge = Math.max(0, Math.min(18, age));
+  const lowerIdx = Math.floor(clampedAge);
+  const upperIdx = Math.min(18, Math.ceil(clampedAge));
+  if (lowerIdx === upperIdx) return dataset[lowerIdx];
+  const ratio = clampedAge - lowerIdx;
+  return dataset[lowerIdx] + (dataset[upperIdx] - dataset[lowerIdx]) * ratio;
+}
+
+// 評估生長百分位落點與衛教評語
+function evaluatePercentileStatus(metric, value, ageDecimal, gender = 'boy') {
+  const genderNorms = TAIWAN_GROWTH_NORMS[gender] || TAIWAN_GROWTH_NORMS.boy;
+  const data = genderNorms[metric] || genderNorms.height;
+
+  const vP3 = interpolateNormValue(data.p3, ageDecimal);
+  const vP15 = interpolateNormValue(data.p15, ageDecimal);
+  const vP50 = interpolateNormValue(data.p50, ageDecimal);
+  const vP85 = interpolateNormValue(data.p85, ageDecimal);
+  const vP97 = interpolateNormValue(data.p97, ageDecimal);
+
+  if (value < vP3) {
+    return {
+      percentileText: '< 3rd',
+      badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
+      statusText: metric === 'weight' ? '體重過輕' : (metric === 'bmi' ? '體重過輕' : '生長落後需關注'),
+      color: '#e11d48'
+    };
+  } else if (value < vP15) {
+    return {
+      percentileText: '3rd ~ 15th',
+      badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+      statusText: '生長稍偏小',
+      color: '#d97706'
+    };
+  } else if (value <= vP85) {
+    const approx = value <= vP50
+      ? Math.round(15 + ((value - vP15) / (vP50 - vP15 || 1)) * 35)
+      : Math.round(50 + ((value - vP50) / (vP85 - vP50 || 1)) * 35);
+    return {
+      percentileText: `約 ${approx}th`,
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      statusText: '生長正常健康',
+      color: '#059669'
+    };
+  } else if (value <= vP97) {
+    return {
+      percentileText: '85th ~ 97th',
+      badgeClass: 'bg-teal-100 text-teal-800 border-teal-200',
+      statusText: metric === 'height' ? '身形高大' : '體重偏重',
+      color: '#0d9488'
+    };
+  } else {
+    return {
+      percentileText: '> 97th',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-200',
+      statusText: metric === 'height' ? '身形超群' : '需留意體重管理',
+      color: '#7c3aed'
+    };
+  }
+}
+
+// 載入指定子女之生理成長記錄與基本資料
+async function loadChildGrowth(childId) {
+  if (!childId) return;
+  currentGrowthChildId = Number(childId);
+
+  // 嘗試從當前 guardianChildren 清單中獲取性別與生日快取
+  const foundChild = (guardianChildren || []).find(c => c.id === currentGrowthChildId);
+  if (foundChild) {
+    currentChildBio = {
+      nickname: foundChild.nickname || '子女',
+      gender: foundChild.gender || 'boy',
+      birthday: foundChild.birthday ? String(foundChild.birthday).slice(0, 10) : null,
+      grade_level: foundChild.grade_level || '國小六年級',
+      linked_seat_no: foundChild.linked_seat_no
+    };
+  }
+
+  // 預設日期設為今天
+  const inputDate = document.getElementById('input-growth-date');
+  if (inputDate && !inputDate.value) {
+    inputDate.value = new Date().toISOString().slice(0, 10);
+  }
+
+  try {
+    const res = await apiFetch(`/guardian/children/${currentGrowthChildId}/growth`);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (data.child) {
+        currentChildBio = {
+          ...currentChildBio,
+          ...data.child
+        };
+      }
+      currentGrowthRecords = data.records || [];
+      // 快取至 localStorage 供離線備份
+      localStorage.setItem(`g6_growth_${currentGrowthChildId}`, JSON.stringify({
+        child: currentChildBio,
+        records: currentGrowthRecords
+      }));
+    } else {
+      throw new Error(data.error || '無法載入伺服器成長記錄');
+    }
+  } catch (err) {
+    console.warn('loadChildGrowth apiFetch 警告 (切換至本地快取或預設模式):', err);
+    const cached = localStorage.getItem(`g6_growth_${currentGrowthChildId}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.child) currentChildBio = { ...currentChildBio, ...parsed.child };
+        currentGrowthRecords = parsed.records || [];
+      } catch (_) {}
+    } else {
+      // 若完全無紀錄，提供國小六年級標準參考示範點，讓圖表有畫面可看
+      currentGrowthRecords = [
+        {
+          id: 'demo-1',
+          record_date: '2024-11-21',
+          height_cm: 148.5,
+          weight_kg: 39.2,
+          bmi: 17.8,
+          note: '六年級健檢'
+        }
+      ];
+    }
+  }
+
+  renderChildBioUI();
+  renderGrowthQuickStats();
+  renderGrowthHistoryList();
+  renderGrowthCurveChart();
+}
+
+// 渲染子女性別、年齡標籤
+function renderChildBioUI() {
+  const genderBadge = document.getElementById('physical-gender-badge');
+  const ageText = document.getElementById('physical-age-text');
+  const isGirl = currentChildBio.gender === 'girl';
+
+  if (genderBadge) {
+    if (isGirl) {
+      genderBadge.className = 'px-1.5 py-0.5 rounded text-[11px] bg-pink-100 text-pink-700 font-bold';
+      genderBadge.innerHTML = '<i class="fa-solid fa-venus"></i> 女童';
+    } else {
+      genderBadge.className = 'px-1.5 py-0.5 rounded text-[11px] bg-blue-100 text-blue-700 font-bold';
+      genderBadge.innerHTML = '<i class="fa-solid fa-mars"></i> 男童';
+    }
+  }
+
+  const ageInfo = calculateChildAge(currentChildBio.birthday, null, currentChildBio.grade_level);
+  if (ageText) {
+    ageText.textContent = ageInfo.display;
+  }
+}
+
+// 渲染最新生理指標摘要條
+function renderGrowthQuickStats() {
+  const elHeight = document.getElementById('quick-height');
+  const elWeight = document.getElementById('quick-weight');
+  const elBmi = document.getElementById('quick-bmi');
+  const elPercentilePill = document.getElementById('quick-percentile-pill');
+  const elPercentile = document.getElementById('quick-percentile');
+
+  if (currentGrowthRecords.length === 0) {
+    if (elHeight) elHeight.textContent = '--';
+    if (elWeight) elWeight.textContent = '--';
+    if (elBmi) elBmi.textContent = '--';
+    if (elPercentile) elPercentile.textContent = '尚無量測記錄';
+    if (elPercentilePill) elPercentilePill.className = 'bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1';
+    return;
+  }
+
+  // 取最新一筆記錄 (依 record_date 由新至舊排序)
+  const sorted = [...currentGrowthRecords].sort((a, b) => new Date(b.record_date) - new Date(a.record_date));
+  const latest = sorted[0];
+
+  if (elHeight) elHeight.textContent = latest.height_cm;
+  if (elWeight) elWeight.textContent = latest.weight_kg;
+  if (elBmi) elBmi.textContent = latest.bmi;
+
+  const ageInfo = calculateChildAge(currentChildBio.birthday, latest.record_date, currentChildBio.grade_level);
+  const evalH = evaluatePercentileStatus('height', latest.height_cm, ageInfo.ageDecimal, currentChildBio.gender);
+
+  if (elPercentile) elPercentile.textContent = `${evalH.percentileText} (${evalH.statusText})`;
+  if (elPercentilePill) {
+    elPercentilePill.className = `${evalH.badgeClass} border px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition-all`;
+  }
+}
+
+// 繪製 0-18 歲兒童生長曲線百分位圖表 (Chart.js)
+function renderGrowthCurveChart() {
+  const canvas = document.getElementById('growth-curve-canvas');
+  if (!canvas) return;
+
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js 尚未載入，稍候重試');
+    setTimeout(renderGrowthCurveChart, 300);
+    return;
+  }
+
+  const gender = currentChildBio.gender === 'girl' ? 'girl' : 'boy';
+  const metric = currentGrowthMetric; // 'height' | 'weight' | 'bmi'
+  const normData = TAIWAN_GROWTH_NORMS[gender][metric];
+  const ages = TAIWAN_GROWTH_NORMS.ages;
+
+  // 整理孩子的實際測量資料點
+  const childPoints = currentGrowthRecords.map(r => {
+    const ageInfo = calculateChildAge(currentChildBio.birthday, r.record_date, currentChildBio.grade_level);
+    let val = r.height_cm;
+    if (metric === 'weight') val = r.weight_kg;
+    else if (metric === 'bmi') val = r.bmi;
+    return {
+      x: Number(ageInfo.ageDecimal.toFixed(2)),
+      y: Number(val),
+      recordDate: r.record_date,
+      note: r.note || '',
+      height: r.height_cm,
+      weight: r.weight_kg,
+      bmi: r.bmi
+    };
+  }).filter(pt => pt.x >= 0 && pt.x <= 18);
+
+  const metricLabel = metric === 'height' ? '身高 (cm)' : (metric === 'weight' ? '體重 (kg)' : 'BMI (kg/m²)');
+
+  if (growthChartInstance) {
+    growthChartInstance.destroy();
+  }
+
+  const ctx = canvas.getContext('2d');
+  growthChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ages,
+      datasets: [
+        // 孩子實測點
+        {
+          label: '【孩子量測記錄】',
+          data: childPoints,
+          borderColor: '#f59e0b',
+          backgroundColor: '#f59e0b',
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2.5,
+          showLine: true,
+          borderDash: [4, 4],
+          borderWidth: 2,
+          tension: 0.2,
+          order: 1
+        },
+        // 常模 P97
+        {
+          label: 'P97 (97%)',
+          data: normData.p97,
+          borderColor: '#475569',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.35,
+          order: 2
+        },
+        // 常模 P85
+        {
+          label: 'P85 (85%)',
+          data: normData.p85,
+          borderColor: '#0284c7',
+          backgroundColor: 'rgba(2, 132, 199, 0.08)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: '+1',
+          tension: 0.35,
+          order: 3
+        },
+        // 常模 P50 (中位線)
+        {
+          label: 'P50 (中位標準)',
+          data: normData.p50,
+          borderColor: '#059669',
+          backgroundColor: 'rgba(5, 150, 105, 0.12)',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          fill: '-1',
+          tension: 0.35,
+          order: 4
+        },
+        // 常模 P15
+        {
+          label: 'P15 (15%)',
+          data: normData.p15,
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.08)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: '+1',
+          tension: 0.35,
+          order: 5
+        },
+        // 常模 P3
+        {
+          label: 'P3 (3%)',
+          data: normData.p3,
+          borderColor: '#6366f1',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.35,
+          order: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'nearest',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 11 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: function(items) {
+              const item = items[0];
+              if (item.datasetIndex === 0) {
+                const raw = item.raw;
+                return `測量日期：${raw.recordDate || ''} (年齡: ${raw.x} 歲)`;
+              }
+              return `年齡：${item.label} 歲`;
+            },
+            label: function(item) {
+              if (item.datasetIndex === 0) {
+                const raw = item.raw;
+                return `孩子記錄：${raw.y} ${metric === 'height' ? 'cm' : (metric === 'weight' ? 'kg' : '')} ｜ 身高:${raw.height}cm 體重:${raw.weight}kg BMI:${raw.bmi}`;
+              }
+              return `${item.dataset.label}：${item.formattedValue}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: {
+            display: true,
+            text: '年齡 (歲)',
+            font: { size: 11, weight: 'bold' },
+            color: '#64748b'
+          },
+          min: 0,
+          max: 18,
+          ticks: {
+            stepSize: 2,
+            font: { size: 10 }
+          },
+          grid: {
+            color: '#f1f5f9'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: metricLabel,
+            font: { size: 11, weight: 'bold' },
+            color: '#64748b'
+          },
+          ticks: {
+            font: { size: 10 }
+          },
+          grid: {
+            color: '#f1f5f9'
+          }
+        }
+      }
+    }
+  });
+}
+
+// 渲染近期測量紀錄歷史清單
+function renderGrowthHistoryList() {
+  const container = document.getElementById('growth-history-container');
+  const countSpan = document.getElementById('growth-records-count');
+  if (!container) return;
+
+  if (countSpan) countSpan.textContent = `共 ${currentGrowthRecords.length} 筆`;
+
+  if (currentGrowthRecords.length === 0) {
+    container.innerHTML = `
+      <div class="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <i class="fa-solid fa-ruler-vertical text-slate-300 text-2xl mb-1.5"></i>
+        <p class="text-xs font-bold text-slate-500">尚無量測記錄</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">歡迎使用上方表單登錄孩子的身高與體重！</p>
+      </div>
+    `;
+    return;
+  }
+
+  // 依日期降冪排序
+  const sorted = [...currentGrowthRecords].sort((a, b) => new Date(b.record_date) - new Date(a.record_date));
+
+  container.innerHTML = sorted.map(rec => {
+    const ageInfo = calculateChildAge(currentChildBio.birthday, rec.record_date, currentChildBio.grade_level);
+    const evalH = evaluatePercentileStatus('height', rec.height_cm, ageInfo.ageDecimal, currentChildBio.gender);
+
+    return `
+      <div class="p-3 bg-white hover:bg-slate-50/80 rounded-xl border border-slate-200 transition-colors flex items-center justify-between gap-3 shadow-xs">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-800">${rec.record_date}</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${ageInfo.display}</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${evalH.badgeClass}">${evalH.statusText}</span>
+          </div>
+          <div class="text-[11px] text-slate-600 font-medium flex items-center gap-3">
+            <span>身高：<b class="text-slate-800 font-bold">${rec.height_cm}</b> cm</span>
+            <span>體重：<b class="text-slate-800 font-bold">${rec.weight_kg}</b> kg</span>
+            <span>BMI：<b class="text-teal-700 font-bold">${rec.bmi}</b></span>
+            ${rec.note ? `<span class="text-slate-400 text-[10px]">(${rec.note})</span>` : ''}
+          </div>
+        </div>
+
+        <button type="button" onclick="deleteChildGrowthRecord('${rec.id}')" title="刪除此紀錄" class="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-colors">
+          <i class="fa-solid fa-trash-can text-xs"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+// 刪除一筆測量記錄
+window.deleteChildGrowthRecord = async function(recordId) {
+  if (!currentGrowthChildId || !recordId) return;
+
+  openCustomModal('確定要刪除此筆測量紀錄？', '刪除後，生長曲線圖表將即時重繪更新。', async () => {
+    try {
+      if (typeof recordId === 'number' || (typeof recordId === 'string' && !recordId.startsWith('demo-'))) {
+        const res = await apiFetch(`/guardian/children/${currentGrowthChildId}/growth/${recordId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || '刪除失敗');
+      }
+
+      currentGrowthRecords = currentGrowthRecords.filter(r => String(r.id) !== String(recordId));
+      localStorage.setItem(`g6_growth_${currentGrowthChildId}`, JSON.stringify({
+        child: currentChildBio,
+        records: currentGrowthRecords
+      }));
+
+      showToast('測量紀錄已成功刪除', 'fa-trash-can');
+      renderGrowthQuickStats();
+      renderGrowthHistoryList();
+      renderGrowthCurveChart();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || '刪除失敗', 'fa-triangle-exclamation');
+    }
+  });
+};
+
+// 綁定指標切換按鈕 (身高 / 體重 / BMI)
+['height', 'weight', 'bmi'].forEach(metric => {
+  document.getElementById(`btn-metric-${metric}`)?.addEventListener('click', () => {
+    currentGrowthMetric = metric;
+    ['height', 'weight', 'bmi'].forEach(m => {
+      const btn = document.getElementById(`btn-metric-${m}`);
+      if (m === metric) {
+        btn?.classList.add('bg-[#173852]', 'text-white', 'shadow-sm');
+        btn?.classList.remove('text-slate-600', 'hover:text-slate-900');
+      } else {
+        btn?.classList.remove('bg-[#173852]', 'text-white', 'shadow-sm');
+        btn?.classList.add('text-slate-600', 'hover:text-slate-900');
+      }
+    });
+    renderGrowthCurveChart();
+  });
+});
+
+// 新增測量紀錄表單送出
+document.getElementById('form-add-growth-record')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentGrowthChildId) {
+    showToast('請先選擇子女檔案', 'fa-triangle-exclamation');
+    return;
+  }
+
+  const recordDate = document.getElementById('input-growth-date').value;
+  const heightCm = Number(document.getElementById('input-growth-height').value);
+  const weightKg = Number(document.getElementById('input-growth-weight').value);
+  const note = document.getElementById('input-growth-note').value.trim();
+
+  if (!recordDate || isNaN(heightCm) || isNaN(weightKg)) {
+    showToast('請完整填寫測量日期、身高與體重', 'fa-circle-exclamation');
+    return;
+  }
+
+  const bmi = Number((weightKg / Math.pow(heightCm / 100, 2)).toFixed(1));
+  const newRecord = {
+    id: Date.now(),
+    record_date: recordDate,
+    height_cm: heightCm,
+    weight_kg: weightKg,
+    bmi,
+    note
+  };
+
+  const btn = document.getElementById('btn-save-growth');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 儲存中...';
+  }
+
+  try {
+    const res = await apiFetch(`/guardian/children/${currentGrowthChildId}/growth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        record_date: recordDate,
+        height_cm: heightCm,
+        weight_kg: weightKg,
+        note
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success && data.data) {
+      newRecord.id = data.data.id;
+    }
+  } catch (err) {
+    console.warn('POST growth record API 離線/降級使用本地儲存:', err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+
+  // 更新記憶體與 LocalStorage
+  currentGrowthRecords.push(newRecord);
+  localStorage.setItem(`g6_growth_${currentGrowthChildId}`, JSON.stringify({
+    child: currentChildBio,
+    records: currentGrowthRecords
+  }));
+
+  showToast('身高體重紀錄儲存成功！曲線已更新', 'fa-circle-check');
+  document.getElementById('input-growth-note').value = '';
+
+  renderGrowthQuickStats();
+  renderGrowthHistoryList();
+  renderGrowthCurveChart();
+});
+
+// 生理資訊設定彈窗 (性別與生日)
+document.getElementById('btn-edit-child-bio')?.addEventListener('click', () => {
+  const isGirl = currentChildBio.gender === 'girl';
+  const rBoy = document.getElementById('child-bio-gender-boy');
+  const rGirl = document.getElementById('child-bio-gender-girl');
+  if (isGirl && rGirl) rGirl.checked = true;
+  else if (rBoy) rBoy.checked = true;
+
+  const bdayInput = document.getElementById('input-child-bio-birthday');
+  if (bdayInput) {
+    bdayInput.value = currentChildBio.birthday ? String(currentChildBio.birthday).slice(0, 10) : '';
+  }
+
+  document.getElementById('modal-child-bio')?.classList.remove('hidden');
+});
+
+document.getElementById('btn-close-bio-modal')?.addEventListener('click', () => {
+  document.getElementById('modal-child-bio')?.classList.add('hidden');
+});
+document.getElementById('btn-cancel-bio-modal')?.addEventListener('click', () => {
+  document.getElementById('modal-child-bio')?.classList.add('hidden');
+});
+
+// 儲存性別與生日表單
+document.getElementById('form-child-bio')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentGrowthChildId) return;
+
+  const rGirl = document.getElementById('child-bio-gender-girl');
+  const gender = rGirl?.checked ? 'girl' : 'boy';
+  const birthday = document.getElementById('input-child-bio-birthday')?.value || null;
+
+  currentChildBio.gender = gender;
+  currentChildBio.birthday = birthday;
+
+  // 同步更新當前 guardianChildren 清單
+  const target = (guardianChildren || []).find(c => c.id === currentGrowthChildId);
+  if (target) {
+    target.gender = gender;
+    target.birthday = birthday;
+  }
+
+  try {
+    await apiFetch(`/guardian/children/${currentGrowthChildId}/gender-birthday`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gender, birthday })
+    });
+  } catch (err) {
+    console.warn('PUT gender-birthday API 降級:', err);
+  }
+
+  localStorage.setItem(`g6_growth_${currentGrowthChildId}`, JSON.stringify({
+    child: currentChildBio,
+    records: currentGrowthRecords
+  }));
+
+  document.getElementById('modal-child-bio')?.classList.add('hidden');
+  showToast('子女生理資訊已儲存，生長曲線已更新！', 'fa-circle-check');
+
+  renderChildBioUI();
+  renderGrowthQuickStats();
+  renderGrowthHistoryList();
+  renderGrowthCurveChart();
+});

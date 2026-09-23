@@ -149,7 +149,7 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
   router.get('/guardian/children', requireAuth, requireGuardianRole, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT c.id, c.nickname, c.avatar_key, c.grade_level, c.linked_seat_no, c.created_at,
+      `SELECT c.id, c.nickname, c.avatar_key, c.gender, c.birthday, c.grade_level, c.linked_seat_no, c.created_at,
               CASE WHEN s.password_hash IS NOT NULL AND s.password_hash != '' THEN 1 ELSE 0 END AS has_password
        FROM child_profiles c
        LEFT JOIN students s ON s.seat_no = c.linked_seat_no
@@ -245,6 +245,8 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
   const nickname = String(req.body?.nickname || '').trim().slice(0, 50);
   const gradeLevel = req.body?.gradeLevel ? String(req.body.gradeLevel).trim().slice(0, 20) : null;
   const avatarKey = req.body?.avatarKey ? String(req.body.avatarKey).trim().slice(0, 50) : null;
+  const gender = req.body?.gender === 'girl' ? 'girl' : 'boy';
+  const birthday = req.body?.birthday ? String(req.body.birthday).trim().slice(0, 10) : null;
   const childPassword = req.body?.childPassword ? String(req.body.childPassword).trim() : null;
   if (!nickname) return res.status(400).json({ success: false, error: '請輸入子女的暱稱' });
 
@@ -258,11 +260,11 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     const passwordHash = childPassword ? hashPassword(childPassword) : null;
     await connection.query('INSERT INTO students (seat_no, name, password_hash) VALUES (?, ?, ?)', [seatNo, nickname, passwordHash]);
     const [result] = await connection.query(
-      'INSERT INTO child_profiles (guardian_id, nickname, avatar_key, grade_level, linked_seat_no) VALUES (?, ?, ?, ?, ?)',
-      [req.auth.sub, nickname, avatarKey, gradeLevel, seatNo]
+      'INSERT INTO child_profiles (guardian_id, nickname, gender, birthday, avatar_key, grade_level, linked_seat_no) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [req.auth.sub, nickname, gender, birthday, avatarKey, gradeLevel, seatNo]
     );
     await connection.commit();
-    res.json({ success: true, data: { id: result.insertId, nickname, avatarKey, gradeLevel, linked_seat_no: seatNo, has_password: !!passwordHash } });
+    res.json({ success: true, data: { id: result.insertId, nickname, gender, birthday, avatarKey, gradeLevel, linked_seat_no: seatNo, has_password: !!passwordHash } });
   } catch (err) {
     if (connection) await connection.rollback();
     res.status(500).json({ success: false, error: err.message });
@@ -271,12 +273,14 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
   }
 });
 
-// [API] 修改子女檔案 (暱稱、年級、密碼)
+// [API] 修改子女檔案 (暱稱、年級、性別、生日、密碼)
   router.put('/guardian/children/:childId', requireAuth, requireGuardianRole, async (req, res) => {
   const childId = Number(req.params.childId);
   const nickname = String(req.body?.nickname || '').trim().slice(0, 50);
   const gradeLevel = req.body?.gradeLevel ? String(req.body.gradeLevel).trim().slice(0, 20) : null;
   const childPassword = req.body?.childPassword ? String(req.body.childPassword).trim() : null;
+  const gender = req.body?.gender === 'girl' ? 'girl' : (req.body?.gender === 'boy' ? 'boy' : undefined);
+  const birthday = req.body?.birthday ? String(req.body.birthday).trim().slice(0, 10) : undefined;
   if (!Number.isInteger(childId)) return res.status(400).json({ success: false, error: '無效的子女檔案 ID' });
   if (!nickname) return res.status(400).json({ success: false, error: '暱稱不能為空' });
 
@@ -288,10 +292,27 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     if (rows.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
     const seatNo = rows[0].linked_seat_no;
 
-    await pool.query(
-      'UPDATE child_profiles SET nickname = ?, grade_level = ? WHERE id = ?',
-      [nickname, gradeLevel, childId]
-    );
+    if (gender !== undefined && birthday !== undefined) {
+      await pool.query(
+        'UPDATE child_profiles SET nickname = ?, grade_level = ?, gender = ?, birthday = ? WHERE id = ?',
+        [nickname, gradeLevel, gender, birthday, childId]
+      );
+    } else if (gender !== undefined) {
+      await pool.query(
+        'UPDATE child_profiles SET nickname = ?, grade_level = ?, gender = ? WHERE id = ?',
+        [nickname, gradeLevel, gender, childId]
+      );
+    } else if (birthday !== undefined) {
+      await pool.query(
+        'UPDATE child_profiles SET nickname = ?, grade_level = ?, birthday = ? WHERE id = ?',
+        [nickname, gradeLevel, birthday, childId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE child_profiles SET nickname = ?, grade_level = ? WHERE id = ?',
+        [nickname, gradeLevel, childId]
+      );
+    }
 
     if (seatNo) {
       if (childPassword) {
@@ -590,6 +611,144 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     }
   });
 }
+
+// ============================================================
+// 生理成長記錄 (Physical Growth Records)
+// ============================================================
+
+// [API] 獲取指定子女的生理資料與歷次量測記錄
+router.get('/guardian/children/:childId/growth', requireAuth, requireGuardianRole, async (req, res) => {
+  const childId = Number(req.params.childId);
+  if (!Number.isInteger(childId)) return res.status(400).json({ success: false, error: '無效的子女檔案 ID' });
+  try {
+    const [children] = await pool.query(
+      'SELECT id, nickname, gender, birthday, grade_level, linked_seat_no FROM child_profiles WHERE id = ? AND guardian_id = ?',
+      [childId, req.auth.sub]
+    );
+    if (children.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
+    const child = children[0];
+    const [records] = await pool.query(
+      'SELECT id, record_date, height_cm, weight_kg, bmi, note, created_at FROM child_growth_records WHERE child_id = ? ORDER BY record_date ASC, id ASC',
+      [childId]
+    );
+    res.json({
+      success: true,
+      child: {
+        id: child.id,
+        nickname: child.nickname,
+        gender: child.gender || 'boy',
+        birthday: child.birthday ? new Date(child.birthday).toISOString().slice(0, 10) : null,
+        grade_level: child.grade_level,
+        linked_seat_no: child.linked_seat_no
+      },
+      records: records.map(r => ({
+        id: r.id,
+        record_date: r.record_date ? new Date(r.record_date).toISOString().slice(0, 10) : '',
+        height_cm: Number(r.height_cm),
+        weight_kg: Number(r.weight_kg),
+        bmi: r.bmi != null ? Number(r.bmi) : Number((Number(r.weight_kg) / Math.pow(Number(r.height_cm) / 100, 2)).toFixed(1)),
+        note: r.note || '',
+        created_at: r.created_at
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// [API] 新增一筆身高體重測量紀錄
+router.post('/guardian/children/:childId/growth', requireAuth, requireGuardianRole, async (req, res) => {
+  const childId = Number(req.params.childId);
+  if (!Number.isInteger(childId)) return res.status(400).json({ success: false, error: '無效的子女檔案 ID' });
+  const heightCm = Number(req.body?.height_cm);
+  const weightKg = Number(req.body?.weight_kg);
+  const recordDate = String(req.body?.record_date || '').trim().slice(0, 10);
+  const note = req.body?.note ? String(req.body.note).trim().slice(0, 100) : null;
+
+  if (!recordDate || !/^\d{4}-\d{2}-\d{2}$/.test(recordDate)) {
+    return res.status(400).json({ success: false, error: '請輸入正確的測量日期 (YYYY-MM-DD)' });
+  }
+  if (isNaN(heightCm) || heightCm < 30 || heightCm > 250) {
+    return res.status(400).json({ success: false, error: '請輸入有效的身高數值 (30 ~ 250 cm)' });
+  }
+  if (isNaN(weightKg) || weightKg < 2 || weightKg > 200) {
+    return res.status(400).json({ success: false, error: '請輸入有效的體重數值 (2 ~ 200 kg)' });
+  }
+
+  try {
+    const [children] = await pool.query(
+      'SELECT id FROM child_profiles WHERE id = ? AND guardian_id = ?',
+      [childId, req.auth.sub]
+    );
+    if (children.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
+    const bmi = Number((weightKg / Math.pow(heightCm / 100, 2)).toFixed(1));
+    const [insertRes] = await pool.query(
+      'INSERT INTO child_growth_records (child_id, record_date, height_cm, weight_kg, bmi, note) VALUES (?, ?, ?, ?, ?, ?)',
+      [childId, recordDate, heightCm, weightKg, bmi, note]
+    );
+    res.json({
+      success: true,
+      data: {
+        id: insertRes.insertId,
+        child_id: childId,
+        record_date: recordDate,
+        height_cm: heightCm,
+        weight_kg: weightKg,
+        bmi,
+        note
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// [API] 刪除一筆測量記錄
+router.delete('/guardian/children/:childId/growth/:recordId', requireAuth, requireGuardianRole, async (req, res) => {
+  const childId = Number(req.params.childId);
+  const recordId = Number(req.params.recordId);
+  if (!Number.isInteger(childId) || !Number.isInteger(recordId)) {
+    return res.status(400).json({ success: false, error: '無效的參數' });
+  }
+  try {
+    const [children] = await pool.query(
+      'SELECT id FROM child_profiles WHERE id = ? AND guardian_id = ?',
+      [childId, req.auth.sub]
+    );
+    if (children.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
+    const [delRes] = await pool.query(
+      'DELETE FROM child_growth_records WHERE id = ? AND child_id = ?',
+      [recordId, childId]
+    );
+    if (delRes.affectedRows === 0) return res.status(404).json({ success: false, error: '找不到該筆測量記錄' });
+    res.json({ success: true, message: '測量記錄已成功刪除' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// [API] 快速更新子女的生理基本資料 (性別、生日)
+router.put('/guardian/children/:childId/gender-birthday', requireAuth, requireGuardianRole, async (req, res) => {
+  const childId = Number(req.params.childId);
+  const gender = req.body?.gender === 'girl' ? 'girl' : 'boy';
+  const birthday = req.body?.birthday ? String(req.body.birthday).trim().slice(0, 10) : null;
+  if (!Number.isInteger(childId)) return res.status(400).json({ success: false, error: '無效的子女檔案 ID' });
+
+  try {
+    const [children] = await pool.query(
+      'SELECT id FROM child_profiles WHERE id = ? AND guardian_id = ?',
+      [childId, req.auth.sub]
+    );
+    if (children.length === 0) return res.status(404).json({ success: false, error: '找不到該子女檔案' });
+    await pool.query(
+      'UPDATE child_profiles SET gender = ?, birthday = ? WHERE id = ?',
+      [gender, birthday, childId]
+    );
+    res.json({ success: true, message: '子女生理資訊已更新', gender, birthday });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
   return router;
 };

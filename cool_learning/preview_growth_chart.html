@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家長專區 - 生理成長記錄與生長曲線 預覽展示</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+  </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen text-slate-800">
+
+  <div class="max-w-5xl mx-auto space-y-6">
+    <!-- 頂部提示條 -->
+    <div class="bg-gradient-to-r from-[#173852] to-[#21546e] text-white p-5 rounded-2xl shadow-lg flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="px-2 py-0.5 rounded bg-emerald-500 text-white text-[11px] font-bold">預覽模式</span>
+          <h1 class="text-xl font-black">家長專區：學習成長紀錄更名與生理成長記錄（生長曲線）</h1>
+        </div>
+        <p class="text-xs text-slate-200">此頁面為新功能獨立預覽頁，包含產出之視覺概念設計圖與即時互動版本。</p>
+      </div>
+      <a href="index.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5">
+        <i class="fa-solid fa-arrow-left"></i> 返回主系統
+      </a>
+    </div>
+
+    <!-- 視覺設計概念圖 -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 class="font-black text-base text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-image text-teal-600"></i> 介面視覺設計圖 (UI Mockup)
+        </h2>
+        <span class="text-xs text-slate-400 font-medium">若下方圖片未自動顯示，可點擊檔案直接開啟</span>
+      </div>
+      
+      <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50 flex items-center justify-center">
+        <img src="growth_chart_preview.jpg" alt="家長專區生理成長記錄預覽圖" class="w-full h-auto object-cover max-h-[580px] shadow-inner">
+      </div>
+    </div>
+
+    <!-- 即時互動式面板展示 -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 class="font-black text-base text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-laptop-code text-teal-600"></i> 即時互動操作預覽 (Interactive Live Preview)
+        </h2>
+        <span class="text-xs bg-teal-50 text-teal-700 px-2.5 py-1 rounded-lg font-bold border border-teal-200">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 可切換指標與測試新增
+        </span>
+      </div>
+
+      <!-- 導覽標籤列 -->
+      <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+        <button class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-children"></i> 子女管理
+        </button>
+        <button class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-pie"></i> 學習追蹤
+        </button>
+        <button class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-award"></i> 學習成長紀錄
+        </button>
+        <!-- 新增之生理成長記錄 (啟用狀態) -->
+        <button class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-[#173852] text-white shadow-md flex items-center gap-1.5">
+          <i class="fa-solid fa-ruler-combined"></i> 生理成長記錄
+        </button>
+        <button class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-headset"></i> 聯絡客服
+        </button>
+        <button class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-brands fa-line text-emerald-600 text-sm"></i> LINE 社群
+        </button>
+      </div>
+
+      <!-- 生理頂部狀態摘要列 -->
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-700">選擇子女：</label>
+            <select id="demo-child-select" onchange="onChildChange(this.value)" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white shadow-sm focus:outline-none focus:border-teal-600">
+              <option value="61222">黃煒許 (61222)</option>
+              <option value="61223">林佩珊 (61223)</option>
+            </select>
+          </div>
+          <div class="px-2.5 py-1 text-xs font-bold bg-white text-slate-700 rounded-lg border border-slate-300 shadow-sm flex items-center gap-1.5">
+            <span id="demo-gender-badge" class="px-1.5 py-0.5 rounded text-[11px] bg-blue-100 text-blue-700 font-bold"><i class="fa-solid fa-mars"></i> 男童</span>
+            <span id="demo-age-text" class="text-slate-600">11 歲 8 個月</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[11px]">最新身高</span>
+            <span id="demo-height" class="font-black text-slate-800 text-sm">148.5</span>
+            <span class="text-[10px] text-slate-400 font-bold">cm</span>
+          </div>
+          <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[11px]">最新體重</span>
+            <span id="demo-weight" class="font-black text-slate-800 text-sm">39.2</span>
+            <span class="text-[10px] text-slate-400 font-bold">kg</span>
+          </div>
+          <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[11px]">BMI</span>
+            <span id="demo-bmi" class="font-black text-teal-700 text-sm">17.8</span>
+          </div>
+          <div id="demo-percentile-pill" class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+            <i class="fa-solid fa-gauge-high text-emerald-600 text-xs"></i>
+            <span id="demo-percentile-text">約 65th (生長正常健康)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 學習成長紀錄連動預覽卡片 (呈現雙向切換) -->
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-xs text-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-award text-amber-500"></i> 【學習成長紀錄】即時連動預覽
+          </h4>
+          <span class="text-[11px] text-slate-400 font-medium">切換子女時，學習與生理兩大面板將同步更新！</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+              <span>數學錯題掌握</span>
+              <span id="demo-math-rate" class="text-emerald-600 font-black">100%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div id="demo-math-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 100%"></div>
+            </div>
+          </div>
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+              <span>自然錯題掌握</span>
+              <span id="demo-nature-rate" class="text-amber-600 font-black">80%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div id="demo-nature-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 80%"></div>
+            </div>
+          </div>
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+              <span>社會錯題掌握</span>
+              <span id="demo-social-rate" class="text-orange-600 font-black">65%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div id="demo-social-bar" class="bg-orange-500 h-2 rounded-full transition-all duration-500" style="width: 65%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主體雙欄排版 -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- 左欄：圖表卡片 -->
+        <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-teal-600"></i> 0-18歲兒童生長曲線百分位圖表
+              </h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">依據台灣衛生福利部國民健康署兒童常模標準</p>
+            </div>
+
+            <!-- 切換按鈕 -->
+            <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+              <button onclick="switchMetric('height')" id="btn-h" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-[#173852] text-white shadow-sm">
+                身高曲線
+              </button>
+              <button onclick="switchMetric('weight')" id="btn-w" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900">
+                體重曲線
+              </button>
+              <button onclick="switchMetric('bmi')" id="btn-b" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900">
+                BMI 曲線
+              </button>
+            </div>
+          </div>
+
+          <div class="relative w-full h-[320px]">
+            <canvas id="demo-chart"></canvas>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5">
+            <div class="flex flex-wrap items-center gap-3.5 text-[11px] font-bold text-slate-600">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-slate-400 rounded-full inline-block"></span> P97 (97%)</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-teal-500 rounded-full inline-block"></span> P85 (85%)</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1.5 bg-emerald-600 rounded-full inline-block"></span> P50 (50%中位線)</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-cyan-500 rounded-full inline-block"></span> P15 (15%)</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-indigo-400 rounded-full inline-block"></span> P3 (3%)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-amber-500 border-2 border-white rounded-full inline-block shadow-sm"></span> 孩子測量點</span>
+            </div>
+            <p class="text-[11px] text-slate-500 leading-relaxed pt-1">
+              💡 <b>醫師小衛教</b>：一般而言，孩子的生長曲線落在第 3 至第 97 百分位之間皆屬正常發育範圍。觀察生長關鍵在於<b>持續穩定的曲線走向</b>，若突然跨越兩個主要百分位區間，建議向兒科醫師諮詢。
+            </p>
+          </div>
+        </div>
+
+        <!-- 右欄：新增測量與歷史記錄 -->
+        <div class="lg:col-span-5 space-y-4">
+          <!-- 表單 -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <h4 class="font-bold text-sm text-slate-800 flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-teal-600"></i> 新增身高體重測量
+              </span>
+              <span class="text-[11px] text-slate-400 font-normal">定期量測掌握發育</span>
+            </h4>
+            <form onsubmit="addDemoRecord(event)" class="space-y-3">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">測量日期</label>
+                  <input type="date" id="in-date" required value="2024-11-21" class="w-full py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-300">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">身高 (cm)</label>
+                  <input type="number" id="in-h" step="0.1" required value="148.5" class="w-full py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-300">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">體重 (kg)</label>
+                  <input type="number" id="in-w" step="0.1" required value="39.2" class="w-full py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-300">
+                </div>
+              </div>
+              <input type="text" id="in-n" placeholder="備註 (如：六年級上學期健檢)" class="w-full py-2 px-3 text-xs font-medium rounded-lg border border-slate-300">
+              <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-teal-600 to-cyan-700 text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 hover:opacity-90">
+                <i class="fa-solid fa-check"></i> 儲存測量紀錄並更新曲線
+              </button>
+            </form>
+          </div>
+
+          <!-- 歷史 -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> 近期測量紀錄
+              </h4>
+              <span id="demo-count" class="text-xs text-slate-400 font-bold">共 3 筆</span>
+            </div>
+            <div id="demo-history-list" class="space-y-2 max-h-[260px] overflow-y-auto">
+              <!-- 動態生成 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const NORMS = {
+      ages: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      height: {
+        p3:  [46.1, 71.0, 82.5, 90.7, 97.6, 104.0, 110.0, 115.5, 120.5, 125.0, 130.0, 134.5, 140.5, 148.0, 155.0, 160.0, 162.5, 163.5, 164.0],
+        p15: [47.9, 73.4, 85.1, 93.5, 100.5, 107.0, 113.5, 119.0, 124.5, 129.5, 135.0, 140.0, 147.0, 155.0, 161.5, 165.5, 167.5, 168.5, 169.0],
+        p50: [49.9, 75.7, 87.8, 96.1, 103.3, 110.0, 117.0, 123.0, 128.5, 134.0, 140.0, 146.0, 154.0, 162.0, 168.0, 171.0, 172.5, 173.5, 174.0],
+        p85: [51.8, 78.1, 90.4, 99.1, 106.4, 113.5, 121.0, 127.5, 133.5, 139.5, 146.0, 153.0, 161.5, 169.5, 174.5, 177.0, 178.5, 179.5, 180.0],
+        p97: [53.7, 80.5, 93.2, 102.1, 109.5, 117.0, 125.0, 132.0, 138.5, 145.0, 152.0, 160.0, 168.5, 175.5, 180.0, 182.0, 183.5, 184.5, 185.0]
+      },
+      weight: {
+        p3:  [2.5, 7.7,  9.7, 11.3, 12.7, 14.1, 16.0, 18.0, 20.5, 23.0, 26.0, 29.0, 33.0, 38.0, 43.0, 47.0, 50.0, 52.0, 53.0],
+        p15: [2.9, 8.6, 10.8, 12.7, 14.4, 16.1, 18.0, 20.5, 23.0, 26.0, 29.5, 34.0, 38.5, 44.0, 49.0, 53.0, 55.5, 57.5, 58.5],
+        p50: [3.3, 9.6, 12.2, 14.3, 16.3, 18.3, 20.5, 23.5, 26.5, 30.5, 35.0, 40.5, 46.5, 52.5, 57.5, 61.5, 64.0, 65.5, 66.5],
+        p85: [3.9, 10.8, 13.6, 16.2, 18.6, 21.2, 24.0, 28.0, 32.0, 37.0, 43.0, 49.5, 56.5, 63.0, 68.0, 71.5, 74.0, 76.0, 77.0],
+        p97: [4.4, 12.0, 15.3, 18.3, 21.2, 24.2, 28.0, 33.0, 38.0, 45.0, 52.0, 60.0, 67.5, 74.0, 79.0, 82.5, 85.0, 87.0, 88.0]
+      },
+      bmi: {
+        p3:  [11.5, 14.3, 14.1, 13.7, 13.5, 13.4, 13.5, 13.7, 14.0, 14.4, 14.9, 15.4, 16.0, 16.6, 17.2, 17.8, 18.2, 18.5, 18.7],
+        p15: [12.4, 15.1, 14.8, 14.5, 14.2, 14.1, 14.2, 14.4, 14.8, 15.3, 15.9, 16.5, 17.2, 17.9, 18.6, 19.2, 19.7, 20.0, 20.3],
+        p50: [13.4, 16.2, 15.7, 15.3, 15.1, 15.1, 15.2, 15.5, 16.0, 16.7, 17.4, 18.2, 19.0, 19.8, 20.6, 21.3, 21.9, 22.3, 22.5],
+        p85: [14.6, 17.3, 16.8, 16.5, 16.3, 16.4, 16.7, 17.3, 18.0, 18.9, 19.9, 20.9, 21.9, 22.8, 23.6, 24.3, 24.8, 25.2, 25.5],
+        p97: [15.8, 18.5, 18.0, 17.7, 17.6, 17.8, 18.3, 19.2, 20.2, 21.4, 22.6, 23.8, 24.9, 25.8, 26.6, 27.2, 27.8, 28.2, 28.5]
+      }
+    };
+
+    const CHILDREN_DATA = {
+      '61222': {
+        name: '黃煒許',
+        seat: '61222',
+        gender: 'boy',
+        ageStr: '11 歲 8 個月',
+        height: 148.5,
+        weight: 39.2,
+        bmi: 17.8,
+        percentile: '約 65th (生長正常健康)',
+        mathRate: '100%',
+        natureRate: '80%',
+        socialRate: '65%',
+        records: [
+          { date: '2024-11-21', age: 11.67, ageStr: '11 歲 8 個月', h: 148.5, w: 39.2, bmi: 17.8, note: '學校六年級健檢' },
+          { date: '2024-05-18', age: 11.17, ageStr: '11 歲 2 個月', h: 145.2, w: 37.0, bmi: 17.5, note: '定期居家測量' },
+          { date: '2023-11-15', age: 10.67, ageStr: '10 歲 8 個月', h: 141.0, w: 34.5, bmi: 17.3, note: '五年級上學期健檢' }
+        ]
+      },
+      '61223': {
+        name: '林佩珊',
+        seat: '61223',
+        gender: 'girl',
+        ageStr: '10 歲 4 個月',
+        height: 139.0,
+        weight: 32.5,
+        bmi: 16.8,
+        percentile: '約 50th (生長正常健康)',
+        mathRate: '88%',
+        natureRate: '100%',
+        socialRate: '92%',
+        records: [
+          { date: '2024-10-15', age: 10.33, ageStr: '10 歲 4 個月', h: 139.0, w: 32.5, bmi: 16.8, note: '五年級定期健檢' },
+          { date: '2024-04-10', age: 9.83, ageStr: '9 歲 10 個月', h: 135.5, w: 30.2, bmi: 16.5, note: '學校四年級健檢' },
+          { date: '2023-10-05', age: 9.33, ageStr: '9 歲 4 個月', h: 132.0, w: 28.0, bmi: 16.1, note: '居家測量' }
+        ]
+      }
+    };
+
+    let currentChildKey = '61222';
+    let curMetric = 'height';
+    let records = [...CHILDREN_DATA['61222'].records];
+    let chartInst = null;
+
+    function onChildChange(childSeat) {
+      currentChildKey = childSeat;
+      const c = CHILDREN_DATA[childSeat] || CHILDREN_DATA['61222'];
+      records = [...c.records];
+
+      // 更新生理摘要
+      document.getElementById('demo-age-text').textContent = c.ageStr;
+      const gBadge = document.getElementById('demo-gender-badge');
+      if (c.gender === 'girl') {
+        gBadge.className = 'px-1.5 py-0.5 rounded text-[11px] bg-pink-100 text-pink-700 font-bold';
+        gBadge.innerHTML = '<i class="fa-solid fa-venus"></i> 女童';
+      } else {
+        gBadge.className = 'px-1.5 py-0.5 rounded text-[11px] bg-blue-100 text-blue-700 font-bold';
+        gBadge.innerHTML = '<i class="fa-solid fa-mars"></i> 男童';
+      }
+
+      document.getElementById('demo-height').textContent = c.height;
+      document.getElementById('demo-weight').textContent = c.weight;
+      document.getElementById('demo-bmi').textContent = c.bmi;
+      document.getElementById('demo-percentile-text').textContent = c.percentile;
+
+      // 同步更新【學習成長紀錄】精熟掌握率
+      document.getElementById('demo-math-rate').textContent = c.mathRate;
+      document.getElementById('demo-math-bar').style.width = c.mathRate;
+      document.getElementById('demo-nature-rate').textContent = c.natureRate;
+      document.getElementById('demo-nature-bar').style.width = c.natureRate;
+      document.getElementById('demo-social-rate').textContent = c.socialRate;
+      document.getElementById('demo-social-bar').style.width = c.socialRate;
+
+      renderHistory();
+      drawChart();
+    }
+
+    function renderHistory() {
+      const el = document.getElementById('demo-history-list');
+      document.getElementById('demo-count').textContent = `共 ${records.length} 筆`;
+      el.innerHTML = records.map((r, idx) => `
+        <div class="p-3 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-slate-800">${r.date}</span>
+              <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">${r.ageStr}</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">生長正常</span>
+            </div>
+            <div class="text-slate-500 font-medium">
+              身高: <b class="text-slate-800">${r.h}</b> cm ｜ 體重: <b class="text-slate-800">${r.w}</b> kg ｜ BMI: <b class="text-teal-700">${r.bmi}</b>
+              ${r.note ? ` (${r.note})` : ''}
+            </div>
+          </div>
+          <button onclick="removeRecord(${idx})" class="text-slate-300 hover:text-rose-500 p-1"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      `).join('');
+    }
+
+    function removeRecord(idx) {
+      records.splice(idx, 1);
+      renderHistory();
+      drawChart();
+    }
+
+    function switchMetric(m) {
+      curMetric = m;
+      ['height', 'weight', 'bmi'].forEach(id => {
+        const btn = document.getElementById('btn-' + id[0]);
+        if (id === m) {
+          btn.className = 'px-3 py-1 rounded-md text-xs font-bold transition-all bg-[#173852] text-white shadow-sm';
+        } else {
+          btn.className = 'px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900';
+        }
+      });
+      drawChart();
+    }
+
+    function drawChart() {
+      const ctx = document.getElementById('demo-chart').getContext('2d');
+      const data = NORMS[curMetric];
+      const pts = records.map(r => ({
+        x: r.age,
+        y: curMetric === 'height' ? r.h : (curMetric === 'weight' ? r.w : r.bmi),
+        date: r.date,
+        h: r.h, w: r.w, bmi: r.bmi
+      }));
+
+      if (chartInst) chartInst.destroy();
+      chartInst = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: NORMS.ages,
+          datasets: [
+            {
+              label: '【孩子量測記錄】',
+              data: pts,
+              borderColor: '#f59e0b',
+              backgroundColor: '#f59e0b',
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              borderWidth: 2,
+              borderDash: [4, 4],
+              tension: 0.2,
+              order: 1
+            },
+            { label: 'P97', data: data.p97, borderColor: '#475569', borderWidth: 1.5, pointRadius: 0, tension: 0.35, order: 2 },
+            { label: 'P85', data: data.p85, borderColor: '#0284c7', backgroundColor: 'rgba(2,132,199,0.08)', borderWidth: 1.5, pointRadius: 0, fill: '+1', tension: 0.35, order: 3 },
+            { label: 'P50 (中位數)', data: data.p50, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.12)', borderWidth: 2.5, pointRadius: 0, fill: '-1', tension: 0.35, order: 4 },
+            { label: 'P15', data: data.p15, borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)', borderWidth: 1.5, pointRadius: 0, fill: '+1', tension: 0.35, order: 5 },
+            { label: 'P3', data: data.p3, borderColor: '#6366f1', borderWidth: 1.5, pointRadius: 0, tension: 0.35, order: 6 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { type: 'linear', min: 0, max: 18, title: { display: true, text: '年齡 (歲)' } },
+            y: { title: { display: true, text: curMetric === 'height' ? '身高 (cm)' : (curMetric === 'weight' ? '體重 (kg)' : 'BMI') } }
+          }
+        }
+      });
+    }
+
+    function addDemoRecord(e) {
+      e.preventDefault();
+      const d = document.getElementById('in-date').value;
+      const h = Number(document.getElementById('in-h').value);
+      const w = Number(document.getElementById('in-w').value);
+      const note = document.getElementById('in-n').value;
+      const bmi = Number((w / Math.pow(h/100, 2)).toFixed(1));
+
+      records.unshift({
+        date: d,
+        age: 11.67,
+        ageStr: '11 歲 8 個月',
+        h, w, bmi, note
+      });
+
+      document.getElementById('demo-height').textContent = h;
+      document.getElementById('demo-weight').textContent = w;
+      document.getElementById('demo-bmi').textContent = bmi;
+      document.getElementById('in-n').value = '';
+
+      renderHistory();
+      drawChart();
+    }
+
+    renderHistory();
+    drawChart();
+  </script>
+</body>
+</html>

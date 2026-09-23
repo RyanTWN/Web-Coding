@@ -22,6 +22,8 @@
 
   <!-- Google Identity Services (GIS) SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Chart.js 生長曲線繪圖庫 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen is-login-state">
 
@@ -331,7 +333,7 @@
         </div>
       </div>
 
-      <!-- 5 大功能分頁籤 -->
+      <!-- 6 大功能分頁籤 -->
       <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-100 pb-3">
         <button id="guardian-tab-children" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all bg-[#173852] text-white shadow-md flex items-center gap-1.5">
           <i class="fa-solid fa-children"></i> 子女管理
@@ -340,7 +342,10 @@
           <i class="fa-solid fa-chart-pie"></i> 學習追蹤
         </button>
         <button id="guardian-tab-growth" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
-          <i class="fa-solid fa-award"></i> 成長記錄
+          <i class="fa-solid fa-award"></i> 學習成長紀錄
+        </button>
+        <button id="guardian-tab-physical" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-ruler-combined"></i> 生理成長記錄
         </button>
         <button id="guardian-tab-support" class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
           <i class="fa-solid fa-headset"></i> 聯絡客服
@@ -492,7 +497,152 @@
         </div>
       </div>
 
-      <!-- 4. 聯絡客服面板 -->
+      <!-- 4. 生理成長記錄面板 -->
+      <div id="guardian-panel-physical" class="hidden space-y-5">
+        <!-- 頂部子女選擇與生理摘要卡 -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-bold text-slate-700">選擇子女：</label>
+              <select id="physical-child-select" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white shadow-sm focus:outline-none focus:border-teal-600">
+              </select>
+            </div>
+            <!-- 性別與年齡設定快捷按鈕 -->
+            <button id="btn-edit-child-bio" type="button" title="點擊設定生理性別與生日" class="px-2.5 py-1 text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 shadow-sm flex items-center gap-1.5 transition-all">
+              <span id="physical-gender-badge" class="px-1.5 py-0.5 rounded text-[11px] bg-blue-100 text-blue-700 font-bold"><i class="fa-solid fa-mars"></i> 男童</span>
+              <span id="physical-age-text" class="text-slate-600">-- 歲 -- 個月</span>
+              <i class="fa-solid fa-pen-to-square text-slate-400 text-[10px]"></i>
+            </button>
+          </div>
+          
+          <!-- 生理快見指標條 -->
+          <div class="flex flex-wrap items-center gap-2.5 text-xs">
+            <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5">
+              <span class="text-slate-400 font-medium text-[11px]">最新身高</span>
+              <span id="quick-height" class="font-black text-slate-800 text-sm">--</span>
+              <span class="text-[10px] text-slate-400 font-bold">cm</span>
+            </div>
+            <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5">
+              <span class="text-slate-400 font-medium text-[11px]">最新體重</span>
+              <span id="quick-weight" class="font-black text-slate-800 text-sm">--</span>
+              <span class="text-[10px] text-slate-400 font-bold">kg</span>
+            </div>
+            <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5">
+              <span class="text-slate-400 font-medium text-[11px]">BMI</span>
+              <span id="quick-bmi" class="font-black text-teal-700 text-sm">--</span>
+            </div>
+            <div id="quick-percentile-pill" class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+              <i class="fa-solid fa-gauge-high text-emerald-600 text-xs"></i>
+              <span id="quick-percentile">生長常模正常</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 主體網格：左側圖表 (7 cols)，右側記錄與歷史 (5 cols) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- 左側：生長曲線圖表卡片 -->
+          <div class="lg:col-span-7 bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-teal-600"></i> 0-18歲兒童生長曲線百分位圖表
+                  </h4>
+                  <p class="text-[11px] text-slate-500 mt-0.5">依據台灣衛生福利部國民健康署兒童常模標準繪製</p>
+                </div>
+
+                <!-- 指標切換：身高 / 體重 / BMI -->
+                <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+                  <button type="button" id="btn-metric-height" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-[#173852] text-white shadow-sm">
+                    身高曲線
+                  </button>
+                  <button type="button" id="btn-metric-weight" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900">
+                    體重曲線
+                  </button>
+                  <button type="button" id="btn-metric-bmi" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900">
+                    BMI 曲線
+                  </button>
+                </div>
+              </div>
+
+              <!-- 圖表畫布容器 -->
+              <div class="relative w-full h-[320px] sm:h-[350px] mt-2">
+                <canvas id="growth-curve-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- 百分位圖例與衛教指引 -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-xs space-y-1.5 mt-2">
+              <div class="flex flex-wrap items-center gap-3.5 text-[11px] font-bold text-slate-600">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-slate-400 rounded-full inline-block"></span> P97 (97%)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-teal-500 rounded-full inline-block"></span> P85 (85%)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-1.5 bg-emerald-600 rounded-full inline-block"></span> P50 (50%中位線)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-cyan-500 rounded-full inline-block"></span> P15 (15%)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-indigo-400 rounded-full inline-block"></span> P3 (3%)</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-amber-500 border-2 border-white rounded-full inline-block shadow-sm"></span> 孩子測量點</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-relaxed pt-1">
+                💡 <b>醫師小衛教</b>：一般而言，孩子的生長曲線落在第 3 至第 97 百分位之間皆屬正常發育範圍。觀察生長關鍵在於<b>持續穩定的曲線走向</b>，若突然跨越兩個主要百分位區間，建議向兒科醫師諮詢。
+              </p>
+            </div>
+          </div>
+
+          <!-- 右側：新增量測與歷史記錄清單 -->
+          <div class="lg:col-span-5 space-y-4">
+            <!-- 新增測量表單卡片 -->
+            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-3">
+              <h4 class="font-bold text-sm text-slate-800 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                  <i class="fa-solid fa-plus-circle text-teal-600"></i> 新增身高體重測量
+                </span>
+                <span class="text-[11px] text-slate-400 font-normal">定期量測掌握發育</span>
+              </h4>
+
+              <form id="form-add-growth-record" class="space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1 ml-0.5">測量日期</label>
+                    <input type="date" id="input-growth-date" required class="w-full py-2 px-2.5 text-xs font-bold rounded-lg border border-slate-300 focus:outline-none focus:border-teal-600 bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1 ml-0.5">身高 (cm)</label>
+                    <input type="number" id="input-growth-height" required step="0.1" min="30" max="250" placeholder="如 148.5" class="w-full py-2 px-2.5 text-xs font-bold rounded-lg border border-slate-300 focus:outline-none focus:border-teal-600 bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1 ml-0.5">體重 (kg)</label>
+                    <input type="number" id="input-growth-weight" required step="0.1" min="2" max="200" placeholder="如 39.2" class="w-full py-2 px-2.5 text-xs font-bold rounded-lg border border-slate-300 focus:outline-none focus:border-teal-600 bg-white">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1 ml-0.5">備註 (可選)</label>
+                  <input type="text" id="input-growth-note" maxlength="50" placeholder="例如：學校健檢、在家量測" class="w-full py-2 px-3 text-xs font-medium rounded-lg border border-slate-300 focus:outline-none focus:border-teal-600 bg-white">
+                </div>
+
+                <button type="submit" id="btn-save-growth" class="w-full py-2.5 bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 active:scale-98 transition-all">
+                  <i class="fa-solid fa-check"></i> 儲存測量紀錄並更新曲線
+                </button>
+              </form>
+            </div>
+
+            <!-- 近期測量歷史列表 -->
+            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                  <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> 近期測量紀錄
+                </h4>
+                <span id="growth-records-count" class="text-xs text-slate-400 font-bold">共 0 筆</span>
+              </div>
+
+              <div id="growth-history-container" class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                <!-- 由 JS 動態渲染歷史紀錄 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 聯絡客服面板 -->
       <div id="guardian-panel-support" class="hidden space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
@@ -592,6 +742,19 @@
             <option value="國中七年級">國中七年級</option>
           </select>
         </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">生理性別</label>
+            <select id="input-child-gender" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800 bg-white">
+              <option value="boy">男童 (Boy)</option>
+              <option value="girl">女童 (Girl)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">出生日期 (可選)</label>
+            <input type="date" id="input-child-birthday" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-bold text-slate-800 bg-white">
+          </div>
+        </div>
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1 ml-1">孩子獨立登入密碼 (可選)</label>
           <input type="password" id="input-child-password" placeholder="留空則僅由家長代登；填寫可供孩子自行登入" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none text-xs font-medium text-slate-800">
@@ -652,8 +815,49 @@
     </div>
   </div>
 
+  <!-- 子女性別與生日快速設定彈窗 -->
+  <div id="modal-child-bio" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-white/60 card-flip-enter space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-black text-sm text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-id-card-clip text-teal-600"></i> 設定子女性別與出生日期
+        </h3>
+        <button type="button" id="btn-close-bio-modal" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 leading-relaxed">
+        衛福部兒童生長曲線百分位常模會依據<b>生理性別</b>與<b>精確月齡</b>進行對照計算，請協助確認填寫：
+      </p>
+      <form id="form-child-bio" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">生理性別</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50 has-[:checked]:text-teal-800 font-bold text-xs">
+              <input type="radio" name="child-bio-gender" id="child-bio-gender-boy" value="boy" class="accent-teal-600" checked>
+              <i class="fa-solid fa-mars text-blue-500"></i> 男童 (Boy)
+            </label>
+            <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50 has-[:checked]:text-teal-800 font-bold text-xs">
+              <input type="radio" name="child-bio-gender" id="child-bio-gender-girl" value="girl" class="accent-teal-600">
+              <i class="fa-solid fa-venus text-pink-500"></i> 女童 (Girl)
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">出生日期 (Birthday)</label>
+          <input type="date" id="input-child-bio-birthday" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:outline-none focus:border-teal-600 text-xs font-bold text-slate-800 bg-white">
+          <p class="text-[10px] text-slate-400 mt-1">若不確定日期，系統將以國小各年級標準年齡推算</p>
+        </div>
+        <div class="pt-2 flex gap-2">
+          <button type="button" id="btn-cancel-bio-modal" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50">取消</button>
+          <button type="submit" id="btn-submit-bio-form" class="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md">儲存並重繪曲線</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260923-fix-guardian-children"></script>
+  <script src="assets/js/app.js?v=20260923-physical-growth-chart"></script>
   <script src="assets/js/quiz.js"></script>
 
 <!-- 付費解鎖彈窗 -->
