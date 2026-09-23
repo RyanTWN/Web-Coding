@@ -41,6 +41,43 @@
     .game-card:hover {
       transform: translateY(-6px) scale(1.015);
     }
+
+    /* 成語疊疊樂專用樣式 */
+    .idiom-grid-cell {
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .idiom-block-btn {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 0 #047857, 0 8px 12px rgba(0,0,0,0.15);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .idiom-block-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 0 #047857, 0 10px 16px rgba(0,0,0,0.2);
+    }
+    .idiom-block-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #047857, 0 4px 6px rgba(0,0,0,0.15);
+    }
+    .idiom-slot-active {
+      box-shadow: 0 0 0 4px #10b981, 0 0 16px rgba(16, 185, 129, 0.5) !important;
+      animation: slotPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes slotPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    @keyframes blockPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      70% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-block-pop {
+      animation: blockPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
   </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col justify-between p-3 sm:p-6">
@@ -175,15 +212,18 @@
           </div>
         </div>
 
-        <!-- 遊戲 2: 成語疊疊樂 (即將推出) -->
-        <div onclick="showGameToast('成語疊疊樂正在加緊製作中，敬請期待！')" class="game-card bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50/80 border-2 border-emerald-300/70 hover:border-emerald-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+        <!-- 遊戲 2: 成語疊疊樂 (即刻開戰) -->
+        <div onclick="openIdiomGame()" class="game-card bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50/80 border-2 border-emerald-300/80 hover:border-emerald-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+          <!-- 背景裝飾微光 -->
+          <div class="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-emerald-200/50 blur-xl pointer-events-none"></div>
+
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold text-xs">
-                <i class="fa-solid fa-clock"></i> 即將推出
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-xs shadow-xs animate-bounce">
+                <i class="fa-solid fa-fire"></i> 即刻開戰
               </span>
               <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                國語成語 200 題庫
+                成語縱橫 × 洞築機先
               </span>
             </div>
 
@@ -218,13 +258,13 @@
               成語疊疊樂 <i class="fa-solid fa-cubes-stacked text-emerald-600"></i>
             </h3>
             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-              辨識字音字形與精確語意，將四字成語積木精準堆疊！看誰能堆出最高的智慧博學之塔！
+              公視《一字千金》「洞築機先」經典玩法！十字交錯的成語填空，點擊漢字積木精準填入交會孔洞，堆出智慧高塔！
             </p>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-emerald-700 font-bold text-sm">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-hourglass-half"></i> 敬請期待</span>
-            <i class="fa-solid fa-lock text-emerald-400"></i>
+          <div class="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-emerald-700 font-black text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始堆疊！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
           </div>
         </div>
 
@@ -565,7 +605,138 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- 遊戲 2: 成語疊疊樂 (Idiom Stacker) - 縱橫交錯・洞築機先                      -->
+  <!-- ========================================================================= -->
+  <section id="view-game-idiom" class="w-full max-w-4xl mx-auto hidden pb-8">
+    <div class="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-emerald-300 p-4 sm:p-6 shadow-xl relative overflow-hidden">
+
+      <!-- 頂部資訊列 (關卡、智慧星數、生命/機會、返回、音效) -->
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-emerald-200/80">
+        <div class="flex items-center gap-3">
+          <button onclick="backToGamesLobbyFromIdiom()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>回遊戲大廳</span>
+          </button>
+          <div>
+            <h2 class="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2 leading-tight">
+              成語疊疊樂 <span class="text-xs px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-bold">洞築機先</span>
+            </h2>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span id="idiom-level-badge" class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">第 1 關</span>
+              <span id="idiom-mode-badge" class="text-xs font-bold text-slate-500">十字交錯</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- 得分 / 積木塔星數 -->
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs shadow-xs">
+            <i class="fa-solid fa-crown text-amber-500"></i>
+            <span>通關: <span id="idiom-score-count" class="text-sm">0</span></span>
+          </div>
+
+          <!-- 機會愛心 (3 顆血) -->
+          <div id="idiom-lives-container" class="flex items-center gap-1 bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-200 text-rose-500 text-sm shadow-xs">
+            <i class="fa-solid fa-heart" id="idiom-life-1"></i>
+            <i class="fa-solid fa-heart" id="idiom-life-2"></i>
+            <i class="fa-solid fa-heart" id="idiom-life-3"></i>
+          </div>
+
+          <!-- 音效開關 -->
+          <button onclick="toggleGameSound()" title="音效開關" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-sm shadow-sm transition-all">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 玩法引導提示 -->
+      <div class="flex items-center justify-between px-3 py-1.5 bg-emerald-50/90 rounded-lg mb-4 text-xs font-bold border border-emerald-100">
+        <div class="flex items-center gap-2 text-emerald-900">
+          <i class="fa-solid fa-lightbulb text-amber-500 text-sm"></i>
+          <span>觀察成語縱橫上下文，點選下方漢字積木填入正確孔洞！</span>
+        </div>
+        <button onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="text-emerald-700 hover:text-emerald-900 underline text-xs font-black flex items-center gap-1 cursor-pointer">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 提示
+        </button>
+      </div>
+
+      <!-- 成語縱橫棋盤容器 (立體交錯盤) -->
+      <div class="w-full bg-gradient-to-b from-amber-50/80 via-emerald-50/40 to-teal-50/80 rounded-2xl border-2 border-emerald-200/90 p-4 sm:p-6 mb-5 shadow-inner flex flex-col items-center justify-center min-h-[300px]">
+        <div id="idiom-grid-board" class="inline-grid gap-2 sm:gap-2.5 justify-center items-center my-auto">
+          <!-- JS 動態生成成語交錯矩陣與孔洞 -->
+        </div>
+      </div>
+
+      <!-- 下方：備選漢字積木區 (6~8 塊木質/翡翠質感積木按鈕) -->
+      <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-2xl p-4 border-2 border-emerald-300/80 shadow-md text-center">
+        <div class="flex items-center justify-between text-xs font-bold text-emerald-800 mb-2.5 px-1">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-cubes text-emerald-600"></i> 請選擇漢字積木填入：</span>
+          <span id="idiom-target-hint" class="text-emerald-600 font-normal">點擊或拖曳置入空格</span>
+        </div>
+
+        <div id="idiom-pool-container" class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5 max-w-xl mx-auto py-1">
+          <!-- JS 動態生成候選積木 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 成語疊疊樂 - 通關慶祝卡片 (釋義、注音、例句全解析)                    -->
+  <!-- ========================================================================= -->
+  <div id="idiom-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-emerald-400 card-flip-enter max-h-[90vh] overflow-y-auto">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-2 border-emerald-300 shadow-sm animate-bounce">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-0.5">太厲害了！完全答對！</h3>
+      <p class="text-xs text-emerald-600 font-bold mb-4">成語積木精準咬合，智慧博學之塔又增高一層！</p>
+
+      <!-- 包含的成語詳細解說卡 -->
+      <div id="idiom-success-details" class="space-y-3 mb-5 text-left">
+        <!-- JS 動態填入本關成語解析 (注音、釋義、例句) -->
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="window.coolGameIdiom && window.coolGameIdiom.nextLevel()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md text-base transition-all active:scale-95 flex items-center justify-center gap-2">
+          <span>晉級下一關</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 成語疊疊樂 - 遊戲結束 (機會用盡)                                      -->
+  <!-- ========================================================================= -->
+  <div id="idiom-gameover-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-2 border-rose-300 card-flip-enter">
+      <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-2 border-rose-300 shadow-sm">
+        <i class="fa-solid fa-heart-crack"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-1">差一點點！機會用盡</h3>
+      <p class="text-xs text-slate-500 mb-4">別氣餒，成語越玩越熟悉，再來挑戰一次吧！</p>
+
+      <div class="bg-emerald-50 rounded-xl p-3.5 border border-emerald-200 mb-5">
+        <span class="text-xs text-emerald-700 block font-medium">本次共連續闖過</span>
+        <span id="idiom-gameover-score" class="text-3xl font-black text-emerald-600">0</span>
+        <span class="text-xs text-emerald-700 block font-medium mt-0.5">座智慧成語積木塔</span>
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="restartIdiomGame()" class="w-full py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 重新挑戰！
+        </button>
+        <button onclick="closeIdiomGameOverAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/config.js"></script>
+  <script src="assets/js/data/idioms200.js"></script>
   <script src="assets/js/games.js"></script>
 
   <script>
@@ -661,6 +832,47 @@
         modal.classList.remove('flex');
       }
       backToGamesLobbyFromMouse();
+    }
+
+    // 成語疊疊樂控制器
+    function openIdiomGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      const idiomView = document.getElementById('view-game-idiom');
+      idiomView.classList.remove('hidden');
+
+      if (window.coolGameIdiom) {
+        window.coolGameIdiom.start();
+      }
+    }
+
+    function backToGamesLobbyFromIdiom() {
+      if (window.coolGameIdiom) {
+        window.coolGameIdiom.isRunning = false;
+      }
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartIdiomGame() {
+      const modal = document.getElementById('idiom-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      if (window.coolGameIdiom) {
+        window.coolGameIdiom.start();
+      }
+    }
+
+    function closeIdiomGameOverAndBack() {
+      const modal = document.getElementById('idiom-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromIdiom();
     }
 
     function toggleGameSound() {

@@ -246,6 +246,46 @@
       osc.start(t);
       osc.stop(t + 0.5);
     }
+
+    // 成語積木放置/咬合音：厚實木質啪搭聲 (Woodblock Snap)
+    playBlockSnap() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(420, t);
+      osc.frequency.exponentialRampToValueAtTime(180, t + 0.08);
+      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.09);
+    }
+
+    // 成語通關勝利號角音 (Victory Fanfare)
+    playFanfare() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+      notes.forEach((freq, idx) => {
+        const t = this.ctx.currentTime + idx * 0.09;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.32, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      });
+    }
   }
 
   const sounds = new SoundEngine();
@@ -1524,10 +1564,586 @@
   }
 
   // =========================================================================
+  // 4. 成語疊疊樂 (Idiom Stacker) - 縱橫交錯・洞築機先 (公視《一字千金》題型)
+  // =========================================================================
+  class IdiomStackerGame {
+    constructor() {
+      this.isRunning = false;
+      this.level = 1;
+      this.score = 0;
+      this.lives = 3;
+      this.currentPuzzle = null;
+      this.selectedSlotKey = null; // 當前聚焦等待填入的空格 key
+      this.userFilled = {}; // slotKey -> character
+      this.solved = false;
+      this.idiomsBank = [];
+      this.pairsList = [];
+      this.laddersList = [];
+    }
+
+    // 初始化與關聯 200 核心成語題庫
+    initData() {
+      if (typeof IDIOMS_200 !== 'undefined' && Array.isArray(IDIOMS_200) && IDIOMS_200.length > 0) {
+        this.idiomsBank = IDIOMS_200;
+      } else {
+        // 內建兜底高頻成語
+        this.idiomsBank = [
+          { name: "口若懸河", bopomofo: "ㄎㄡˇ ㄖㄨㄛˋ ㄒㄩㄢˊ ㄏㄜˊ", meaning: "形容說話像瀑布一樣滔滔不絕，比喻能言善辯。", example: "他辯才無礙，在辯論比賽中口若懸河。" },
+          { name: "信口開河", bopomofo: "ㄒㄧㄣˋ ㄎㄡˇ ㄎㄞ ㄏㄜˊ", meaning: "不加思索隨意亂說，毫無根據。", example: "做人要誠實可靠，不可信口開河。" },
+          { name: "河清海晏", bopomofo: "ㄏㄜˊ ㄑㄧㄥ ㄏㄞˇ ㄧㄢˋ", meaning: "比喻天下太平。", example: "國泰民安，四海河清海晏。" },
+          { name: "開門見山", bopomofo: "ㄎㄞ ㄇㄣˊ ㄐㄧㄢˋ ㄕㄢ", meaning: "說話或寫文章直截了當切入主題。", example: "演講時開門見山，才能吸引聽眾。" },
+          { name: "山明水秀", bopomofo: "ㄕㄢ ㄇㄧㄥˊ ㄕㄨㄟˇ ㄒㄧㄡˋ", meaning: "山水風景秀美明麗。", example: "花蓮依山傍海，風景山明水秀。" },
+          { name: "水落石出", bopomofo: "ㄕㄨㄟˇ ㄌㄨㄛˋ ㄕˊ ㄔㄨ", meaning: "比喻事情真相大白。", example: "經過警方調查，案情終於水落石出。" },
+          { name: "出神入化", bopomofo: "ㄔㄨ ㄕㄣˊ ㄖㄨˋ ㄏㄨㄚˋ", meaning: "形容技藝高超精妙，達到化境。", example: "他彈鋼琴的技巧已達出神入化的境界。" }
+        ];
+      }
+
+      // 預先計算成語交錯配對
+      this.pairsList = [];
+      for (let i = 0; i < this.idiomsBank.length; i++) {
+        for (let j = 0; j < this.idiomsBank.length; j++) {
+          if (i === j) continue;
+          const h = this.idiomsBank[i].name;
+          const v = this.idiomsBank[j].name;
+          for (let pH = 0; pH < h.length; pH++) {
+            for (let pV = 0; pV < v.length; pV++) {
+              if (h[pH] === v[pV]) {
+                this.pairsList.push({
+                  nameH: h, posH: pH,
+                  nameV: v, posV: pV,
+                  char: h[pH]
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // 預先計算 3 條成語雙十字階梯 (Ladder: 1 縱貫條 × 2 橫排條)
+      this.laddersList = [];
+      for (let i = 0; i < this.pairsList.length; i++) {
+        const p1 = this.pairsList[i];
+        for (let j = i + 1; j < this.pairsList.length; j++) {
+          const p2 = this.pairsList[j];
+          if (p1.nameV === p2.nameV && p1.nameH !== p2.nameH && p1.posV < p2.posV) {
+            this.laddersList.push({ p1, p2 });
+          }
+        }
+      }
+    }
+
+    start() {
+      this.isRunning = true;
+      this.level = 1;
+      this.score = 0;
+      this.lives = 3;
+      this.initData();
+      this.updateLivesUI();
+      this.loadLevel(this.level);
+    }
+
+    updateLivesUI() {
+      for (let i = 1; i <= 3; i++) {
+        const heart = document.getElementById(`idiom-life-${i}`);
+        if (heart) {
+          if (i <= this.lives) {
+            heart.className = 'fa-solid fa-heart text-rose-500 scale-100 transition-transform';
+          } else {
+            heart.className = 'fa-regular fa-heart text-slate-300 scale-90 transition-transform';
+          }
+        }
+      }
+    }
+
+    // 依關卡難度生成縱橫謎題
+    generatePuzzle(level) {
+      // 關卡 1~5: 經典雙成語十字交叉 (2 Idioms, 1 Intersection, 1~2 Blanks)
+      // 關卡 6 以上: 進階三成語立體縱橫階梯 (3 Idioms, 2 Intersections, 2~3 Blanks)
+      const isAdvanced = level >= 6 && this.laddersList.length > 0;
+
+      if (!isAdvanced) {
+        // 隨機選取一組雙成語十字
+        const pick = this.pairsList[Math.floor(Math.random() * this.pairsList.length)];
+        const posH = pick.posH;
+        const posV = pick.posV;
+
+        const cells = {};
+        // 放置垂直成語 (V): 列 0..3, 行 posH
+        for (let r = 0; r < 4; r++) {
+          const k = `${r},${posH}`;
+          cells[k] = {
+            r, c: posH,
+            char: pick.nameV[r],
+            isCross: false,
+            idioms: [pick.nameV]
+          };
+        }
+        // 放置水平成語 (H): 列 posV, 行 0..3
+        for (let c = 0; c < 4; c++) {
+          const k = `${posV},${c}`;
+          if (cells[k]) {
+            cells[k].isCross = true;
+            cells[k].idioms.push(pick.nameH);
+          } else {
+            cells[k] = {
+              r: posV, c,
+              char: pick.nameH[c],
+              isCross: false,
+              idioms: [pick.nameH]
+            };
+          }
+        }
+
+        // 決定哪些格子留白成「空格洞」(洞築機先)
+        // 必空交會字！如果關卡 >= 3，再隨機空 1 個周邊字
+        const blankKeys = [`${posV},${posH}`];
+        if (level >= 3) {
+          const otherKeys = Object.keys(cells).filter(k => k !== `${posV},${posH}`);
+          const extraKey = otherKeys[Math.floor(Math.random() * otherKeys.length)];
+          blankKeys.push(extraKey);
+        }
+
+        return {
+          type: '2_cross',
+          modeName: '十字交叉',
+          idiomNames: [pick.nameH, pick.nameV],
+          cells,
+          blankKeys,
+          minR: 0, maxR: 3,
+          minC: 0, maxC: 3
+        };
+      } else {
+        // 三成語雙十字階梯
+        const ladder = this.laddersList[Math.floor(Math.random() * this.laddersList.length)];
+        const p1 = ladder.p1;
+        const p2 = ladder.p2;
+
+        const pV1 = p1.posV, pH1 = p1.posH;
+        const pV2 = p2.posV, pH2 = p2.posH;
+        let c_V = Math.max(pH1, pH2);
+        const min_c = Math.min(c_V - pH1, c_V - pH2);
+        c_V = c_V - min_c; // 正規化至左側緊貼
+
+        const cells = {};
+        // 放置貫穿縱線成語 (V)
+        for (let r = 0; r < 4; r++) {
+          const k = `${r},${c_V}`;
+          cells[k] = {
+            r, c: c_V,
+            char: p1.nameV[r],
+            isCross: false,
+            idioms: [p1.nameV]
+          };
+        }
+        // 放置水平成語 1 (H1)
+        const start_c1 = c_V - pH1;
+        for (let i = 0; i < 4; i++) {
+          const c = start_c1 + i;
+          const k = `${pV1},${c}`;
+          if (cells[k]) {
+            cells[k].isCross = true;
+            cells[k].idioms.push(p1.nameH);
+          } else {
+            cells[k] = {
+              r: pV1, c,
+              char: p1.nameH[i],
+              isCross: false,
+              idioms: [p1.nameH]
+            };
+          }
+        }
+        // 放置水平成語 2 (H2)
+        const start_c2 = c_V - pH2;
+        for (let i = 0; i < 4; i++) {
+          const c = start_c2 + i;
+          const k = `${pV2},${c}`;
+          if (cells[k]) {
+            cells[k].isCross = true;
+            cells[k].idioms.push(p2.nameH);
+          } else {
+            cells[k] = {
+              r: pV2, c,
+              char: p2.nameH[i],
+              isCross: false,
+              idioms: [p2.nameH]
+            };
+          }
+        }
+
+        // 計算整體邊界
+        const allR = Object.values(cells).map(x => x.r);
+        const allC = Object.values(cells).map(x => x.c);
+        const minR = Math.min(...allR), maxR = Math.max(...allR);
+        const minC = Math.min(...allC), maxC = Math.max(...allC);
+
+        // 兩個交會點必為空格洞
+        const cross1 = `${pV1},${c_V}`;
+        const cross2 = `${pV2},${c_V}`;
+        const blankKeys = [cross1, cross2];
+
+        // 關卡 >= 9 再加空 1 格
+        if (level >= 9) {
+          const others = Object.keys(cells).filter(k => !blankKeys.includes(k));
+          const extra = others[Math.floor(Math.random() * others.length)];
+          blankKeys.push(extra);
+        }
+
+        return {
+          type: '3_ladder',
+          modeName: '立體雙縱橫',
+          idiomNames: [p1.nameV, p1.nameH, p2.nameH],
+          cells,
+          blankKeys,
+          minR, maxR,
+          minC, maxC
+        };
+      }
+    }
+
+    loadLevel(level) {
+      this.solved = false;
+      this.userFilled = {};
+      this.currentPuzzle = this.generatePuzzle(level);
+
+      // 預設將第一個空格選取為活躍焦點
+      this.selectedSlotKey = this.currentPuzzle.blankKeys[0];
+
+      // 更新關卡徽章
+      const lvlBadge = document.getElementById('idiom-level-badge');
+      if (lvlBadge) lvlBadge.textContent = `第 ${level} 關`;
+      const modeBadge = document.getElementById('idiom-mode-badge');
+      if (modeBadge) modeBadge.textContent = this.currentPuzzle.modeName;
+      const scoreBadge = document.getElementById('idiom-score-count');
+      if (scoreBadge) scoreBadge.textContent = this.score;
+
+      // 渲染棋盤
+      this.renderBoard();
+      // 渲染候選積木池
+      this.renderBlockPool();
+    }
+
+    renderBoard() {
+      const boardEl = document.getElementById('idiom-grid-board');
+      if (!boardEl || !this.currentPuzzle) return;
+
+      const p = this.currentPuzzle;
+      const numRows = p.maxR - p.minR + 1;
+      const numCols = p.maxC - p.minC + 1;
+
+      boardEl.style.gridTemplateRows = `repeat(${numRows}, minmax(0, 1fr))`;
+      boardEl.style.gridTemplateColumns = `repeat(${numCols}, minmax(0, 1fr))`;
+      boardEl.innerHTML = '';
+
+      for (let r = p.minR; r <= p.maxR; r++) {
+        for (let c = p.minC; c <= p.maxC; c++) {
+          const key = `${r},${c}`;
+          const cellData = p.cells[key];
+
+          const cellDiv = document.createElement('div');
+          // 尺寸響應式 (手機 46px, 平板/電腦 56px)
+          cellDiv.className = 'w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center font-black text-xl sm:text-2xl transition-all relative idiom-grid-cell';
+
+          if (!cellData) {
+            // 空白佔位格 (維持棋盤網格對齊)
+            cellDiv.classList.add('opacity-0', 'pointer-events-none');
+            boardEl.appendChild(cellDiv);
+            continue;
+          }
+
+          const isBlank = p.blankKeys.includes(key);
+
+          if (isBlank) {
+            // 空白孔洞 (洞築機先)
+            cellDiv.dataset.key = key;
+            cellDiv.onclick = () => this.selectSlot(key);
+
+            const filledChar = this.userFilled[key];
+            if (filledChar) {
+              // 玩家已填入字 (果凍積木立體效果)
+              cellDiv.classList.add(
+                'bg-emerald-500', 'text-white', 'border-2', 'border-emerald-600',
+                'shadow-md', 'cursor-pointer', 'animate-block-pop'
+              );
+              cellDiv.innerHTML = `
+                <span>${filledChar}</span>
+                <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-700 hover:bg-rose-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold shadow-xs">
+                  <i class="fa-solid fa-xmark"></i>
+                </span>
+              `;
+            } else {
+              // 待填空格洞 (凹槽孔洞視覺)
+              cellDiv.classList.add(
+                'bg-amber-100/90', 'border-2', 'border-dashed', 'border-amber-400',
+                'text-amber-600', 'cursor-pointer', 'hover:bg-amber-200/80', 'hover:border-amber-500'
+              );
+              if (key === this.selectedSlotKey) {
+                cellDiv.classList.add('idiom-slot-active');
+              }
+              // 凹槽符號
+              cellDiv.innerHTML = `<i class="fa-solid fa-plus text-xs sm:text-sm opacity-40"></i>`;
+            }
+
+            // 若為交錯孔洞，右上角添加閃爍雙向小角標
+            if (cellData.isCross) {
+              const crossBadge = document.createElement('span');
+              crossBadge.className = 'absolute -top-1.5 -left-1.5 w-4 h-4 bg-amber-500 text-white rounded-full text-[9px] flex items-center justify-center font-black shadow-xs';
+              crossBadge.innerHTML = '<i class="fa-solid fa-arrows-up-down-left-right text-[8px]"></i>';
+              crossBadge.title = '縱橫關鍵交會字';
+              cellDiv.appendChild(crossBadge);
+            }
+          } else {
+            // 已知題目字 (木質金字立體積木)
+            cellDiv.classList.add(
+              'bg-gradient-to-b', 'from-white', 'to-slate-100', 'text-slate-800',
+              'border-2', 'border-slate-300', 'shadow-xs', 'pointer-events-none'
+            );
+            cellDiv.textContent = cellData.char;
+
+            // 若為交錯格
+            if (cellData.isCross) {
+              cellDiv.classList.add('border-emerald-400', 'bg-emerald-50/50');
+            }
+          }
+
+          boardEl.appendChild(cellDiv);
+        }
+      }
+    }
+
+    renderBlockPool() {
+      const container = document.getElementById('idiom-pool-container');
+      if (!container || !this.currentPuzzle) return;
+
+      container.innerHTML = '';
+
+      // 提取本題空格正確字
+      const correctChars = this.currentPuzzle.blankKeys.map(k => this.currentPuzzle.cells[k].char);
+
+      // 收集干擾字 (從成語庫中隨機選取相似或常見字)
+      const distractorPool = [];
+      this.idiomsBank.forEach(item => {
+        for (let c of item.name) {
+          if (!correctChars.includes(c) && !distractorPool.includes(c)) {
+            distractorPool.push(c);
+          }
+        }
+      });
+      // 隨機混淆 4~5 個干擾字
+      distractorPool.sort(() => Math.random() - 0.5);
+      const neededDistractors = Math.max(4, 7 - correctChars.length);
+      const chosenDistractors = distractorPool.slice(0, neededDistractors);
+
+      // 合併並洗牌
+      const pool = [...correctChars, ...chosenDistractors].sort(() => Math.random() - 0.5);
+
+      pool.forEach(char => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-b from-emerald-500 to-teal-700 text-white font-black text-xl sm:text-2xl idiom-block-btn flex items-center justify-center transition-all cursor-pointer border border-emerald-300/40 relative active:scale-95';
+        btn.textContent = char;
+
+        btn.onclick = () => this.handlePickBlock(char, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    selectSlot(key) {
+      if (this.solved) return;
+      // 若點選已填格，則清空還原
+      if (this.userFilled[key]) {
+        delete this.userFilled[key];
+        sounds.playBlockSnap();
+        this.selectedSlotKey = key;
+        this.renderBoard();
+        return;
+      }
+      this.selectedSlotKey = key;
+      sounds.playBlockSnap();
+      this.renderBoard();
+    }
+
+    handlePickBlock(char, btnEl) {
+      if (this.solved) return;
+
+      // 如果尚未選定空格，自動定位到第一個尚未填寫的空格
+      if (!this.selectedSlotKey || this.userFilled[this.selectedSlotKey]) {
+        const emptyKey = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]);
+        if (emptyKey) {
+          this.selectedSlotKey = emptyKey;
+        } else {
+          // 全部空格都已填滿
+          return;
+        }
+      }
+
+      const targetKey = this.selectedSlotKey;
+      this.userFilled[targetKey] = char;
+      sounds.playBlockSnap();
+
+      // 尋找下一個未填空格作為新焦點
+      const nextEmpty = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]);
+      this.selectedSlotKey = nextEmpty || null;
+
+      this.renderBoard();
+
+      // 檢查是否所有空格均已填入
+      const allFilled = this.currentPuzzle.blankKeys.every(k => this.userFilled[k]);
+      if (allFilled) {
+        this.validateAnswers();
+      }
+    }
+
+    validateAnswers() {
+      const p = this.currentPuzzle;
+      let allCorrect = true;
+
+      for (let k of p.blankKeys) {
+        const expected = p.cells[k].char;
+        const actual = this.userFilled[k];
+        if (expected !== actual) {
+          allCorrect = false;
+          break;
+        }
+      }
+
+      if (allCorrect) {
+        // 完全正確！通關！
+        this.solved = true;
+        this.score += 1;
+        sounds.playFanfare();
+
+        // 觸發手機震動 (成功雙響 0.1s + 0.1s)
+        if (navigator.vibrate) {
+          try { navigator.vibrate([100, 60, 100]); } catch (_) {}
+        }
+
+        // 彈出成語解析成功慶祝彈窗
+        setTimeout(() => {
+          this.showSuccessModal();
+        }, 350);
+      } else {
+        // 答錯扣血
+        this.lives -= 1;
+        this.updateLivesUI();
+        sounds.playHurt();
+
+        // 觸發手機震動 0.5 秒 (同搶救字母大作戰規範)
+        if (navigator.vibrate) {
+          try { navigator.vibrate(500); } catch (_) {}
+        }
+
+        showGameToast('填入字有誤喔！仔細推敲縱橫上下文～', 'fa-circle-exclamation');
+
+        // 清除錯誤的填空
+        for (let k of p.blankKeys) {
+          if (this.userFilled[k] !== p.cells[k].char) {
+            delete this.userFilled[k];
+          }
+        }
+        this.selectedSlotKey = p.blankKeys.find(k => !this.userFilled[k]);
+        this.renderBoard();
+
+        if (this.lives <= 0) {
+          // 機會用盡，遊戲結束
+          this.handleGameOver();
+        }
+      }
+    }
+
+    showSuccessModal() {
+      const modal = document.getElementById('idiom-success-modal');
+      const detailsEl = document.getElementById('idiom-success-details');
+      if (!modal || !detailsEl) return;
+
+      detailsEl.innerHTML = '';
+
+      // 渲染本關成語解析卡片
+      this.currentPuzzle.idiomNames.forEach(name => {
+        const found = this.idiomsBank.find(x => x.name === name) || {
+          name, bopomofo: '', meaning: '成語釋義', example: ''
+        };
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-50 border border-slate-200 rounded-xl p-3.5 shadow-xs';
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-baseline gap-2">
+              <span class="text-base sm:text-lg font-black text-slate-800 tracking-wider">${found.name}</span>
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">${found.bopomofo || ''}</span>
+            </div>
+            <button onclick="window.coolGameIdiom && window.coolGameIdiom.speakIdiom('${found.name}')" title="語音朗讀" class="w-7 h-7 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 flex items-center justify-center text-xs transition-all">
+              <i class="fa-solid fa-volume-high"></i>
+            </button>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-1.5"><strong class="text-slate-700">釋義：</strong>${found.meaning || '暫無釋義'}</p>
+          ${found.example ? `<p class="text-xs text-slate-500 leading-relaxed bg-white p-2 rounded-lg border border-slate-100"><strong class="text-slate-600">例句：</strong>${found.example}</p>` : ''}
+        `;
+        detailsEl.appendChild(card);
+      });
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    speakIdiom(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'zh-TW';
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    nextLevel() {
+      const modal = document.getElementById('idiom-success-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      this.level += 1;
+      this.loadLevel(this.level);
+    }
+
+    showHint() {
+      if (this.solved || !this.currentPuzzle) return;
+      // 提示一處未填空格的正確答案
+      const emptyKey = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]);
+      if (emptyKey) {
+        const correctChar = this.currentPuzzle.cells[emptyKey].char;
+        this.userFilled[emptyKey] = correctChar;
+        sounds.playCatch();
+        this.selectedSlotKey = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]) || null;
+        this.renderBoard();
+        showGameToast(`為您自動填入「${correctChar}」！`, 'fa-wand-magic-sparkles');
+
+        if (this.currentPuzzle.blankKeys.every(k => this.userFilled[k])) {
+          this.validateAnswers();
+        }
+      } else {
+        showGameToast('所有空格均已填滿囉！', 'fa-check');
+      }
+    }
+
+    handleGameOver() {
+      this.isRunning = false;
+      sounds.playGameOver();
+      const modal = document.getElementById('idiom-gameover-modal');
+      const scoreEl = document.getElementById('idiom-gameover-score');
+      if (scoreEl) scoreEl.textContent = this.score;
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+  }
+
+  // =========================================================================
   // 5. 模組導出與全域初始化
   // =========================================================================
   window.coolGameRescue = new WordRescueGame();
   window.coolGameSpeedyMouse = new SpeedyMouseGame();
+  window.coolGameIdiom = new IdiomStackerGame();
   window.coolGameSounds = sounds;
   window.speakCurrentWord = () => {
     if (window.coolGameRescue && window.coolGameRescue.currentWord) {
