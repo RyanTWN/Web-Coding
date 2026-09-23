@@ -1115,6 +1115,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!currentUser) return logout();
   const seatBadge = document.getElementById('user-seat-badge');
   if (seatBadge) seatBadge.textContent = `${currentUser.seatNo} 號 ${currentUser.name || ''}`;
+  const hName = document.getElementById('header-name');
+  if (hName) hName.textContent = currentUser.name || '同學';
+  const hSeat = document.getElementById('header-seat');
+  if (hSeat) hSeat.textContent = `座號: ${currentUser.seatNo}`;
+  const btnLogout = document.getElementById('btn-logout');
+  if (btnLogout) btnLogout.onclick = logout;
 
   const btnStart = document.getElementById('btn-start');
   if (btnStart) btnStart.onclick = startOrResume;

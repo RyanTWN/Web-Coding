@@ -905,24 +905,35 @@
   </div>
 
   <!-- 全域頂部導覽列 -->
-  <header id="global-header" class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white px-5 py-3 rounded-lg border-4 border-slate-800 shadow-comic mb-4">
-    <div id="btn-go-home" class="flex items-center gap-3 cursor-pointer" onclick="window.location.assign('index.html')">
-      <div class="w-10 h-10 rounded-md bg-rose-500 border-2 border-slate-800 text-white flex items-center justify-center font-extrabold text-xl shadow-comic transform hover:-translate-y-1 transition-transform">
-        <i class="fa-solid fa-rocket"></i>
+  <!-- 全域頂部導覽列 -->
+  <header id="global-header" class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-4 sm:px-5 py-3 rounded-lg border border-white/70 shadow-sm mb-4">
+    <!-- 1. 左上角：科目與 Logo (點擊回到首頁大廳) -->
+    <div id="btn-go-home" class="flex items-center gap-3 cursor-pointer group select-none" onclick="window.location.assign('index.html')">
+      <div class="w-10 h-10 rounded-md bg-gradient-to-tr from-rose-500 to-red-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md group-hover:scale-105 transition-transform">
+        <i class="fa-solid fa-language"></i>
       </div>
-      <div class="brand-lockup">
-        <h1 class="brand-zh">酷學習</h1>
-        <p class="brand-en">Cool Learning</p>
+      <div>
+        <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight group-hover:text-rose-700 transition-colors">英文單字天地</h1>
+        <p class="text-[11px] text-slate-500 font-medium">酷學習・每日30字常用字庫</p>
       </div>
     </div>
 
-    <div id="user-profile-badge" class="flex items-center gap-3">
-      <div class="text-right">
-        <span id="header-user-name" class="block font-black text-sm text-slate-800 leading-tight">學生</span>
-        <span id="header-user-seat" class="block text-[11px] text-rose-600 font-bold">座號: -</span>
-        <span id="sync-status" class="block text-[10px] text-slate-400 font-bold" aria-live="polite">等待同步</span>
-      </div>
-      <button id="btn-logout" class="w-9 h-9 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-600 border-2 border-slate-800 shadow-comic transform active:translate-y-1 active:shadow-comic-active flex items-center justify-center text-sm transition-all" title="登出系統" onclick="window.location.assign('index.html')">
+    <!-- 2. 右上角：由右至左分別為 登出、姓名座號、科目大廳 -->
+    <div id="user-profile-badge" class="flex items-center gap-2 sm:gap-3">
+      <!-- 科目大廳按鈕 (手機版隱藏以節省版面) -->
+      <button type="button" id="btn-subject-lobby" onclick="window.location.assign('index.html')" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-house text-slate-500"></i>
+        <span>科目大廳</span>
+      </button>
+
+      <!-- 姓名座號 (姓名在上、座號在下，可點擊進入孩子自我設定頁) -->
+      <a href="profile.html" id="btn-child-profile" title="點擊進入孩子自我設定頁" class="text-right cursor-pointer group px-2 py-1 rounded-lg hover:bg-slate-100/70 transition-all select-none block">
+        <span id="header-user-name" class="block font-bold text-xs sm:text-sm text-slate-800 leading-tight group-hover:text-rose-700 transition-colors">學生</span>
+        <span id="header-user-seat" class="block text-[10px] sm:text-[11px] text-rose-600 font-semibold">座號: -</span>
+      </a>
+
+      <!-- 登出按鈕 (箭頭向右符號) -->
+      <button type="button" id="btn-logout" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center text-xs sm:text-sm transition-all active:scale-95 shadow-sm cursor-pointer" title="登出系統" onclick="logoutEnglishStudent()">
         <i class="fa-solid fa-right-from-bracket"></i>
       </button>
     </div>
@@ -1194,6 +1205,11 @@
       // 4. 主動觸發：向資料庫抓取單字資料，並將其渲染到畫面上
       loadStudentAppData(currentUser.seatNo);
     });
+
+    function logoutEnglishStudent() {
+      sessionStorage.removeItem('g6_portal_user');
+      window.location.assign('index.html');
+    }
   </script>
 
   <script>

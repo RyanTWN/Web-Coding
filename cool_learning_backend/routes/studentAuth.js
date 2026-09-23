@@ -3,7 +3,7 @@ const express = require('express');
 
 module.exports = function createStudentAuthRouter({
   pool, issueToken, hashPassword, verifyPassword, isValidStudentPassword,
-  LOGIN_MAX_ATTEMPTS, LOGIN_LOCK_MS,
+  LOGIN_MAX_ATTEMPTS, LOGIN_LOCK_MS, requireAuth,
 }) {
   const router = express.Router();
 
@@ -105,6 +105,138 @@ module.exports = function createStudentAuthRouter({
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+  // [API] 學生自身學習追蹤、學習成長與生理成長記錄（孩子自我設定頁用）
+  if (requireAuth) {
+    router.get('/student/summary', requireAuth, async (req, res) => {
+      const seatNo = req.auth.sub;
+      try {
+        const [students] = await pool.query('SELECT name, seat_no FROM students WHERE seat_no = ?', [seatNo]);
+        const student = students[0] || { name: '同學', seat_no: seatNo };
+
+        // 查詢是否有綁定的子女檔案（取得性別、生日）
+        const [children] = await pool.query(
+          'SELECT id, nickname, gender, birthday, grade_level FROM child_profiles WHERE linked_seat_no = ? LIMIT 1',
+          [seatNo]
+        );
+        const child = children[0] || null;
+
+        // 1. 英文學習統計
+        const [engProgress] = await pool.query(
+          `SELECT COUNT(DISTINCT d) AS days_count FROM (
+             SELECT learning_date AS d FROM english_daily_progress WHERE seat_no = ? AND completed = 1
+             UNION
+             SELECT completed_date AS d FROM learning_progress WHERE seat_no = ?
+           ) AS dates`,
+          [seatNo, seatNo]
+        );
+        const [engQuizzes] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM quiz_logs WHERE seat_no = ?', [seatNo]);
+        const [learningStateRows] = await pool.query(
+          'SELECT learned_word_ids, starred_ids FROM student_learning_state WHERE seat_no = ?',
+          [seatNo]
+        );
+        let learnedWordsCount = 0;
+        let starredWordsCount = 0;
+        if (learningStateRows.length > 0) {
+          try {
+            const lWords = typeof learningStateRows[0].learned_word_ids === 'string'
+              ? JSON.parse(learningStateRows[0].learned_word_ids || '[]')
+              : (learningStateRows[0].learned_word_ids || []);
+            learnedWordsCount = Array.isArray(lWords) ? lWords.length : 0;
+          } catch (_) { learnedWordsCount = 0; }
+
+          try {
+            const sWords = typeof learningStateRows[0].starred_ids === 'string'
+              ? JSON.parse(learningStateRows[0].starred_ids || '[]')
+              : (learningStateRows[0].starred_ids || []);
+            starredWordsCount = Array.isArray(sWords) ? sWords.length : 0;
+          } catch (_) { starredWordsCount = 0; }
+        }
+
+        // 2. 數學學習統計
+        const [mathLogs] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM math_quiz_logs WHERE seat_no = ?', [seatNo]);
+        const [mathWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM math_wrong_questions WHERE seat_no = ?', [seatNo]);
+
+        // 3. 自然學習統計
+        const [natureProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM nature_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+        const [natureWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM nature_wrong_questions WHERE seat_no = ?', [seatNo]);
+
+        // 4. 社會學習統計
+        const [socialProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM social_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+        const [socialWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM social_wrong_questions WHERE seat_no = ?', [seatNo]);
+
+        // 5. 國語學習統計
+        const [chineseProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM chinese_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
+        const [chineseWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM chinese_wrong_questions WHERE seat_no = ?', [seatNo]);
+        const [idiomStars] = await pool.query('SELECT COUNT(*) AS star_count FROM student_idiom_stars WHERE seat_no = ?', [seatNo]);
+
+        // 6. 生理成長記錄
+        let growthRecords = [];
+        if (child && child.id) {
+          const [gRows] = await pool.query(
+            'SELECT id, record_date, height_cm, weight_kg, bmi, note FROM child_growth_records WHERE child_id = ? ORDER BY record_date ASC, id ASC',
+            [child.id]
+          );
+          growthRecords = gRows;
+        }
+
+        res.json({
+          success: true,
+          data: {
+            student: {
+              name: student.name,
+              seatNo: student.seat_no,
+              gradeLevel: child?.grade_level || '國小六年級'
+            },
+            child: child ? {
+              id: child.id,
+              nickname: child.nickname,
+              gender: child.gender || 'boy',
+              birthday: child.birthday
+            } : null,
+            summary: {
+              english: {
+                completedDays: Number(engProgress[0]?.days_count || 0),
+                quizCount: Number(engQuizzes[0]?.total_quizzes || 0),
+                avgScore: Math.round(Number(engQuizzes[0]?.avg_score || 0)),
+                learnedWords: learnedWordsCount,
+                starredCount: starredWordsCount,
+                totalWords: 2000
+              },
+              math: {
+                quizCount: Number(mathLogs[0]?.total_quizzes || 0),
+                avgScore: Math.round(Number(mathLogs[0]?.avg_score || 0)),
+                totalWrong: Number(mathWrong[0]?.wrong_count || 0),
+                masteredWrong: Number(mathWrong[0]?.mastered_count || 0)
+              },
+              nature: {
+                completedDays: Number(natureProgress[0]?.days_count || 0),
+                avgScore: Math.round(Number(natureProgress[0]?.avg_score || 0)),
+                totalWrong: Number(natureWrong[0]?.wrong_count || 0),
+                masteredWrong: Number(natureWrong[0]?.mastered_count || 0)
+              },
+              social: {
+                completedDays: Number(socialProgress[0]?.days_count || 0),
+                avgScore: Math.round(Number(socialProgress[0]?.avg_score || 0)),
+                totalWrong: Number(socialWrong[0]?.wrong_count || 0),
+                masteredWrong: Number(socialWrong[0]?.mastered_count || 0)
+              },
+              chinese: {
+                completedDays: Number(chineseProgress[0]?.days_count || 0),
+                avgScore: Math.round(Number(chineseProgress[0]?.avg_score || 0)),
+                totalWrong: Number(chineseWrong[0]?.wrong_count || 0),
+                masteredWrong: Number(chineseWrong[0]?.mastered_count || 0),
+                idiomStars: Number(idiomStars[0]?.star_count || 0)
+              }
+            },
+            growthRecords
+          }
+        });
+      } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+      }
+    });
+  }
 
   return router;
 };

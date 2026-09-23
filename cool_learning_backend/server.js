@@ -49,7 +49,7 @@ app.use('/api', require('./routes/health')({ pool, APP_VERSION }));
 
 app.use('/api', require('./routes/studentAuth')({
   pool, issueToken, hashPassword, verifyPassword, isValidStudentPassword,
-  LOGIN_MAX_ATTEMPTS, LOGIN_LOCK_MS,
+  LOGIN_MAX_ATTEMPTS, LOGIN_LOCK_MS, requireAuth,
 }));
 
 app.use('/api', require('./routes/admin')({

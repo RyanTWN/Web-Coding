@@ -102,17 +102,23 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-3">
-      <button onclick="window.location.assign('index.html')" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all">
-        <i class="fa-solid fa-house"></i>
+    <div id="user-profile-badge" class="flex items-center gap-2 sm:gap-3">
+      <!-- 科目大廳按鈕 (手機版隱藏以節省版面) -->
+      <button type="button" id="btn-subject-lobby" onclick="window.location.assign('index.html')" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-house text-slate-500"></i>
         <span>科目大廳</span>
       </button>
-      <div id="user-profile-badge" class="hidden sm:flex items-center gap-2 text-right">
-        <div>
-          <span id="header-user-name" class="block font-bold text-sm text-slate-800 leading-tight">學生</span>
-          <span id="header-user-seat" class="block text-[11px] text-amber-600 font-semibold">座號: -</span>
-        </div>
-      </div>
+
+      <!-- 姓名座號 (姓名在上、座號在下，可點擊進入孩子自我設定頁) -->
+      <a href="profile.html" id="btn-child-profile" title="點擊進入孩子自我設定頁" class="text-right cursor-pointer group px-2 py-1 rounded-lg hover:bg-slate-100/70 transition-all select-none block">
+        <span id="header-user-name" class="block font-bold text-xs sm:text-sm text-slate-800 leading-tight group-hover:text-amber-600 transition-colors">學生</span>
+        <span id="header-user-seat" class="block text-[10px] sm:text-[11px] text-amber-600 font-semibold">座號: -</span>
+      </a>
+
+      <!-- 登出按鈕 (箭頭向右符號) -->
+      <button type="button" id="btn-logout" onclick="logoutCurrentStudent()" title="登出系統" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center text-xs sm:text-sm transition-all active:scale-95 shadow-sm cursor-pointer">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
     </div>
   </header>
 
@@ -851,6 +857,11 @@
         if (seatEl) seatEl.textContent = `座號: ${user.seatNo || '-'}`;
       }
     });
+
+    function logoutCurrentStudent() {
+      sessionStorage.removeItem('g6_portal_user');
+      window.location.assign('index.html');
+    }
 
     // 搶救字母大作戰控制器
     function openRescueGame() {

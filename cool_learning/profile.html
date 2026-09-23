@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#173852">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="酷學習">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
+  <title>孩子自我設定與成長歷程｜酷學習 Cool Learning</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="assets/css/tailwind.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at top left, #f8fafc, #f1f5f9 45%, #e2e8f0 100%);
+      min-height: 100vh;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+  </style>
+</head>
+<body class="text-slate-800 flex flex-col justify-between p-3 sm:p-6 min-h-screen">
+
+  <!-- Toast 訊息通知 -->
+  <div id="toast-container" class="fixed left-1/2 top-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; transform: translate(-50%, -50%) scale(0.9);">
+    <div id="toast-inner" style="background: rgba(15, 23, 42, 0.85) !important; -webkit-backdrop-filter: blur(16px) saturate(180%) !important; backdrop-filter: blur(16px) saturate(180%) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4); border-radius: 20px !important; padding: 14px 26px !important; display: flex; align-items: center; gap: 14px;">
+      <i id="toast-icon" class="fa-solid fa-circle-info text-teal-300" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;"></i>
+      <span id="toast-text" style="color: #ffffff !important; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; line-height: 1.5; max-width: min(75vw, 360px); text-align: left;">訊息通知</span>
+    </div>
+  </div>
+
+  <!-- 全域頂部導覽列 (統一標準：左Logo科目回首頁大廳，右側由右至左為登出、姓名座號、科目大廳) -->
+  <header id="global-header" class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-4 sm:px-5 py-3 rounded-lg border border-white/70 shadow-sm mb-4 sm:mb-5">
+    <!-- 1. 左上角：科目與 Logo (點擊回到首頁大廳) -->
+    <div id="btn-go-home" onclick="window.location.assign('index.html')" class="flex items-center gap-3 cursor-pointer group select-none">
+      <div class="w-10 h-10 rounded-md bg-gradient-to-tr from-[#173852] to-teal-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md group-hover:scale-105 transition-transform">
+        <i class="fa-solid fa-id-badge"></i>
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight group-hover:text-teal-700 transition-colors">孩子自我設定</h1>
+        <p class="text-[11px] text-slate-500 font-medium">學習歷程與生長發育總覽</p>
+      </div>
+    </div>
+
+    <!-- 2. 右上角：由右至左分別為 登出、姓名座號、科目大廳 -->
+    <div id="user-profile-badge" class="flex items-center gap-2 sm:gap-3">
+      <!-- 科目大廳按鈕 (手機版隱藏以節省版面) -->
+      <button type="button" id="btn-subject-lobby" onclick="window.location.assign('index.html')" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-house text-slate-500"></i>
+        <span>科目大廳</span>
+      </button>
+
+      <!-- 姓名座號 (姓名在上、座號在下，可點擊進入孩子自我設定頁) -->
+      <a href="profile.html" id="btn-child-profile" title="孩子自我設定頁（當前頁面）" class="text-right cursor-pointer group px-2 py-1 rounded-lg bg-teal-50/70 border border-teal-200/80 hover:bg-teal-100/70 transition-all select-none block">
+        <span id="header-user-name" class="block font-bold text-xs sm:text-sm text-slate-800 leading-tight group-hover:text-teal-700 transition-colors">學生</span>
+        <span id="header-user-seat" class="block text-[10px] sm:text-[11px] text-teal-700 font-semibold">座號: -</span>
+      </a>
+
+      <!-- 登出按鈕 (箭頭向右符號) -->
+      <button type="button" id="btn-logout" onclick="logoutCurrentStudent()" title="登出系統" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center text-xs sm:text-sm transition-all active:scale-95 shadow-sm cursor-pointer">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主內容容器 -->
+  <main class="w-full max-w-5xl mx-auto flex-1 space-y-6 pb-8">
+    
+    <!-- 學生個人身分看板 (Hero Card) -->
+    <div class="bg-gradient-to-r from-[#173852] via-[#21546e] to-[#2c6e7a] rounded-lg p-6 sm:p-7 text-white shadow-xl flex flex-wrap items-center justify-between gap-4 relative overflow-hidden">
+      <div class="relative z-10 flex items-center gap-4">
+        <div class="w-16 h-16 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center text-3xl font-black shadow-inner">
+          <span id="hero-avatar-initial">學</span>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h2 id="hero-student-name" class="text-2xl sm:text-3xl font-black">張小明</h2>
+            <span id="hero-grade-badge" class="px-2.5 py-0.5 rounded-full bg-white/20 text-teal-100 text-xs font-bold border border-white/20">國小六年級</span>
+            <span id="hero-gender-badge" class="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 text-xs font-bold border border-blue-300/30 flex items-center gap-1">
+              <i class="fa-solid fa-mars"></i> 男童
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-200 font-medium">
+            <span class="font-mono bg-black/20 px-2 py-0.5 rounded border border-white/10">
+              座號：<strong id="hero-student-seat" class="text-amber-300">60101</strong>
+            </span>
+            <span id="hero-age-text">年齡：11 歲 8 個月</span>
+            <span class="text-teal-200/80">・每日自主學習持續進步中</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center gap-4 relative z-10 text-right">
+        <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20">
+          <span class="block text-[11px] text-teal-200 font-bold">學習核心指標</span>
+          <span class="text-lg font-black text-white">五大學科全面整合</span>
+        </div>
+      </div>
+      
+      <!-- 裝飾背景浮水印圖標 -->
+      <div class="absolute -right-6 -bottom-8 text-9xl text-white/5 select-none pointer-events-none transform -rotate-12">
+        <i class="fa-solid fa-chart-line"></i>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 區塊 1: 所有科目的學習追蹤                                                  -->
+    <!-- ========================================================================= -->
+    <section class="bg-white/95 backdrop-blur-md rounded-lg p-5 sm:p-7 shadow-sm border border-slate-200/90 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-teal-600"></i> 所有科目的學習追蹤
+          </h3>
+          <p class="text-xs text-slate-500 font-medium mt-0.5">即時統計英語、數學、自然、社會、國語五大學科累計學習歷程</p>
+        </div>
+        <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-teal-50 text-teal-700 text-xs font-bold rounded-lg border border-teal-200">
+          <i class="fa-solid fa-circle-check text-teal-600"></i> 雲端數據同步
+        </span>
+      </div>
+
+      <!-- 五大學科卡片網格 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
+        
+        <!-- 1. 英文單字天地 -->
+        <div class="bg-gradient-to-br from-rose-50/80 to-pink-50/40 p-4 rounded-xl border border-rose-200/80 hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-language text-rose-500"></i> 英文天地
+              </span>
+              <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">每日30字</span>
+            </div>
+            <div class="text-2xl font-black text-rose-700 mb-1">
+              <span id="track-eng-days">0</span> <span class="text-xs font-bold text-rose-500">天完成</span>
+            </div>
+            <div class="text-[11px] text-slate-600 font-medium space-y-0.5 mt-2">
+              <p>掌握單字：<b id="track-eng-words" class="text-rose-700 font-black">0</b> / 2000</p>
+              <p>難字收藏：<b id="track-eng-starred" class="text-purple-600 font-black">0</b> 個</p>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-rose-100 mt-3 text-[11px] text-slate-500 font-medium">
+            測驗平均：<b id="track-eng-score" class="text-rose-600 font-bold">0</b> 分 (<span id="track-eng-quizzes">0</span>次)
+          </div>
+        </div>
+
+        <!-- 2. 數學天地 -->
+        <div class="bg-gradient-to-br from-sky-50/80 to-blue-50/40 p-4 rounded-xl border border-sky-200/80 hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black text-sky-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-calculator text-sky-500"></i> 數學天地
+              </span>
+              <span class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">動態題型</span>
+            </div>
+            <div class="text-2xl font-black text-sky-700 mb-1">
+              <span id="track-math-quizzes">0</span> <span class="text-xs font-bold text-sky-500">回演練</span>
+            </div>
+            <div class="text-[11px] text-slate-600 font-medium space-y-0.5 mt-2">
+              <p>測驗均分：<b id="track-math-score" class="text-sky-700 font-black">0</b> 分</p>
+              <p>已掌握錯題：<b id="track-math-mastered" class="text-emerald-600 font-black">0</b> 題</p>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-sky-100 mt-3 text-[11px] text-slate-500 font-medium">
+            累積錯題：<span id="track-math-wrong">0</span> 題
+          </div>
+        </div>
+
+        <!-- 3. 自然科學實驗室 -->
+        <div class="bg-gradient-to-br from-amber-50/80 to-orange-50/40 p-4 rounded-xl border border-amber-200/80 hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black text-amber-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-flask-vial text-amber-500"></i> 自然科學
+              </span>
+              <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">115課綱</span>
+            </div>
+            <div class="text-2xl font-black text-amber-700 mb-1">
+              <span id="track-nature-days">0</span> <span class="text-xs font-bold text-amber-500">回完成</span>
+            </div>
+            <div class="text-[11px] text-slate-600 font-medium space-y-0.5 mt-2">
+              <p>測驗均分：<b id="track-nature-score" class="text-amber-700 font-black">0</b> 分</p>
+              <p>已掌握錯題：<b id="track-nature-mastered" class="text-emerald-600 font-black">0</b> 題</p>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-amber-100 mt-3 text-[11px] text-slate-500 font-medium">
+            累積錯題：<span id="track-nature-wrong">0</span> 題
+          </div>
+        </div>
+
+        <!-- 4. 社會人文探索館 -->
+        <div class="bg-gradient-to-br from-purple-50/80 to-fuchsia-50/40 p-4 rounded-xl border border-purple-200/80 hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black text-purple-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-earth-americas text-purple-500"></i> 社會人文
+              </span>
+              <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">115課綱</span>
+            </div>
+            <div class="text-2xl font-black text-purple-700 mb-1">
+              <span id="track-social-days">0</span> <span class="text-xs font-bold text-purple-500">回完成</span>
+            </div>
+            <div class="text-[11px] text-slate-600 font-medium space-y-0.5 mt-2">
+              <p>測驗均分：<b id="track-social-score" class="text-purple-700 font-black">0</b> 分</p>
+              <p>已掌握錯題：<b id="track-social-mastered" class="text-emerald-600 font-black">0</b> 題</p>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-purple-100 mt-3 text-[11px] text-slate-500 font-medium">
+            累積錯題：<span id="track-social-wrong">0</span> 題
+          </div>
+        </div>
+
+        <!-- 5. 國語文學與成語 -->
+        <div class="bg-gradient-to-br from-emerald-50/80 to-teal-50/40 p-4 rounded-xl border border-emerald-200/80 hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-book-open text-emerald-500"></i> 國語成語
+              </span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">成語200</span>
+            </div>
+            <div class="text-2xl font-black text-emerald-700 mb-1">
+              <span id="track-chinese-days">0</span> <span class="text-xs font-bold text-emerald-500">回完成</span>
+            </div>
+            <div class="text-[11px] text-slate-600 font-medium space-y-0.5 mt-2">
+              <p>測驗均分：<b id="track-chinese-score" class="text-emerald-700 font-black">0</b> 分</p>
+              <p>已掌握錯題：<b id="track-chinese-mastered" class="text-emerald-600 font-black">0</b> 題</p>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-emerald-100 mt-3 text-[11px] text-slate-500 font-medium">
+            成語收藏：<b id="track-chinese-stars" class="text-amber-600 font-bold">0</b> 則
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 區塊 2: 學習成長紀錄                                                        -->
+    <!-- ========================================================================= -->
+    <section class="bg-white/95 backdrop-blur-md rounded-lg p-5 sm:p-7 shadow-sm border border-slate-200/90 space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-award text-amber-500"></i> 學習成長紀錄
+          </h3>
+          <p class="text-xs text-slate-500 font-medium mt-0.5">錯題本精熟掌握率與自主學習歷程反思</p>
+        </div>
+        <span class="text-xs text-slate-400 font-medium">做錯引導・複習掌握</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- 錯題精熟率進度條 -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+          <h4 class="font-bold text-sm text-slate-800 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-bullseye text-rose-500"></i> 四大學科錯題精熟率
+            </span>
+            <span class="text-xs text-slate-400 font-normal">複習答對即標記精熟</span>
+          </h4>
+
+          <div>
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-calculator text-sky-500"></i> 數學錯題精熟掌握</span>
+              <span id="growth-math-rate" class="text-sky-700 font-black">0%</span>
+            </div>
+            <div class="w-full bg-slate-200/70 rounded-full h-3 overflow-hidden">
+              <div id="growth-math-bar" class="bg-sky-500 h-3 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-flask-vial text-amber-500"></i> 自然錯題精熟掌握</span>
+              <span id="growth-nature-rate" class="text-amber-700 font-black">0%</span>
+            </div>
+            <div class="w-full bg-slate-200/70 rounded-full h-3 overflow-hidden">
+              <div id="growth-nature-bar" class="bg-amber-500 h-3 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-earth-americas text-purple-500"></i> 社會錯題精熟掌握</span>
+              <span id="growth-social-rate" class="text-purple-700 font-black">0%</span>
+            </div>
+            <div class="w-full bg-slate-200/70 rounded-full h-3 overflow-hidden">
+              <div id="growth-social-bar" class="bg-purple-500 h-3 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-book-open text-emerald-500"></i> 國語錯題精熟掌握</span>
+              <span id="growth-chinese-rate" class="text-emerald-700 font-black">0%</span>
+            </div>
+            <div class="w-full bg-slate-200/70 rounded-full h-3 overflow-hidden">
+              <div id="growth-chinese-bar" class="bg-emerald-500 h-3 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 自主激勵指標與防挫折說明 -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
+          <div>
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2 mb-2">
+              <i class="fa-solid fa-medal text-amber-500"></i> 自主激勵成就指標
+            </h4>
+            <p class="text-xs text-slate-600 leading-relaxed font-medium">
+              酷學習系統落實「做中學、錯中學」的微學習核心思維。做錯題目時，系統提供引導提示，第二次答錯收錄至專屬錯題本中。當你在後續練習或複習中再度答對，就會自動升級為「精熟掌握」！
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="p-3 bg-amber-50/90 rounded-xl border border-amber-200/80 text-xs text-amber-900 font-medium flex items-start gap-2">
+              <span class="text-amber-500 text-sm mt-0.5">💡</span>
+              <span><b>每日微學習建議</b>：每天專注完成 15~20 分鐘任務，維持每日答題節奏，不知不覺就能建立堅實的學科基礎！</span>
+            </div>
+            <div class="p-3 bg-teal-50/90 rounded-xl border border-teal-200/80 text-xs text-teal-900 font-medium flex items-start gap-2">
+              <span class="text-teal-600 text-sm mt-0.5">🌟</span>
+              <span><b>錯題是最好的老師</b>：定期回到各科的錯題本進行溫習，掌握率達到 80% 以上就具備深厚實力囉！</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 區塊 3: 生理成長紀錄 (只顯示生長曲線百分位圖表)                             -->
+    <!-- ========================================================================= -->
+    <section class="bg-white/95 backdrop-blur-md rounded-lg p-5 sm:p-7 shadow-sm border border-slate-200/90 space-y-5">
+      <!-- 標題與衛福部標準說明 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-ruler-combined text-teal-600"></i> 生理成長紀錄（生長曲線百分位圖表）
+          </h3>
+          <p class="text-xs text-slate-500 font-medium mt-0.5">依據台灣衛生福利部國民健康署 0-18 歲兒童生長曲線常模標準繪製</p>
+        </div>
+        
+        <!-- 指標切換按鈕：身高 / 體重 / BMI -->
+        <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+          <button type="button" id="btn-metric-height" onclick="switchGrowthMetric('height')" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-[#173852] text-white shadow-sm cursor-pointer">
+            身高曲線
+          </button>
+          <button type="button" id="btn-metric-weight" onclick="switchGrowthMetric('weight')" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+            體重曲線
+          </button>
+          <button type="button" id="btn-metric-bmi" onclick="switchGrowthMetric('bmi')" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+            BMI 曲線
+          </button>
+        </div>
+      </div>
+
+      <!-- 最新生理快見指標摘要條 -->
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="px-3 py-1.5 text-xs font-bold bg-white text-slate-700 rounded-lg border border-slate-200 shadow-xs flex items-center gap-2">
+            <span id="phys-gender-badge" class="px-1.5 py-0.5 rounded text-[11px] bg-blue-100 text-blue-700 font-bold"><i class="fa-solid fa-mars"></i> 男童</span>
+            <span id="phys-age-text" class="text-slate-600">11 歲 8 個月</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[11px]">最新身高</span>
+            <span id="phys-quick-height" class="font-black text-slate-800 text-sm">--</span>
+            <span class="text-[10px] text-slate-400 font-bold">cm</span>
+          </div>
+          <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[11px]">最新體重</span>
+            <span id="phys-quick-weight" class="font-black text-slate-800 text-sm">--</span>
+            <span class="text-[10px] text-slate-400 font-bold">kg</span>
+          </div>
+          <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[11px]">BMI</span>
+            <span id="phys-quick-bmi" class="font-black text-teal-700 text-sm">--</span>
+          </div>
+          <div id="phys-percentile-pill" class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-xs">
+            <i class="fa-solid fa-gauge-high text-emerald-600"></i>
+            <span id="phys-quick-percentile">生長常模正常</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 生長曲線畫布與控制視角列 -->
+      <div class="space-y-3">
+        <!-- 縮放與視角控制列 -->
+        <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+          <div class="flex items-center gap-1.5 text-slate-700 font-bold">
+            <i class="fa-solid fa-arrows-left-right text-teal-600"></i>
+            <span id="growth-chart-range-text">顯示範圍：前後 1 年區間</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" onclick="zoomGrowthChart('in')" title="放大時間軸" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-teal-700 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-magnifying-glass-plus text-teal-600"></i>
+              <span>放大</span>
+            </button>
+            <button type="button" onclick="zoomGrowthChart('out')" title="縮小時間軸" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-teal-700 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-magnifying-glass-minus text-teal-600"></i>
+              <span>縮小</span>
+            </button>
+            <button type="button" onclick="resetGrowthChartDefault()" title="回到預設：當下前後各 1 年" class="px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-crosshairs text-teal-600"></i>
+              <span>前後1年</span>
+            </button>
+            <button type="button" onclick="resetGrowthChartFull()" title="檢視 0-18 歲完整發育曲線" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-expand text-slate-500"></i>
+              <span>全區間 (0-18歲)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 曲線圖表畫布 (自適應高解析度) -->
+        <div class="relative w-full h-[360px] sm:h-[420px] bg-white rounded-xl border border-slate-200 p-2 sm:p-4">
+          <canvas id="growth-curve-chart" style="touch-action: pan-y;"></canvas>
+        </div>
+
+        <!-- 圖例說明與衛教卡 -->
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs space-y-2">
+          <div class="flex flex-wrap items-center gap-3.5 text-[11px] font-bold text-slate-600">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1 bg-slate-400 rounded-full inline-block"></span> P97 (第97百分位)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1 bg-teal-500 rounded-full inline-block"></span> P85 (第85百分位)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1.5 bg-emerald-600 rounded-full inline-block"></span> P50 (第50百分位・中位線)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1 bg-cyan-500 rounded-full inline-block"></span> P15 (第15百分位)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1 bg-indigo-400 rounded-full inline-block"></span> P3 (第3百分位)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-amber-500 border-2 border-white rounded-full inline-block shadow-sm"></span> 你的生長測量點</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed pt-1 border-t border-slate-200/60">
+            💡 <b>醫師小叮嚀</b>：一般而言，孩子的生長曲線只要落在第 3 至第 97 百分位區間，都屬於正常健康的發育常模範圍。觀察生長的最重要關鍵在於<b>「沿著自己的生長曲線平穩走向」</b>；維持均衡營養、充足睡眠與規律運動，能幫助身體健健康康長大！
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="w-full max-w-5xl mx-auto text-center py-4 text-xs text-slate-400 font-medium">
+    酷學習 Cool Learning ｜ 國小六年級跨學科每日自主微學習平台
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script>
+    // 0-18 歲兒童生長標準常模 (衛福部國民健康署常模數據)
+    const NORMS = {
+      ages: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      boy: {
+        height: {
+          p3:  [46.1, 71.0, 82.5, 90.7, 97.6, 104.0, 110.0, 115.5, 120.5, 125.0, 130.0, 134.5, 140.5, 148.0, 155.0, 160.0, 162.5, 163.5, 164.0],
+          p15: [47.9, 73.4, 85.1, 93.5, 100.5, 107.0, 113.5, 119.0, 124.5, 129.5, 135.0, 140.0, 147.0, 155.0, 161.5, 165.5, 167.5, 168.5, 169.0],
+          p50: [49.9, 75.7, 87.8, 96.1, 103.3, 110.0, 117.0, 123.0, 128.5, 134.0, 140.0, 146.0, 154.0, 162.0, 168.0, 171.0, 172.5, 173.5, 174.0],
+          p85: [51.8, 78.1, 90.4, 99.1, 106.4, 113.5, 121.0, 127.5, 133.5, 139.5, 146.0, 153.0, 161.5, 169.5, 174.5, 177.0, 178.5, 179.5, 180.0],
+          p97: [53.7, 80.5, 93.2, 102.1, 109.5, 117.0, 125.0, 132.0, 138.5, 145.0, 152.0, 160.0, 168.5, 175.5, 180.0, 182.0, 183.5, 184.5, 185.0]
+        },
+        weight: {
+          p3:  [2.5, 7.7,  9.7, 11.3, 12.7, 14.1, 16.0, 18.0, 20.5, 23.0, 26.0, 29.0, 33.0, 38.0, 43.0, 47.0, 50.0, 52.0, 53.0],
+          p15: [2.9, 8.6, 10.8, 12.7, 14.4, 16.1, 18.0, 20.5, 23.0, 26.0, 29.5, 34.0, 38.5, 44.0, 49.0, 53.0, 55.5, 57.5, 58.5],
+          p50: [3.3, 9.6, 12.2, 14.3, 16.3, 18.3, 20.5, 23.5, 26.5, 30.5, 35.0, 40.5, 46.5, 52.5, 57.5, 61.5, 64.0, 65.5, 66.5],
+          p85: [3.9, 10.8, 13.6, 16.2, 18.6, 21.2, 24.0, 28.0, 32.0, 37.0, 43.0, 49.5, 56.5, 63.0, 68.0, 71.5, 74.0, 76.0, 77.0],
+          p97: [4.4, 12.0, 15.3, 18.3, 21.2, 24.2, 28.0, 33.0, 38.0, 45.0, 52.0, 60.0, 67.5, 74.0, 79.0, 82.5, 85.0, 87.0, 88.0]
+        },
+        bmi: {
+          p3:  [11.5, 14.3, 14.1, 13.7, 13.5, 13.4, 13.5, 13.7, 14.0, 14.4, 14.9, 15.4, 16.0, 16.6, 17.2, 17.8, 18.2, 18.5, 18.7],
+          p15: [12.4, 15.1, 14.8, 14.5, 14.2, 14.1, 14.2, 14.4, 14.8, 15.3, 15.9, 16.5, 17.2, 17.9, 18.6, 19.2, 19.7, 20.0, 20.3],
+          p50: [13.4, 16.2, 15.7, 15.3, 15.1, 15.1, 15.2, 15.5, 16.0, 16.7, 17.4, 18.2, 19.0, 19.8, 20.6, 21.3, 21.9, 22.3, 22.5],
+          p85: [14.6, 17.3, 16.8, 16.5, 16.3, 16.4, 16.7, 17.3, 18.0, 18.9, 19.9, 20.9, 21.9, 22.8, 23.6, 24.3, 24.8, 25.2, 25.5],
+          p97: [15.8, 18.5, 18.0, 17.7, 17.6, 17.8, 18.3, 19.2, 20.2, 21.4, 22.6, 23.8, 24.9, 25.8, 26.6, 27.2, 27.8, 28.2, 28.5]
+        }
+      },
+      girl: {
+        height: {
+          p3:  [45.4, 68.9, 80.0, 88.4, 95.1, 101.4, 107.5, 113.2, 118.5, 123.8, 129.0, 134.5, 141.0, 146.5, 149.0, 150.5, 151.0, 151.5, 152.0],
+          p15: [47.2, 71.4, 82.7, 91.2, 98.0, 104.5, 111.0, 116.8, 122.5, 128.0, 134.0, 140.5, 146.5, 151.5, 154.0, 155.0, 155.5, 156.0, 156.5],
+          p50: [49.1, 74.0, 85.7, 94.2, 101.6, 108.4, 115.0, 121.0, 127.0, 133.0, 139.5, 146.5, 152.5, 156.5, 158.5, 159.5, 160.0, 160.5, 161.0],
+          p85: [51.0, 76.6, 88.8, 97.5, 105.1, 112.4, 119.5, 126.0, 132.5, 139.0, 146.0, 153.0, 158.5, 161.5, 163.5, 164.5, 165.0, 165.5, 166.0],
+          p97: [52.9, 79.1, 91.7, 100.8, 108.5, 116.0, 123.5, 130.5, 137.5, 144.5, 152.0, 159.0, 164.0, 167.0, 168.5, 169.5, 170.0, 170.5, 171.0]
+        },
+        weight: {
+          p3:  [2.4, 7.0,  9.0, 10.8, 12.3, 13.7, 15.3, 17.2, 19.4, 21.8, 24.5, 27.5, 31.5, 36.0, 40.0, 42.5, 44.0, 44.8, 45.2],
+          p15: [2.8, 7.9, 10.1, 12.0, 13.8, 15.5, 17.3, 19.5, 22.0, 25.0, 28.5, 32.5, 37.0, 42.0, 45.5, 47.8, 49.0, 49.8, 50.2],
+          p50: [3.2, 8.9, 11.5, 13.9, 15.8, 17.9, 20.0, 22.5, 25.5, 29.0, 33.0, 37.5, 42.5, 47.0, 50.0, 52.0, 53.0, 53.8, 54.2],
+          p85: [3.7, 10.1, 13.0, 15.6, 18.0, 20.6, 23.5, 27.0, 31.0, 35.5, 40.5, 46.0, 51.5, 55.5, 58.0, 60.0, 61.0, 61.8, 62.2],
+          p97: [4.2, 11.3, 14.6, 17.5, 20.4, 23.6, 27.5, 32.0, 37.0, 42.5, 48.5, 55.0, 60.5, 64.5, 67.0, 68.5, 69.5, 70.2, 70.8]
+        },
+        bmi: {
+          p3:  [11.2, 13.8, 13.5, 13.2, 13.0, 12.9, 12.9, 13.1, 13.4, 13.8, 14.3, 14.8, 15.4, 16.0, 16.6, 17.1, 17.5, 17.7, 17.9],
+          p15: [12.1, 14.6, 14.3, 14.0, 13.8, 13.7, 13.7, 14.0, 14.4, 14.9, 15.5, 16.1, 16.8, 17.5, 18.1, 18.6, 19.0, 19.2, 19.4],
+          p50: [13.1, 15.7, 15.2, 14.8, 14.6, 14.6, 14.7, 15.0, 15.5, 16.2, 17.0, 17.8, 18.6, 19.4, 20.1, 20.7, 21.1, 21.4, 21.6],
+          p85: [14.3, 16.9, 16.4, 16.1, 15.9, 16.0, 16.3, 16.8, 17.6, 18.5, 19.5, 20.5, 21.5, 22.4, 23.1, 23.7, 24.1, 24.4, 24.6],
+          p97: [15.5, 18.1, 17.6, 17.3, 17.2, 17.4, 17.9, 18.7, 19.7, 20.9, 22.0, 23.2, 24.3, 25.2, 25.9, 26.5, 27.0, 27.3, 27.5]
+        }
+      }
+    };
+
+    let currentUser = null;
+    let studentData = null;
+    let growthRecords = [];
+    let childGender = 'boy';
+    let currentMetric = 'height';
+    let chartInstance = null;
+
+    // Toast 通知函式
+    function showToast(msg, icon = 'fa-circle-info') {
+      const el = document.getElementById('toast-container');
+      const text = document.getElementById('toast-text');
+      const ic = document.getElementById('toast-icon');
+      if (!el || !text) return;
+      text.textContent = msg;
+      if (ic) ic.className = `fa-solid ${icon} text-teal-300`;
+      el.style.opacity = '1';
+      el.style.transform = 'translate(-50%, -50%) scale(1)';
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translate(-50%, -50%) scale(0.9)';
+      }, 2400);
+    }
+
+    // 登出系統
+    function logoutCurrentStudent() {
+      sessionStorage.removeItem('g6_portal_user');
+      showToast('已登出系統', 'fa-right-from-bracket');
+      setTimeout(() => {
+        window.location.assign('index.html');
+      }, 350);
+    }
+
+    // 載入當前學生資料
+    async function initProfilePage() {
+      try {
+        const stored = sessionStorage.getItem('g6_portal_user');
+        currentUser = stored ? JSON.parse(stored) : null;
+      } catch (e) {
+        currentUser = null;
+      }
+
+      // 檢查登入狀態
+      if (!currentUser || !currentUser.seatNo) {
+        // 未登入時提供預設展示並提示
+        currentUser = {
+          name: '張小明',
+          seatNo: '60101',
+          token: ''
+        };
+      }
+
+      // 更新頂部與標題文字
+      document.getElementById('header-user-name').textContent = currentUser.name || '同學';
+      document.getElementById('header-user-seat').textContent = `座號: ${currentUser.seatNo}`;
+      document.getElementById('hero-student-name').textContent = currentUser.name || '同學';
+      document.getElementById('hero-student-seat').textContent = currentUser.seatNo || '-';
+      document.getElementById('hero-avatar-initial').textContent = (currentUser.name || '學').charAt(0);
+
+      // 預設示範數據（當後端尚未連線或本機展示時使用）
+      let summary = {
+        english: { completedDays: 14, quizCount: 18, avgScore: 92, learnedWords: 420, starredCount: 15, totalWords: 2000 },
+        math: { quizCount: 22, avgScore: 88, totalWrong: 12, masteredWrong: 10 },
+        nature: { completedDays: 16, avgScore: 90, totalWrong: 8, masteredWrong: 7 },
+        social: { completedDays: 15, avgScore: 86, totalWrong: 10, masteredWrong: 8 },
+        chinese: { completedDays: 18, avgScore: 94, totalWrong: 6, masteredWrong: 6, idiomStars: 32 }
+      };
+
+      // 預設生長記錄 (國小六年級 11歲8個月)
+      growthRecords = [
+        { age: 10.67, date: '2023-11-15', h: 141.0, w: 34.5, bmi: 17.3, note: '五年級上學期健檢' },
+        { age: 11.17, date: '2024-05-18', h: 145.2, w: 37.0, bmi: 17.5, note: '定期居家測量' },
+        { age: 11.67, date: '2024-11-21', h: 148.5, w: 39.2, bmi: 17.8, note: '學校六年級健檢' }
+      ];
+
+      // 若有 Token，嘗試向後端請求真實數據
+      if (currentUser.token && typeof API_BASE_URL !== 'undefined') {
+        try {
+          const res = await fetch(`${API_BASE_URL}/student/summary`, {
+            headers: { 'Authorization': `Bearer ${currentUser.token}` }
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              const d = result.data;
+              if (d.student?.name) {
+                currentUser.name = d.student.name;
+                document.getElementById('header-user-name').textContent = d.student.name;
+                document.getElementById('hero-student-name').textContent = d.student.name;
+                document.getElementById('hero-avatar-initial').textContent = d.student.name.charAt(0);
+              }
+              if (d.child) {
+                childGender = d.child.gender === 'girl' ? 'girl' : 'boy';
+              }
+              if (d.summary) {
+                summary = d.summary;
+              }
+              if (Array.isArray(d.growthRecords) && d.growthRecords.length > 0) {
+                growthRecords = d.growthRecords.map(r => {
+                  let age = 11.67;
+                  if (d.child?.birthday && r.record_date) {
+                    const b = new Date(d.child.birthday);
+                    const rec = new Date(r.record_date);
+                    age = Number(((rec - b) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(2));
+                  }
+                  return {
+                    age: isNaN(age) || age <= 0 ? 11.67 : age,
+                    date: String(r.record_date).slice(0, 10),
+                    h: Number(r.height_cm || 0),
+                    w: Number(r.weight_kg || 0),
+                    bmi: Number(r.bmi || ((r.weight_kg / Math.pow(r.height_cm / 100, 2)).toFixed(1))),
+                    note: r.note || ''
+                  };
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('API連線使用本地示範數據:', err);
+        }
+      }
+
+      // 更新性別徽章
+      updateGenderDisplay();
+
+      // 渲染五大學科學習追蹤卡片
+      renderLearningTracking(summary);
+
+      // 渲染學習成長紀錄 (錯題精熟率進度條)
+      renderGrowthRecords(summary);
+
+      // 繪製生理成長生長曲線圖表
+      initGrowthChart();
+    }
+
+    // 更新性別標籤
+    function updateGenderDisplay() {
+      const gBadge = document.getElementById('hero-gender-badge');
+      const physBadge = document.getElementById('phys-gender-badge');
+      if (childGender === 'girl') {
+        const girlHtml = '<i class="fa-solid fa-venus"></i> 女童';
+        if (gBadge) {
+          gBadge.className = 'px-2 py-0.5 rounded-full bg-pink-500/30 text-pink-200 text-xs font-bold border border-pink-300/30 flex items-center gap-1';
+          gBadge.innerHTML = girlHtml;
+        }
+        if (physBadge) {
+          physBadge.className = 'px-1.5 py-0.5 rounded text-[11px] bg-pink-100 text-pink-700 font-bold';
+          physBadge.innerHTML = girlHtml;
+        }
+      } else {
+        const boyHtml = '<i class="fa-solid fa-mars"></i> 男童';
+        if (gBadge) {
+          gBadge.className = 'px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 text-xs font-bold border border-blue-300/30 flex items-center gap-1';
+          gBadge.innerHTML = boyHtml;
+        }
+        if (physBadge) {
+          physBadge.className = 'px-1.5 py-0.5 rounded text-[11px] bg-blue-100 text-blue-700 font-bold';
+          physBadge.innerHTML = boyHtml;
+        }
+      }
+    }
+
+    // 渲染所有科目的學習追蹤
+    function renderLearningTracking(s) {
+      // 1. 英文
+      const eng = s.english || {};
+      document.getElementById('track-eng-days').textContent = eng.completedDays ?? 0;
+      document.getElementById('track-eng-words').textContent = eng.learnedWords ?? 0;
+      document.getElementById('track-eng-starred').textContent = eng.starredCount ?? 0;
+      document.getElementById('track-eng-score').textContent = eng.avgScore ?? 0;
+      document.getElementById('track-eng-quizzes').textContent = eng.quizCount ?? 0;
+
+      // 2. 數學
+      const math = s.math || {};
+      document.getElementById('track-math-quizzes').textContent = math.quizCount ?? 0;
+      document.getElementById('track-math-score').textContent = math.avgScore ?? 0;
+      document.getElementById('track-math-mastered').textContent = math.masteredWrong ?? 0;
+      document.getElementById('track-math-wrong').textContent = math.totalWrong ?? 0;
+
+      // 3. 自然
+      const nature = s.nature || {};
+      document.getElementById('track-nature-days').textContent = nature.completedDays ?? 0;
+      document.getElementById('track-nature-score').textContent = nature.avgScore ?? 0;
+      document.getElementById('track-nature-mastered').textContent = nature.masteredWrong ?? 0;
+      document.getElementById('track-nature-wrong').textContent = nature.totalWrong ?? 0;
+
+      // 4. 社會
+      const social = s.social || {};
+      document.getElementById('track-social-days').textContent = social.completedDays ?? 0;
+      document.getElementById('track-social-score').textContent = social.avgScore ?? 0;
+      document.getElementById('track-social-mastered').textContent = social.masteredWrong ?? 0;
+      document.getElementById('track-social-wrong').textContent = social.totalWrong ?? 0;
+
+      // 5. 國語
+      const chinese = s.chinese || {};
+      document.getElementById('track-chinese-days').textContent = chinese.completedDays ?? 0;
+      document.getElementById('track-chinese-score').textContent = chinese.avgScore ?? 0;
+      document.getElementById('track-chinese-mastered').textContent = chinese.masteredWrong ?? 0;
+      document.getElementById('track-chinese-stars').textContent = chinese.idiomStars ?? 0;
+    }
+
+    // 渲染學習成長紀錄 (四科錯題精熟率進度條)
+    function renderGrowthRecords(s) {
+      const calcRate = (mastered, total) => {
+        if (!total || total === 0) return '100%';
+        const r = Math.min(100, Math.round((mastered / total) * 100));
+        return `${r}%`;
+      };
+
+      const mRate = calcRate(s.math?.masteredWrong || 0, s.math?.totalWrong || 0);
+      const nRate = calcRate(s.nature?.masteredWrong || 0, s.nature?.totalWrong || 0);
+      const sRate = calcRate(s.social?.masteredWrong || 0, s.social?.totalWrong || 0);
+      const cRate = calcRate(s.chinese?.masteredWrong || 0, s.chinese?.totalWrong || 0);
+
+      document.getElementById('growth-math-rate').textContent = mRate;
+      document.getElementById('growth-math-bar').style.width = mRate;
+
+      document.getElementById('growth-nature-rate').textContent = nRate;
+      document.getElementById('growth-nature-bar').style.width = nRate;
+
+      document.getElementById('growth-social-rate').textContent = sRate;
+      document.getElementById('growth-social-bar').style.width = sRate;
+
+      document.getElementById('growth-chinese-rate').textContent = cRate;
+      document.getElementById('growth-chinese-bar').style.width = cRate;
+    }
+
+    // =========================================================================
+    // 生長曲線繪製與控制邏輯 (只顯示生長曲線百分位圖表)
+    // =========================================================================
+
+    function switchGrowthMetric(m) {
+      currentMetric = m;
+      ['height', 'weight', 'bmi'].forEach(id => {
+        const btn = document.getElementById(`btn-metric-${id}`);
+        if (!btn) return;
+        if (id === m) {
+          btn.className = 'px-3 py-1 rounded-md text-xs font-bold transition-all bg-[#173852] text-white shadow-sm cursor-pointer';
+        } else {
+          btn.className = 'px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+        }
+      });
+      drawGrowthChart();
+    }
+
+    function getCenterAge() {
+      if (growthRecords.length > 0) {
+        return growthRecords[growthRecords.length - 1].age || 11.67;
+      }
+      return 11.67;
+    }
+
+    function updateRangeDisplay(chart) {
+      const el = document.getElementById('growth-chart-range-text');
+      if (!el || !chart || !chart.scales || !chart.scales.x) return;
+      const minVal = Math.max(0, chart.scales.x.min).toFixed(1);
+      const maxVal = Math.min(18, chart.scales.x.max).toFixed(1);
+      const center = getCenterAge().toFixed(1);
+      el.textContent = `顯示範圍：${minVal} 歲 ～ ${maxVal} 歲 (當前: ${center}歲)`;
+    }
+
+    function zoomGrowthChart(direction) {
+      if (!chartInstance || !chartInstance.scales || !chartInstance.scales.x) return;
+      const currentMin = chartInstance.scales.x.min;
+      const currentMax = chartInstance.scales.x.max;
+      const currentSpan = Math.max(0.4, currentMax - currentMin);
+      const center = (currentMin + currentMax) / 2;
+
+      let newSpan = direction === 'in' ? currentSpan * 0.7 : currentSpan * 1.4;
+      if (newSpan < 0.6) newSpan = 0.6;
+      if (newSpan > 18) newSpan = 18;
+
+      let newMin = center - newSpan / 2;
+      let newMax = center + newSpan / 2;
+      if (newMin < 0) { newMin = 0; newMax = Math.min(18, newSpan); }
+      else if (newMax > 18) { newMax = 18; newMin = Math.max(0, 18 - newSpan); }
+
+      chartInstance.options.scales.x.min = Number(newMin.toFixed(2));
+      chartInstance.options.scales.x.max = Number(newMax.toFixed(2));
+      chartInstance.update();
+      updateRangeDisplay(chartInstance);
+    }
+
+    function resetGrowthChartDefault() {
+      if (!chartInstance) return;
+      const center = getCenterAge();
+      chartInstance.options.scales.x.min = Math.max(0, Number((center - 1.2).toFixed(2)));
+      chartInstance.options.scales.x.max = Math.min(18, Number((center + 1.2).toFixed(2)));
+      chartInstance.update();
+      updateRangeDisplay(chartInstance);
+    }
+
+    function resetGrowthChartFull() {
+      if (!chartInstance) return;
+      chartInstance.options.scales.x.min = 0;
+      chartInstance.options.scales.x.max = 18;
+      chartInstance.update();
+      updateRangeDisplay(chartInstance);
+    }
+
+    function initGrowthChart() {
+      // 更新生理快見指標摘要
+      if (growthRecords.length > 0) {
+        const latest = growthRecords[growthRecords.length - 1];
+        document.getElementById('phys-quick-height').textContent = latest.h || '--';
+        document.getElementById('phys-quick-weight').textContent = latest.w || '--';
+        document.getElementById('phys-quick-bmi').textContent = latest.bmi || '--';
+      }
+      drawGrowthChart();
+    }
+
+    function drawGrowthChart() {
+      const canvas = document.getElementById('growth-curve-chart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const normSet = NORMS[childGender] || NORMS.boy;
+      const data = normSet[currentMetric];
+
+      const toPoints = (arr) => arr.map((v, i) => ({ x: NORMS.ages[i], y: v }));
+
+      const pts = growthRecords.map(r => ({
+        x: r.age,
+        y: currentMetric === 'height' ? r.h : (currentMetric === 'weight' ? r.w : r.bmi),
+        date: r.date,
+        h: r.h, w: r.w, bmi: r.bmi, note: r.note
+      }));
+
+      const center = getCenterAge();
+      const defaultMin = Math.max(0, Number((center - 1.2).toFixed(2)));
+      const defaultMax = Math.min(18, Number((center + 1.2).toFixed(2)));
+
+      if (chartInstance) chartInstance.destroy();
+
+      const unit = currentMetric === 'height' ? 'cm' : (currentMetric === 'weight' ? 'kg' : '');
+      const metricLabel = currentMetric === 'height' ? '身高 (cm)' : (currentMetric === 'weight' ? '體重 (kg)' : 'BMI');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: NORMS.ages,
+          datasets: [
+            {
+              label: '【你的生長測量點】',
+              data: pts,
+              borderColor: '#f59e0b',
+              backgroundColor: '#f59e0b',
+              borderWidth: 3,
+              pointRadius: 7,
+              pointHoverRadius: 9,
+              pointBackgroundColor: '#f59e0b',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2.5,
+              zIndex: 99,
+              order: 1
+            },
+            {
+              label: 'P97 (97%)',
+              data: toPoints(data.p97),
+              borderColor: 'rgba(148, 163, 184, 0.7)',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0.35,
+              order: 10
+            },
+            {
+              label: 'P85 (85%)',
+              data: toPoints(data.p85),
+              borderColor: 'rgba(13, 148, 136, 0.75)',
+              borderWidth: 1.8,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.35,
+              order: 9
+            },
+            {
+              label: 'P50 (中位線 50%)',
+              data: toPoints(data.p50),
+              borderColor: 'rgba(5, 150, 105, 0.95)',
+              borderWidth: 2.8,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.35,
+              order: 8
+            },
+            {
+              label: 'P15 (15%)',
+              data: toPoints(data.p15),
+              borderColor: 'rgba(6, 182, 212, 0.75)',
+              borderWidth: 1.8,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.35,
+              order: 9
+            },
+            {
+              label: 'P3 (3%)',
+              data: toPoints(data.p3),
+              borderColor: 'rgba(99, 102, 241, 0.7)',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0.35,
+              order: 10
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'nearest',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.92)',
+              titleFont: { size: 12, weight: 'bold', family: 'Noto Sans TC' },
+              bodyFont: { size: 11, family: 'Noto Sans TC' },
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                title: function(items) {
+                  if (items.length && items[0].raw && items[0].raw.date) {
+                    return `📅 測量日期：${items[0].raw.date}`;
+                  }
+                  return `年齡：${items[0].parsed.x} 歲`;
+                },
+                label: function(ctx) {
+                  if (ctx.datasetIndex === 0) {
+                    const p = ctx.raw;
+                    return `你的測量：${p.y} ${unit} (身高:${p.h}cm 體重:${p.w}kg BMI:${p.bmi})`;
+                  }
+                  return `${ctx.dataset.label}: ${ctx.parsed.y} ${unit}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: '年齡 (歲)',
+                font: { size: 11, weight: 'bold', family: 'Noto Sans TC' },
+                color: '#64748b'
+              },
+              min: defaultMin,
+              max: defaultMax,
+              grid: {
+                color: 'rgba(226, 232, 240, 0.6)'
+              },
+              ticks: {
+                stepSize: 0.5,
+                callback: (val) => `${val}歲`,
+                font: { size: 10, weight: 'bold' }
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: metricLabel,
+                font: { size: 11, weight: 'bold', family: 'Noto Sans TC' },
+                color: '#64748b'
+              },
+              grid: {
+                color: 'rgba(226, 232, 240, 0.6)'
+              },
+              ticks: {
+                font: { size: 10, weight: 'bold' }
+              }
+            }
+          }
+        }
+      });
+
+      updateRangeDisplay(chartInstance);
+    }
+
+    // 啟動頁面
+    window.addEventListener('DOMContentLoaded', initProfilePage);
+  </script>
+</body>
+</html>
