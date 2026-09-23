@@ -49,6 +49,73 @@ const {
 assert.deepStrictEqual(Object.keys(CURRICULUM), ['康軒', '南一', '翰林']);
 assert.ok(Object.values(FACTS).every(facts => facts.length >= 10), '每個核心主題至少需要 10 個核心概念題目');
 
+// 驗證南一版 115 學年度六上課綱校正（第十一冊目次四大單元與代表課文）
+assert.strictEqual(CURRICULUM['南一'][0][0], '[六上] 1. 美好時刻');
+assert.strictEqual(CURRICULUM['南一'][1][0], '[六上] 2. 工作圖像');
+assert.strictEqual(CURRICULUM['南一'][2][0], '[六上] 3. 問題解決');
+assert.strictEqual(CURRICULUM['南一'][3][0], '[六上] 4. 文學之窗');
+assert.ok(CURRICULUM['南一'][0][2].includes('在天晴了的時候') && CURRICULUM['南一'][0][2].includes('客至'), '南一六上單元一應包含在天晴了的時候與客至');
+assert.ok(CURRICULUM['南一'][1][2].includes('登月先鋒') && CURRICULUM['南一'][1][2].includes('人稱'), '南一六上單元二應包含登月先鋒與人稱');
+assert.ok(CURRICULUM['南一'][2][2].includes('火燒連環船') && CURRICULUM['南一'][2][2].includes('圖像做筆記'), '南一六上單元三應包含火燒連環船與圖像做筆記');
+assert.ok(CURRICULUM['南一'][3][2].includes('戲術') && CURRICULUM['南一'][3][2].includes('少年筆耕'), '南一六上單元四應包含戲術與少年筆耕');
+
+// 驗證康軒版 115 學年度六上課綱校正（三大單元與 8 課代表課文）
+assert.strictEqual(CURRICULUM['康軒'][0][0], '[六上] 1. 成長的軌跡');
+assert.strictEqual(CURRICULUM['康軒'][1][0], '[六上] 2. 臺灣風情畫');
+assert.strictEqual(CURRICULUM['康軒'][2][0], '[六上] 3. 人性的光輝');
+assert.ok(CURRICULUM['康軒'][0][2].includes('跑道') && CURRICULUM['康軒'][0][2].includes('朱子治家格言選'), '康軒六上單元一應包含跑道與朱子治家格言選');
+assert.ok(CURRICULUM['康軒'][1][2].includes('臺灣美食詩選') && CURRICULUM['康軒'][1][2].includes('珍珠奶茶'), '康軒六上單元二應包含臺灣美食詩選與珍珠奶茶');
+assert.ok(CURRICULUM['康軒'][2][2].includes('大小剛好的鞋子') && CURRICULUM['康軒'][2][2].includes('狐假虎威'), '康軒六上單元三應包含大小剛好的鞋子與狐假虎威');
+
+// 驗證翰林版 115 學年度六上課綱校正（四大單元與 12 課代表課文）
+assert.strictEqual(CURRICULUM['翰林'][0][0], '[六上] 1. 自我探討');
+assert.strictEqual(CURRICULUM['翰林'][1][0], '[六上] 2. 向大自然學習');
+assert.strictEqual(CURRICULUM['翰林'][2][0], '[六上] 3. 美學延伸');
+assert.strictEqual(CURRICULUM['翰林'][3][0], '[六上] 4. 經典文學導讀');
+assert.ok(CURRICULUM['翰林'][0][2].includes('遇見自己') && CURRICULUM['翰林'][0][2].includes('孔子說的話'), '翰林六上單元一應包含遇見自己與孔子說的話');
+assert.ok(CURRICULUM['翰林'][1][2].includes('向大自然學習') && CURRICULUM['翰林'][1][2].includes('善用自嘲'), '翰林六上單元二應包含向大自然學習與善用自嘲');
+assert.ok(CURRICULUM['翰林'][2][2].includes('跟著公共藝術去旅行') && CURRICULUM['翰林'][2][2].includes('戲台上的她與他'), '翰林六上單元三應包含跟著公共藝術去旅行與戲台上的她與他');
+assert.ok(CURRICULUM['翰林'][3][2].includes('過故人莊') && CURRICULUM['翰林'][3][2].includes('存存（存根）'), '翰林六上單元四應包含過故人莊與存存（存根）');
+
+// 驗證統整加深與素養挑戰題庫容量充足，支援多回合隨機題型
+assert.ok(INTEGRATION_FACTS.rhetoric_advanced.length >= 18, '統整加深題庫應包含至少 18 題加深題型');
+assert.ok(COMPETENCY_FACTS.competency_reading.length >= 12, '素養挑戰題庫應包含至少 12 題長文與生活情境思辨題');
+
+// 驗證南一版、康軒版、翰林版各課代表性題型在題庫中皆有對應題目涵蓋
+const allCorePrompts = Object.values(FACTS).flat().map(f => f[0]).join(' ');
+const allIntegPrompts = INTEGRATION_FACTS.rhetoric_advanced.map(f => f[0]).join(' ');
+const allCompPrompts = COMPETENCY_FACTS.competency_reading.map(f => f[0]).join(' ');
+const allPromptsText = `${allCorePrompts} ${allIntegPrompts} ${allCompPrompts}`;
+
+const requiredNanYiKeywords = [
+  '在天晴了的時候', '珍珠鳥', '客至',
+  '贏得喝采的輸家', '哇！原來如此', '登月先鋒',
+  '明智的抉擇', '飢渴好「火」伴', '火燒連環船',
+  '戲術', '紀念照', '少年筆耕'
+];
+requiredNanYiKeywords.forEach(kw => {
+  assert.ok(allPromptsText.includes(kw), `南一 115 學年度課文關鍵詞【${kw}】應在題庫題目中被完整涵蓋`);
+});
+
+const requiredKangHsuanKeywords = [
+  '跑道', '朱子治家格言', '談遇見更好的自己',
+  '臺灣美食詩選', '最好的味覺禮物', '珍珠奶茶',
+  '大小剛好的鞋子', '狐假虎威'
+];
+requiredKangHsuanKeywords.forEach(kw => {
+  assert.ok(allPromptsText.includes(kw), `康軒 115 學年度課文關鍵詞【${kw}】應在題庫題目中被完整涵蓋`);
+});
+
+const requiredHanLinKeywords = [
+  '遇見自己', '為什麼大家不理我', '孔子說的話',
+  '向大自然學習', '樹的聯想', '善用自嘲',
+  '跟著公共藝術去旅行', '街頭藝術家', '戲台上的她與他',
+  '過故人莊', '來一碗溫暖的羹湯', '存根'
+];
+requiredHanLinKeywords.forEach(kw => {
+  assert.ok(allPromptsText.includes(kw), `翰林 115 學年度課文關鍵詞【${kw}】應在題庫題目中被完整涵蓋`);
+});
+
 // 驗證三大版本與各章節 20 題架構 (12核心 + 6加深 + 2素養) 與同輪去重
 for (const [publisher, chapters] of Object.entries(CURRICULUM)) {
   assert.ok(chapters.length >= 6, `${publisher} 應包含六上與六下完整章節`);
