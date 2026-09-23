@@ -1,7 +1,7 @@
 /**
  * 酷學習 Cool Learning - 邊玩邊學遊戲引擎
- * 核心遊戲：搶救字母大作戰 (Word Rescue)
- * 支援：滑鼠靈敏跟隨、手機/平板觸控拖曳、三滴血扣血機制、即時音效與英文發音
+ * 1. 搶救字母大作戰 (Word Rescue) - 頂菜籃接字母、三滴血、關卡提速 30%、單字語音朗讀、手機震動
+ * 2. 光速小鼠 (Speedy Mouse) - 六動物賽跑 (倉鼠/貓/狗/龜/兔/水豚)、數學心算極速答題、答題秒數連動衝刺、每10秒提速10%、距離排名
  */
 
 (function() {
@@ -61,7 +61,6 @@
     { word: "SISTER", meaning: "姊妹", pos: "n.", phonetic: "/ˈsɪstər/" }
   ];
 
-  // 嘗試載入學生當日英語學習單字進行擴充
   function getActiveWordBank() {
     let list = [...DEFAULT_WORD_BANK];
     try {
@@ -190,20 +189,93 @@
         osc.stop(t + 0.3);
       });
     }
+
+    // 賽跑倒計時嗶聲
+    playBeep(isHigh = false) {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isHigh ? 880 : 440, t);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.22);
+    }
+
+    // 賽跑衝刺風嘯 / 氮氣加速音
+    playTurbo() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, t);
+      osc.frequency.exponentialRampToValueAtTime(960, t + 0.35);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.4);
+    }
+
+    // 終點哨聲
+    playWhistle() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1400, t);
+      osc.frequency.linearRampToValueAtTime(1550, t + 0.2);
+      osc.frequency.linearRampToValueAtTime(1380, t + 0.45);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    }
   }
 
   const sounds = new SoundEngine();
 
-  // 語音朗讀單字 (Web Speech Synthesis)
-  function speakWord(text) {
-    if (!window.speechSynthesis) return;
+  // 語音朗讀單字 (Web Speech Synthesis)，支援朗讀完畢回調
+  function speakWord(text, onComplete) {
+    if (!window.speechSynthesis) {
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'en-US';
       u.rate = 0.85;
+      let finished = false;
+      const done = () => {
+        if (!finished) {
+          finished = true;
+          if (typeof onComplete === 'function') onComplete();
+        }
+      };
+      u.onend = done;
+      u.onerror = done;
+      // 容錯防禦：若瀏覽器未觸發 onend，1.6 秒後自動前進
+      setTimeout(done, 1600);
       window.speechSynthesis.speak(u);
-    } catch (_) {}
+    } catch (_) {
+      if (typeof onComplete === 'function') onComplete();
+    }
   }
 
   // =========================================================================
@@ -246,8 +318,7 @@
       this.spawnInterval = 75; // 掉落頻率 (幀數)
       this.shakeIntensity = 0;
 
-      // 畫布縮放比
-      this.scale = 1;
+      // 畫布尺寸
       this.width = 640;
       this.height = 700;
 
@@ -299,10 +370,6 @@
 
     resizeCanvas() {
       if (!this.canvas) return;
-      const container = this.canvas.parentElement;
-      if (!container) return;
-      const w = Math.min(container.clientWidth || 640, 680);
-      const h = Math.min(window.innerHeight * 0.65, 680);
       this.canvas.width = this.width;
       this.canvas.height = this.height;
       this.player.y = this.height - 110;
@@ -353,7 +420,7 @@
       this.targetLetterIndex = 0;
       this.renderWordSlots();
 
-      // 自動朗讀單字，加深記憶
+      // 開局題目自動朗讀單字，加深記憶
       speakWord(this.currentWord);
     }
 
@@ -405,31 +472,31 @@
       }
     }
 
-    // 掉落物生成
+    // 掉落物生成：每過一關(rescuedCount)，速度提升 30%
     spawnBubble() {
-      // 確保一定機率出現當前需要的字母
       const targetChar = this.currentWord[this.targetLetterIndex];
-      const isTarget = Math.random() < 0.45; // 45% 機率產生目前所需字母
+      const isTarget = Math.random() < 0.45;
       let char = targetChar;
 
       if (!isTarget || !targetChar) {
-        // 隨機干擾字母
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         char = alphabet[Math.floor(Math.random() * alphabet.length)];
       }
 
       const radius = 26;
       const x = radius + Math.random() * (this.width - radius * 2);
-      const speed = 2.2 + Math.min(this.rescuedCount * 0.15, 2.5); // 隨過關數平緩微幅提速
 
-      // 多彩活潑泡泡顏色
+      // 每過一關(完成一個單字)，速度提升 30%
+      const baseSpeed = 2.0;
+      const speed = baseSpeed * Math.pow(1.30, this.rescuedCount);
+
       const colors = [
-        { bg: '#38bdf8', border: '#0284c7', text: '#ffffff' }, // 天藍
-        { bg: '#fb923c', border: '#ea580c', text: '#ffffff' }, // 活力橙
-        { bg: '#a855f7', border: '#7e22ce', text: '#ffffff' }, // 夢幻紫
-        { bg: '#ec4899', border: '#db2777', text: '#ffffff' }, // 亮桃紅
-        { bg: '#10b981', border: '#059669', text: '#ffffff' }, // 翠綠
-        { bg: '#facc15', border: '#ca8a04', text: '#713f12' }  // 金黃
+        { bg: '#38bdf8', border: '#0284c7', text: '#ffffff' },
+        { bg: '#fb923c', border: '#ea580c', text: '#ffffff' },
+        { bg: '#a855f7', border: '#7e22ce', text: '#ffffff' },
+        { bg: '#ec4899', border: '#db2777', text: '#ffffff' },
+        { bg: '#10b981', border: '#059669', text: '#ffffff' },
+        { bg: '#facc15', border: '#ca8a04', text: '#713f12' }
       ];
       const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -445,7 +512,6 @@
       });
     }
 
-    // 主渲染循環
     loop() {
       if (!this.isRunning) return;
       if (!this.isPaused) {
@@ -456,10 +522,8 @@
     }
 
     update() {
-      // 角色平滑插值跟隨目標 X
       this.player.x += (this.player.targetX - this.player.x) * 0.28;
 
-      // 表情恢復
       if (this.player.moodTimer > 0) {
         this.player.moodTimer--;
         if (this.player.moodTimer <= 0) {
@@ -467,63 +531,56 @@
         }
       }
 
-      // 震動衰減
       if (this.shakeIntensity > 0) {
         this.shakeIntensity *= 0.88;
         if (this.shakeIntensity < 0.2) this.shakeIntensity = 0;
       }
 
-      // 生成掉落物
       this.spawnTimer++;
-      if (this.spawnTimer >= this.spawnInterval) {
+      // 隨關卡提升，掉落間隔略微縮短，節奏更緊湊
+      const currentInterval = Math.max(38, Math.round(this.spawnInterval / Math.pow(1.08, this.rescuedCount)));
+      if (this.spawnTimer >= currentInterval) {
         this.spawnTimer = 0;
         this.spawnBubble();
       }
 
-      // 菜籃接物判定區
       const basketY = this.player.y - 10;
       const basketLeft = this.player.x - this.player.basketWidth / 2;
       const basketRight = this.player.x + this.player.basketWidth / 2;
 
-      // 更新泡泡物理與碰撞
       for (let i = this.bubbles.length - 1; i >= 0; i--) {
         const b = this.bubbles[i];
         b.y += b.speed;
         b.wobble += b.wobbleSpeed;
         const currentX = b.x + Math.sin(b.wobble) * 1.5;
 
-        // 碰撞檢測：進入菜籃上方區域
         if (
           b.y + b.radius >= basketY &&
           b.y - b.radius <= basketY + this.player.basketHeight &&
           currentX >= basketLeft &&
           currentX <= basketRight
         ) {
-          // 接到了！
           this.handleCatchLetter(b, currentX, basketY);
           this.bubbles.splice(i, 1);
           continue;
         }
 
-        // 掉落地面破裂移除
         if (b.y - b.radius > this.height) {
           this.bubbles.splice(i, 1);
         }
       }
 
-      // 更新粒子特效
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i];
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.15; // 重力
+        p.vy += 0.15;
         p.life -= 0.025;
         if (p.life <= 0) {
           this.particles.splice(i, 1);
         }
       }
 
-      // 更新漂浮文字
       for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
         const ft = this.floatingTexts[i];
         ft.y -= 1.2;
@@ -548,48 +605,48 @@
         this.player.faceMood = 'happy';
         this.player.moodTimer = 35;
 
-        // 噴發金色星星粒子
         this.createParticles(catchX, catchY, '#fbbf24', 18);
         this.addFloatingText(`+25 ${bubble.char}!`, catchX, catchY - 15, '#10b981');
 
         this.renderWordSlots();
         this.updateHud();
 
-        // 檢查單字是否全部完成
         if (this.targetLetterIndex >= this.currentWord.length) {
           this.handleWordCompleted();
         }
       } else {
         // =====================
-        // 接錯字母！扣一滴血
+        // 接錯字母！扣一滴血 + 手機震動 0.5 秒 (500ms)
         // =====================
         sounds.playHurt();
         this.lives--;
-        this.shakeIntensity = 12; // 畫面震動
+        this.shakeIntensity = 14;
         this.player.faceMood = 'hurt';
         this.player.moodTimer = 45;
 
-        // 噴發紅色警戒粒子
+        // 手機震動 0.5 秒 (500ms)
+        if (navigator.vibrate) {
+          try { navigator.vibrate(500); } catch (_) {}
+        }
+
         this.createParticles(catchX, catchY, '#f43f5e', 22);
         this.addFloatingText(`-1 ❤️ 錯了!`, catchX, catchY - 15, '#f43f5e');
 
         this.updateHud();
 
-        // 檢查是否血量扣完
         if (this.lives <= 0) {
           this.gameOver();
         }
       }
     }
 
-    // 單字拼寫完成
+    // 單字拼寫完成：同時發音讀出該單字，朗讀結束後再進入下一關
     handleWordCompleted() {
       sounds.playWordComplete();
       this.score += 100;
       this.rescuedCount++;
       this.updateHud();
 
-      // 產生慶祝粒子雨
       for (let i = 0; i < 40; i++) {
         this.particles.push({
           x: this.width / 2 + (Math.random() - 0.5) * 300,
@@ -602,14 +659,14 @@
         });
       }
 
-      this.addFloatingText("PERFECT! +100", this.width / 2, 220, '#f59e0b', 28);
+      this.addFloatingText(`PERFECT! +100 (速度+30%)`, this.width / 2, 220, '#f59e0b', 24);
 
-      // 稍作停頓展示並發音，接著前往下一題
-      setTimeout(() => {
+      // 同時發音讀出該單字，朗讀結束後再進入下一關
+      speakWord(this.currentWord, () => {
         if (this.isRunning && this.lives > 0) {
           this.pickNextWord();
         }
-      }, 1400);
+      });
     }
 
     // 遊戲結束
@@ -630,7 +687,6 @@
       }
     }
 
-    // 粒子生成器
     createParticles(x, y, color, count) {
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -647,7 +703,6 @@
       }
     }
 
-    // 漂浮提示文字
     addFloatingText(text, x, y, color, size = 20) {
       this.floatingTexts.push({
         text,
@@ -659,54 +714,39 @@
       });
     }
 
-    // 繪製全畫面
     render() {
       if (!this.ctx) return;
       const ctx = this.ctx;
 
       ctx.save();
-
-      // 震動效果
       if (this.shakeIntensity > 0) {
         const ox = (Math.random() - 0.5) * this.shakeIntensity;
         const oy = (Math.random() - 0.5) * this.shakeIntensity;
         ctx.translate(ox, oy);
       }
 
-      // 1. 清空畫布並繪製童趣天空與草地背景
       this.drawBackground(ctx);
-
-      // 2. 繪製掉落中的字母泡泡
       this.drawBubbles(ctx);
-
-      // 3. 繪製頂著菜籃的小人
       this.drawPlayer(ctx);
-
-      // 4. 繪製粒子特效
       this.drawParticles(ctx);
-
-      // 5. 繪製漂浮提示字
       this.drawFloatingTexts(ctx);
 
       ctx.restore();
     }
 
     drawBackground(ctx) {
-      // 漸層天空
       const skyGrad = ctx.createLinearGradient(0, 0, 0, this.height);
-      skyGrad.addColorStop(0, '#e0f2fe'); // 柔和天藍
-      skyGrad.addColorStop(0.7, '#f0fdf4'); // 淡淡草綠
+      skyGrad.addColorStop(0, '#e0f2fe');
+      skyGrad.addColorStop(0.7, '#f0fdf4');
       skyGrad.addColorStop(1, '#dcfce7');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, this.width, this.height);
 
-      // 飄動白雲 (背景點綴)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       this.drawCloud(ctx, 90, 80, 48);
       this.drawCloud(ctx, 420, 110, 60);
       this.drawCloud(ctx, 260, 60, 36);
 
-      // 地面綠地弧形
       ctx.fillStyle = '#86efac';
       ctx.beginPath();
       ctx.ellipse(this.width / 2, this.height + 40, this.width * 0.65, 110, 0, 0, Math.PI * 2);
@@ -732,30 +772,25 @@
         ctx.save();
         ctx.translate(currentX, b.y);
 
-        // 泡泡陰影
         ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
         ctx.shadowBlur = 8;
         ctx.shadowOffsetY = 4;
 
-        // 圓形主體
         ctx.fillStyle = b.color.bg;
         ctx.beginPath();
         ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // 邊框
         ctx.lineWidth = 3.5;
         ctx.strokeStyle = b.color.border;
         ctx.stroke();
 
-        // 高光亮點
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
         ctx.beginPath();
         ctx.arc(-b.radius * 0.3, -b.radius * 0.35, b.radius * 0.28, 0, Math.PI * 2);
         ctx.fill();
 
-        // 字母本體
         ctx.fillStyle = b.color.text;
         ctx.font = '900 24px "Fredoka", "Noto Sans TC", sans-serif';
         ctx.textAlign = 'center';
@@ -771,12 +806,10 @@
       ctx.save();
       ctx.translate(p.x, p.y);
 
-      // 1. 菜籃 (位於小人頭頂)
       const bW = p.basketWidth;
       const bH = p.basketHeight;
       const bY = -35;
 
-      // 菜籃本體 (編織質感褐黃色)
       ctx.fillStyle = '#b45309';
       ctx.beginPath();
       ctx.moveTo(-bW / 2, bY);
@@ -789,7 +822,6 @@
       ctx.strokeStyle = '#78350f';
       ctx.stroke();
 
-      // 菜籃紅白野餐格子布內襯
       ctx.fillStyle = '#fef3c7';
       ctx.beginPath();
       ctx.moveTo(-bW / 2 + 4, bY);
@@ -799,7 +831,6 @@
       ctx.closePath();
       ctx.fill();
 
-      // 菜籃編織條紋
       ctx.strokeStyle = 'rgba(254, 243, 199, 0.5)';
       ctx.lineWidth = 2;
       for (let i = -bW / 2 + 16; i < bW / 2 - 10; i += 14) {
@@ -809,30 +840,26 @@
         ctx.stroke();
       }
 
-      // 2. 雙手向上舉托著菜籃
-      ctx.strokeStyle = '#fbcfe8'; // 手臂膚色
+      ctx.strokeStyle = '#fbcfe8';
       ctx.lineWidth = 6;
       ctx.lineCap = 'round';
-      // 左手臂
       ctx.beginPath();
       ctx.moveTo(-16, 12);
       ctx.lineTo(-28, -6);
       ctx.lineTo(-bW / 2 + 14, bY + bH - 4);
       ctx.stroke();
-      // 右手臂
       ctx.beginPath();
       ctx.moveTo(16, 12);
       ctx.lineTo(28, -6);
       ctx.lineTo(bW / 2 - 14, bY + bH - 4);
       ctx.stroke();
 
-      // 3. 小人頭部 (可愛圓臉)
-      ctx.fillStyle = '#fde047'; // 亮麗俏皮小黃帽
+      ctx.fillStyle = '#fde047';
       ctx.beginPath();
       ctx.arc(0, -6, 26, Math.PI, 0, false);
       ctx.fill();
 
-      ctx.fillStyle = '#fed7aa'; // 膚色臉蛋
+      ctx.fillStyle = '#fed7aa';
       ctx.beginPath();
       ctx.arc(0, 4, 22, 0, Math.PI * 2);
       ctx.fill();
@@ -840,16 +867,13 @@
       ctx.strokeStyle = '#c2410c';
       ctx.stroke();
 
-      // 腮紅
       ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
       ctx.beginPath();
       ctx.arc(-13, 8, 4.5, 0, Math.PI * 2);
       ctx.arc(13, 8, 4.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // 表情繪製
       if (p.faceMood === 'happy') {
-        // 開心瞇瞇眼 ^ ^
         ctx.strokeStyle = '#431407';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
@@ -858,51 +882,42 @@
         ctx.beginPath();
         ctx.arc(7, 2, 5, Math.PI * 1.1, Math.PI * 1.9);
         ctx.stroke();
-        // 開懷大笑
         ctx.fillStyle = '#e11d48';
         ctx.beginPath();
         ctx.arc(0, 10, 6, 0, Math.PI);
         ctx.fill();
       } else if (p.faceMood === 'hurt') {
-        // 暈眩圈圈眼 @ @
         ctx.strokeStyle = '#7f1d1d';
         ctx.lineWidth = 2.5;
-        // 左眼 X
         ctx.beginPath();
         ctx.moveTo(-10, -1); ctx.lineTo(-4, 5);
         ctx.moveTo(-4, -1); ctx.lineTo(-10, 5);
         ctx.stroke();
-        // 右眼 X
         ctx.beginPath();
         ctx.moveTo(4, -1); ctx.lineTo(10, 5);
         ctx.moveTo(10, -1); ctx.lineTo(4, 5);
         ctx.stroke();
-        // 苦惱波浪嘴
         ctx.beginPath();
         ctx.moveTo(-6, 14);
         ctx.quadraticCurveTo(0, 10, 6, 14);
         ctx.stroke();
       } else {
-        // 正常專注大眼 • •
         ctx.fillStyle = '#1e293b';
         ctx.beginPath();
         ctx.arc(-7, 2, 3.5, 0, Math.PI * 2);
         ctx.arc(7, 2, 3.5, 0, Math.PI * 2);
         ctx.fill();
-        // 眼神高光
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(-8, 1, 1.2, 0, Math.PI * 2);
         ctx.arc(6, 1, 1.2, 0, Math.PI * 2);
         ctx.fill();
-        // 認真微張小嘴
         ctx.fillStyle = '#be123c';
         ctx.beginPath();
         ctx.arc(0, 11, 3.5, 0, Math.PI);
         ctx.fill();
       }
 
-      // 4. 小人身體與衣服 (活力橘色連身吊帶褲)
       ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.roundRect(-16, 24, 32, 36, 10);
@@ -911,14 +926,12 @@
       ctx.strokeStyle = '#7c2d12';
       ctx.stroke();
 
-      // 吊帶金黃扣子
       ctx.fillStyle = '#fbbf24';
       ctx.beginPath();
       ctx.arc(-8, 30, 2.5, 0, Math.PI * 2);
       ctx.arc(8, 30, 2.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // 5. 小腳小鞋
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       ctx.ellipse(-9, 63, 6, 4, 0, 0, Math.PI * 2);
@@ -956,9 +969,546 @@
   }
 
   // =========================================================================
-  // 4. 模組導出與全域初始化
+  // 4. 光速小鼠 (Speedy Mouse) - 六動物賽跑與數學速算引擎
+  // =========================================================================
+  class SpeedyMouseGame {
+    constructor() {
+      this.canvas = document.getElementById('mouse-canvas');
+      this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+
+      this.isRunning = false;
+      this.isPaused = false;
+      this.timeLeft = 60; // 倒計時 60 秒 (1 分鐘)
+      this.timerInterval = null;
+      this.questionStartTime = 0;
+      this.currentQuestion = null;
+      this.stats = { totalAnswered: 0, correctCount: 0 };
+
+      // 6 隻小動物參賽選手
+      this.racers = [
+        { id: 'hamster', name: '小倉鼠', icon: '🐹', isPlayer: true, color: '#f59e0b', trackY: 0, distance: 0, speedMultiplier: 1.0, boostTimer: 0, stunTimer: 0, bounceAngle: 0 },
+        { id: 'cat', name: '小貓咪', icon: '🐱', isPlayer: false, color: '#f43f5e', trackY: 0, distance: 0, speedMultiplier: 1.0, aiType: 'agile', boostTimer: 0, nextAiAction: 3, bounceAngle: 0 },
+        { id: 'dog', name: '小狗', icon: '🐶', isPlayer: false, color: '#eab308', trackY: 0, distance: 0, speedMultiplier: 1.0, aiType: 'chaser', boostTimer: 0, nextAiAction: 4, bounceAngle: 0 },
+        { id: 'turtle', name: '烏龜', icon: '🐢', isPlayer: false, color: '#10b981', trackY: 0, distance: 0, speedMultiplier: 0.92, aiType: 'rocket_finish', boostTimer: 0, nextAiAction: 5, bounceAngle: 0 },
+        { id: 'rabbit', name: '兔子', icon: '🐰', isPlayer: false, color: '#ec4899', trackY: 0, distance: 0, speedMultiplier: 1.08, aiType: 'bursty', boostTimer: 0, nextAiAction: 2.5, bounceAngle: 0 },
+        { id: 'capybara', name: '小水豚', icon: '🥔', isPlayer: false, color: '#8b5cf6', trackY: 0, distance: 0, speedMultiplier: 0.98, aiType: 'chill', boostTimer: 0, nextAiAction: 4.5, bounceAngle: 0 }
+      ];
+
+      this.trackScroll = 0;
+      this.particles = [];
+      this.width = 680;
+      this.height = 420;
+      this.lastFrameTime = performance.now();
+
+      this.initEvents();
+    }
+
+    initEvents() {
+      window.addEventListener('resize', () => this.resizeCanvas());
+    }
+
+    resizeCanvas() {
+      if (!this.canvas) return;
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+      const trackHeight = this.height / 6;
+      this.racers.forEach((r, idx) => {
+        r.trackY = trackHeight * idx + trackHeight / 2;
+      });
+    }
+
+    // 啟動賽事
+    start() {
+      sounds.init();
+      this.isRunning = true;
+      this.isPaused = false;
+      this.timeLeft = 60;
+      this.trackScroll = 0;
+      this.particles = [];
+      this.stats = { totalAnswered: 0, correctCount: 0 };
+      this.lastFrameTime = performance.now();
+
+      this.resizeCanvas();
+
+      // 重置選手狀態
+      this.racers.forEach((r) => {
+        r.distance = 0;
+        r.speedMultiplier = 1.0;
+        r.boostTimer = 0;
+        r.stunTimer = 0;
+        r.bounceAngle = Math.random() * Math.PI;
+      });
+
+      this.updateHud();
+      this.generateQuestion();
+
+      // 啟動 60 秒倒數計時器
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      this.timerInterval = setInterval(() => {
+        if (!this.isRunning || this.isPaused) return;
+        this.timeLeft--;
+
+        // 倒數 3, 2, 1 提示音
+        if (this.timeLeft === 3 || this.timeLeft === 2 || this.timeLeft === 1) {
+          sounds.playBeep(false);
+        }
+
+        this.updateHud();
+
+        if (this.timeLeft <= 0) {
+          this.endGame();
+        }
+      }, 1000);
+
+      sounds.playBeep(true);
+      requestAnimationFrame(() => this.loop());
+    }
+
+    // 數學心算題目生成器 (加、減、乘、除、補數題)
+    generateQuestion() {
+      const types = ['add', 'sub', 'mul', 'comp100', 'div'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      let questionText = "";
+      let answer = 0;
+
+      if (type === 'add') {
+        const a = 12 + Math.floor(Math.random() * 45);
+        const b = 15 + Math.floor(Math.random() * 45);
+        questionText = `${a} + ${b} = ?`;
+        answer = a + b;
+      } else if (type === 'sub') {
+        const a = 35 + Math.floor(Math.random() * 60);
+        const b = 12 + Math.floor(Math.random() * (a - 15));
+        questionText = `${a} - ${b} = ?`;
+        answer = a - b;
+      } else if (type === 'mul') {
+        const a = 3 + Math.floor(Math.random() * 7); // 3 ~ 9
+        const b = 3 + Math.floor(Math.random() * 7); // 3 ~ 9
+        questionText = `${a} × ${b} = ?`;
+        answer = a * b;
+      } else if (type === 'div') {
+        const b = 2 + Math.floor(Math.random() * 8); // 2 ~ 9
+        const ans = 3 + Math.floor(Math.random() * 8);
+        const a = b * ans;
+        questionText = `${a} ÷ ${b} = ?`;
+        answer = ans;
+      } else {
+        // 100 補數
+        const b = 15 + Math.floor(Math.random() * 75);
+        questionText = `100 - ${b} = ?`;
+        answer = 100 - b;
+      }
+
+      // 產生 3 個具有迷惑性的小干擾項
+      const optionsSet = new Set([answer]);
+      const deltaPool = [-10, 10, -1, 1, -2, 2, -5, 5];
+      while (optionsSet.size < 4) {
+        const delta = deltaPool[Math.floor(Math.random() * deltaPool.length)];
+        const fake = answer + delta;
+        if (fake > 0 && fake !== answer) {
+          optionsSet.add(fake);
+        } else {
+          optionsSet.add(answer + Math.floor(Math.random() * 15) - 7);
+        }
+      }
+
+      const options = Array.from(optionsSet);
+      // 亂序排列
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+
+      this.currentQuestion = { text: questionText, answer, options };
+      this.questionStartTime = performance.now();
+      this.renderQuestion();
+    }
+
+    // 渲染數學題目與四個選項按鈕
+    renderQuestion() {
+      const qTextEl = document.getElementById('mouse-question-text');
+      const optionsContainer = document.getElementById('mouse-options-grid');
+      if (qTextEl) qTextEl.textContent = this.currentQuestion.text;
+      if (!optionsContainer) return;
+
+      optionsContainer.innerHTML = '';
+      this.currentQuestion.options.forEach((opt) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = "py-3 px-4 rounded-xl border-2 border-slate-300 bg-white hover:bg-amber-50 hover:border-amber-400 active:scale-95 text-slate-800 font-black text-xl sm:text-2xl shadow-sm transition-all";
+        btn.textContent = opt;
+        btn.onclick = () => this.handleAnswer(opt, btn);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    // 答題反饋與衝刺計算
+    handleAnswer(selected, btnEl) {
+      if (!this.isRunning || this.isPaused || !this.currentQuestion) return;
+
+      this.stats.totalAnswered++;
+      const isCorrect = selected === this.currentQuestion.answer;
+      const hamster = this.racers[0]; // 小倉鼠
+
+      if (isCorrect) {
+        this.stats.correctCount++;
+        sounds.playTurbo();
+
+        // 答題秒數判定
+        const elapsedSec = (performance.now() - this.questionStartTime) / 1000;
+        let boostMult = 1.4;
+        let boostDuration = 1.2;
+        let badgeText = "👍 加速前進!";
+
+        if (elapsedSec < 1.0) {
+          // 神速衝刺！
+          boostMult = 2.8;
+          boostDuration = 3.5;
+          badgeText = "⚡ 神速衝刺 (HYPER DASH) +3.5s!";
+        } else if (elapsedSec < 2.0) {
+          // 光速衝刺！
+          boostMult = 2.2;
+          boostDuration = 2.5;
+          badgeText = "🔥 光速衝刺 (SUPER DASH) +2.5s!";
+        } else if (elapsedSec < 3.5) {
+          // 強力加速！
+          boostMult = 1.7;
+          boostDuration = 1.8;
+          badgeText = "✨ 強力加速 (FAST DASH) +1.8s!";
+        }
+
+        hamster.boostTimer = Math.max(hamster.boostTimer, boostDuration);
+        hamster.speedMultiplier = boostMult;
+        hamster.stunTimer = 0;
+
+        // 噴發衝刺火焰粒子
+        for (let i = 0; i < 24; i++) {
+          this.particles.push({
+            x: 80,
+            y: hamster.trackY,
+            vx: -2 - Math.random() * 6,
+            vy: (Math.random() - 0.5) * 3,
+            color: ['#fbbf24', '#f59e0b', '#f97316', '#ef4444'][Math.floor(Math.random() * 4)],
+            size: 4 + Math.random() * 4,
+            life: 0.6
+          });
+        }
+
+        this.showDashFeedback(badgeText, '#10b981');
+      } else {
+        // 答錯：小倉鼠跌倒微減速 0.8s
+        sounds.playHurt();
+        hamster.stunTimer = 0.8;
+        hamster.boostTimer = 0;
+        hamster.speedMultiplier = 0.5;
+
+        if (navigator.vibrate) {
+          try { navigator.vibrate(100); } catch (_) {}
+        }
+
+        this.showDashFeedback("💫 算錯了！絆了一下~", '#ef4444');
+      }
+
+      this.generateQuestion();
+    }
+
+    showDashFeedback(text, color) {
+      const fb = document.getElementById('mouse-dash-feedback');
+      if (fb) {
+        fb.textContent = text;
+        fb.style.color = color;
+        fb.classList.remove('opacity-0');
+        clearTimeout(this._fbTimer);
+        this._fbTimer = setTimeout(() => fb.classList.add('opacity-0'), 1500);
+      }
+    }
+
+    // 核心循環
+    loop() {
+      if (!this.isRunning) return;
+      const now = performance.now();
+      const dt = Math.min((now - this.lastFrameTime) / 1000, 0.1);
+      this.lastFrameTime = now;
+
+      if (!this.isPaused) {
+        this.update(dt);
+        this.render();
+      }
+
+      requestAnimationFrame(() => this.loop());
+    }
+
+    update(dt) {
+      // 1. 基礎速度計算：初始速度 1.0 m/s，每 10 秒提速 10%
+      const elapsed = 60 - this.timeLeft;
+      const tier = Math.min(5, Math.floor(elapsed / 10)); // 0~5 段提速
+      const baseGlobalSpeed = 1.0 * Math.pow(1.10, tier); // 1.0 -> 1.1 -> 1.21 -> 1.33 -> 1.46 -> 1.61 m/s
+
+      // 2. 更新小動物 AI 隨機加速與推進
+      this.racers.forEach((r) => {
+        r.bounceAngle += dt * 12;
+
+        if (r.isPlayer) {
+          // 玩家小倉鼠
+          if (r.boostTimer > 0) {
+            r.boostTimer -= dt;
+            if (r.boostTimer <= 0) r.speedMultiplier = 1.0;
+          }
+          if (r.stunTimer > 0) {
+            r.stunTimer -= dt;
+            if (r.stunTimer <= 0) r.speedMultiplier = 1.0;
+          }
+        } else {
+          // AI 對手動物特色隨機加速
+          r.nextAiAction -= dt;
+          if (r.nextAiAction <= 0) {
+            this.handleAiAction(r);
+          }
+        }
+
+        // 實際速度與距離推進
+        const currentSpeed = baseGlobalSpeed * (r.speedMultiplier || 1.0);
+        r.distance += currentSpeed * dt * 4.5; // 適度放大視覺跑動米數感
+      });
+
+      // 3. 跑道背景滾動速度 (以小倉鼠速度為基準)
+      const playerSpeed = baseGlobalSpeed * (this.racers[0].speedMultiplier || 1.0);
+      this.trackScroll += playerSpeed * dt * 80;
+
+      // 4. 更新粒子
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt * 1.5;
+        if (p.life <= 0) this.particles.splice(i, 1);
+      }
+
+      this.updateHud();
+    }
+
+    // AI 動物隨機加速邏輯
+    handleAiAction(racer) {
+      if (racer.id === 'rabbit') {
+        // 兔子：爆發衝刺或稍稍停頓
+        if (Math.random() < 0.65) {
+          racer.speedMultiplier = 1.8 + Math.random() * 0.5;
+          racer.nextAiAction = 1.5 + Math.random() * 1.2;
+        } else {
+          racer.speedMultiplier = 0.85; // 打瞌睡
+          racer.nextAiAction = 0.8;
+        }
+      } else if (racer.id === 'turtle') {
+        // 烏龜：最後 15 秒大爆發火箭衝刺，平時沉穩
+        if (this.timeLeft <= 15) {
+          racer.speedMultiplier = 2.2 + Math.random() * 0.4;
+          racer.nextAiAction = 3;
+        } else {
+          racer.speedMultiplier = 0.95 + Math.random() * 0.15;
+          racer.nextAiAction = 4;
+        }
+      } else if (racer.id === 'cat') {
+        // 貓咪：頻繁敏捷小衝刺
+        racer.speedMultiplier = 1.3 + Math.random() * 0.45;
+        racer.nextAiAction = 1.8 + Math.random() * 2.0;
+      } else if (racer.id === 'dog') {
+        // 狗狗：追隨前鋒，前方有人越衝刺
+        racer.speedMultiplier = 1.25 + Math.random() * 0.5;
+        racer.nextAiAction = 2.0 + Math.random() * 2.5;
+      } else if (racer.id === 'capybara') {
+        // 水豚：佛系穩定
+        racer.speedMultiplier = 1.05 + Math.random() * 0.25;
+        racer.nextAiAction = 3.5 + Math.random() * 2.0;
+      }
+    }
+
+    // 更新抬頭顯示 (中央已跑距離、倒計時、即時排名)
+    updateHud() {
+      const timeEl = document.getElementById('mouse-time-left');
+      const distEl = document.getElementById('mouse-player-dist');
+      const rankEl = document.getElementById('mouse-player-rank');
+
+      if (timeEl) timeEl.textContent = `${this.timeLeft}s`;
+
+      const hamster = this.racers[0];
+      if (distEl) distEl.textContent = `${hamster.distance.toFixed(1)} m`;
+
+      // 計算即時名次
+      const sorted = [...this.racers].sort((a, b) => b.distance - a.distance);
+      const playerRank = sorted.findIndex(r => r.isPlayer) + 1;
+      if (rankEl) {
+        rankEl.textContent = `第 ${playerRank} 名`;
+        rankEl.className = `px-2.5 py-0.5 rounded-full text-xs font-black shadow-xs ${
+          playerRank === 1 ? 'bg-amber-400 text-amber-950 animate-bounce' : playerRank <= 3 ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700'
+        }`;
+      }
+    }
+
+    // 比賽結束結算
+    endGame() {
+      this.isRunning = false;
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      sounds.playWhistle();
+
+      const modal = document.getElementById('mouse-result-modal');
+      const listContainer = document.getElementById('mouse-podium-list');
+      const accuracyEl = document.getElementById('mouse-stat-accuracy');
+      const totalAnsEl = document.getElementById('mouse-stat-total');
+
+      if (accuracyEl) {
+        const rate = this.stats.totalAnswered > 0 ? Math.round((this.stats.correctCount / this.stats.totalAnswered) * 100) : 0;
+        accuracyEl.textContent = `${rate}%`;
+      }
+      if (totalAnsEl) totalAnsEl.textContent = `${this.stats.correctCount} / ${this.stats.totalAnswered} 題`;
+
+      // 依距離由遠到近排序
+      const sorted = [...this.racers].sort((a, b) => b.distance - a.distance);
+
+      if (listContainer) {
+        listContainer.innerHTML = '';
+        sorted.forEach((r, idx) => {
+          const rank = idx + 1;
+          const row = document.createElement('div');
+          row.className = `flex items-center justify-between p-2.5 rounded-xl border ${
+            r.isPlayer ? 'bg-amber-100/90 border-amber-400 font-black shadow-sm ring-2 ring-amber-300' : 'bg-white border-slate-200 font-bold'
+          }`;
+          const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
+          row.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 text-center text-base">${medal}</span>
+              <span class="text-xl">${r.icon}</span>
+              <span class="text-sm text-slate-800">${r.name} ${r.isPlayer ? '<span class="text-xs text-amber-700">(你)</span>' : ''}</span>
+            </div>
+            <span class="font-black text-sm text-slate-700">${r.distance.toFixed(1)} 公尺</span>
+          `;
+          listContainer.appendChild(row);
+        });
+      }
+
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    // 繪製賽跑主畫面
+    render() {
+      if (!this.ctx) return;
+      const ctx = this.ctx;
+
+      ctx.clearRect(0, 0, this.width, this.height);
+
+      const trackHeight = this.height / 6;
+
+      // 1. 繪製 6 條跑道
+      for (let i = 0; i < 6; i++) {
+        const y = i * trackHeight;
+        // 跑道紅土/草坪漸層
+        ctx.fillStyle = i % 2 === 0 ? '#fed7aa' : '#ffedd5';
+        ctx.fillRect(0, y, this.width, trackHeight);
+
+        // 跑道白色分隔虛線
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([16, 14]);
+        ctx.beginPath();
+        ctx.moveTo(0, y + trackHeight);
+        ctx.lineTo(this.width, y + trackHeight);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 跑道號碼
+        ctx.fillStyle = 'rgba(154, 52, 18, 0.35)';
+        ctx.font = '900 16px "Fredoka", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`R${i + 1}`, 12, y + 24);
+      }
+
+      // 2. 跑道動態標線 (隨滾動向左流動)
+      const offset = (this.trackScroll % 60);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 3;
+      for (let x = -offset; x < this.width; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, this.height);
+        ctx.stroke();
+      }
+
+      // 3. 繪製粒子特效 (火焰氣流)
+      for (const p of this.particles) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 4. 繪製 6 隻小動物跑者 (根據相對小倉鼠的距離決定橫向螢幕位置)
+      const playerDist = this.racers[0].distance;
+      const baseScreenX = 140; // 小倉鼠基準螢幕 X 座標
+
+      this.racers.forEach((r) => {
+        // 相對距離差映射為畫布 X
+        const relativeDiff = (r.distance - playerDist) * 8;
+        const screenX = Math.max(45, Math.min(this.width - 55, baseScreenX + relativeDiff));
+        const bounce = Math.sin(r.bounceAngle) * 4;
+
+        ctx.save();
+        ctx.translate(screenX, r.trackY + bounce);
+
+        // 若正在衝刺，繪製身後光暈火焰
+        if (r.boostTimer > 0) {
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(-15, 0, 22, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.moveTo(-20, -6);
+          ctx.lineTo(-38, 0);
+          ctx.lineTo(-20, 6);
+          ctx.fill();
+        }
+
+        // 動物圓形頭像底色
+        ctx.shadowColor = 'rgba(0,0,0,0.18)';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = r.isPlayer ? '#fef08a' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+
+        // 邊框
+        ctx.lineWidth = r.isPlayer ? 3 : 2;
+        ctx.strokeStyle = r.isPlayer ? '#d97706' : '#cbd5e1';
+        ctx.stroke();
+
+        // Emoji 圖示
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(r.icon, 0, 2);
+
+        // 選手名字浮標
+        ctx.font = 'bold 11px "Noto Sans TC", sans-serif';
+        ctx.fillStyle = r.isPlayer ? '#9a3412' : '#475569';
+        ctx.fillText(`${r.name} (${r.distance.toFixed(0)}m)`, 0, -26);
+
+        ctx.restore();
+      });
+    }
+  }
+
+  // =========================================================================
+  // 5. 模組導出與全域初始化
   // =========================================================================
   window.coolGameRescue = new WordRescueGame();
+  window.coolGameSpeedyMouse = new SpeedyMouseGame();
   window.coolGameSounds = sounds;
   window.speakCurrentWord = () => {
     if (window.coolGameRescue && window.coolGameRescue.currentWord) {

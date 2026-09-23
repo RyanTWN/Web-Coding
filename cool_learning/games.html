@@ -228,15 +228,15 @@
           </div>
         </div>
 
-        <!-- 遊戲 3: 光速小鼠 (即將推出) -->
-        <div onclick="showGameToast('光速小鼠正在調整跑道，敬請期待！')" class="game-card bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50/80 border-2 border-sky-300/70 hover:border-sky-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+        <!-- 遊戲 3: 光速小鼠 (即刻開跑) -->
+        <div onclick="openSpeedyMouseGame()" class="game-card bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50/80 border-2 border-sky-300/80 hover:border-sky-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-600 text-white font-bold text-xs">
-                <i class="fa-solid fa-clock"></i> 即將推出
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500 text-white font-black text-xs shadow-xs animate-pulse">
+                <i class="fa-solid fa-fire"></i> 即刻開跑
               </span>
               <span class="text-xs font-bold text-sky-700 bg-sky-100 px-2.5 py-0.5 rounded-full">
-                極速心算 × 障礙競速
+                數學速算 × 六動物賽跑
               </span>
             </div>
 
@@ -276,13 +276,13 @@
               光速小鼠 <i class="fa-solid fa-bolt text-sky-500"></i>
             </h3>
             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-              極速數學算術與敏捷反應力！控制戴著飛行帽的光速小鼠閃避障礙，衝向終點榮耀！
+              小倉鼠與小貓、小狗、烏龜、兔子、水豚進行 60 秒競速賽跑！答對數學心算越快衝刺越久，看誰跑最遠！
             </p>
           </div>
 
           <div class="mt-4 pt-3 border-t border-sky-200/80 flex items-center justify-between text-sky-700 font-bold text-sm">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-hourglass-half"></i> 敬請期待</span>
-            <i class="fa-solid fa-lock text-sky-400"></i>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 進入賽道！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
           </div>
         </div>
 
@@ -455,6 +455,113 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- 視圖 3: 光速小鼠 - 數學速算賽跑遊戲畫面                                      -->
+  <!-- ========================================================================= -->
+  <section id="view-game-mouse" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter pb-6">
+    <div class="bg-white/95 backdrop-blur-md rounded-lg p-4 sm:p-6 shadow-2xl border border-white">
+      
+      <!-- 頂部功能條 -->
+      <div class="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200">
+        <button onclick="backToGamesLobbyFromMouse()" class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>回遊戲選單</span>
+        </button>
+
+        <!-- 畫面中間上方：醒目大字顯示已跑距離與倒計時 -->
+        <div class="text-center">
+          <div class="text-[11px] font-bold text-slate-500">🐹 小倉鼠目前奔跑距離</div>
+          <div id="mouse-player-dist" class="text-3xl sm:text-4xl font-black text-amber-600 font-mono tracking-wide leading-none">0.0 m</div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 倒數計時徽章 -->
+          <div class="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs shadow-xs">
+            <i class="fa-solid fa-stopwatch"></i>
+            <span id="mouse-time-left" class="text-sm">60s</span>
+          </div>
+          <!-- 音效開關 -->
+          <button onclick="toggleGameSound()" title="音效開關" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-sm shadow-sm transition-all">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 賽事即時戰況條 (名次 + 衝刺加速狀態反饋) -->
+      <div class="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 rounded-lg mb-3 text-xs font-bold">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-500">目前戰況:</span>
+          <span id="mouse-player-rank" class="bg-amber-400 text-amber-950 px-2.5 py-0.5 rounded-full font-black text-xs shadow-xs animate-bounce">第 1 名</span>
+        </div>
+        <div id="mouse-dash-feedback" class="text-xs font-black text-emerald-600 transition-opacity opacity-0">⚡ 神速衝刺中！</div>
+        <div class="text-slate-500 text-[11px]">初始 1m/s・每 10 秒提速 10%</div>
+      </div>
+
+      <!-- Canvas 賽道主畫面 -->
+      <div class="relative w-full rounded-lg overflow-hidden border-2 border-amber-900/40 shadow-inner bg-amber-100 mb-4">
+        <canvas id="mouse-canvas" width="680" height="420" class="w-full h-[280px] sm:h-[340px] block"></canvas>
+      </div>
+
+      <!-- 下方：數學速算答題面板 -->
+      <div class="bg-gradient-to-r from-sky-50 via-amber-50 to-indigo-50 rounded-lg p-4 border-2 border-sky-200 shadow-sm text-center">
+        <div class="text-xs font-bold text-sky-800 mb-1">
+          <i class="fa-solid fa-bolt text-amber-500 mr-1"></i>回答數學速算題獲取衝刺加速！答得愈快，衝刺時間愈長！
+        </div>
+
+        <div class="bg-white rounded-xl py-3 px-6 border-2 border-slate-300 shadow-sm inline-block min-w-[200px] mb-3">
+          <span class="text-[11px] font-bold text-slate-400 block mb-0.5">速算挑戰</span>
+          <h3 id="mouse-question-text" class="text-3xl sm:text-4xl font-black text-slate-800 font-mono tracking-wider">--</h3>
+        </div>
+
+        <!-- 4 個大選項按鈕 -->
+        <div id="mouse-options-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
+          <!-- JS 動態生成選項按鈕 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 光速小鼠 (Speedy Mouse) 賽跑結算頒獎台                                -->
+  <!-- ========================================================================= -->
+  <div id="mouse-result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border border-white card-flip-enter">
+      <div class="w-18 h-18 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 border-2 border-amber-300 shadow-sm">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-1">比賽結束！最終排名</h3>
+      <p class="text-xs text-slate-500 font-medium mb-4">一分鐘極速賽跑，看看誰跑的距離最遠！</p>
+
+      <!-- 排行榜清單 (6 隻動物) -->
+      <div id="mouse-podium-list" class="space-y-2 mb-4 text-left max-h-[220px] overflow-y-auto pr-1">
+        <!-- JS 動態渲染排名清單 -->
+      </div>
+
+      <!-- 答題統計框 -->
+      <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 mb-5 flex items-center justify-around text-xs font-bold">
+        <div>
+          <span class="text-slate-500 block">答題正確數</span>
+          <span id="mouse-stat-total" class="font-black text-base text-slate-800">-</span>
+        </div>
+        <div class="w-px h-8 bg-slate-200"></div>
+        <div>
+          <span class="text-slate-500 block">心算正確率</span>
+          <span id="mouse-stat-accuracy" class="font-black text-base text-emerald-600">-</span>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="restartSpeedyMouseGame()" class="w-full py-3 bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再賽一場！
+        </button>
+        <button onclick="closeMouseResultAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/config.js"></script>
   <script src="assets/js/games.js"></script>
 
@@ -472,13 +579,13 @@
       }
     });
 
-    // 畫面切換控制器
+    // 搶救字母大作戰控制器
     function openRescueGame() {
       document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-mouse').classList.add('hidden');
       const gameView = document.getElementById('view-game-rescue');
       gameView.classList.remove('hidden');
       
-      // 啟動搶救字母大作戰
       if (window.coolGameRescue) {
         window.coolGameRescue.start();
       }
@@ -510,6 +617,47 @@
         modal.classList.remove('flex');
       }
       backToGamesLobby();
+    }
+
+    // 光速小鼠控制器
+    function openSpeedyMouseGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      const mouseView = document.getElementById('view-game-mouse');
+      mouseView.classList.remove('hidden');
+
+      if (window.coolGameSpeedyMouse) {
+        window.coolGameSpeedyMouse.start();
+      }
+    }
+
+    function backToGamesLobbyFromMouse() {
+      if (window.coolGameSpeedyMouse) {
+        window.coolGameSpeedyMouse.isRunning = false;
+        if (window.coolGameSpeedyMouse.timerInterval) clearInterval(window.coolGameSpeedyMouse.timerInterval);
+      }
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartSpeedyMouseGame() {
+      const modal = document.getElementById('mouse-result-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      if (window.coolGameSpeedyMouse) {
+        window.coolGameSpeedyMouse.start();
+      }
+    }
+
+    function closeMouseResultAndBack() {
+      const modal = document.getElementById('mouse-result-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromMouse();
     }
 
     function toggleGameSound() {
