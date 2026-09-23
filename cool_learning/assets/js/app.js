@@ -585,15 +585,17 @@ function renderCard() {
   const flashcard = document.getElementById('flashcard');
   if (flashcard) flashcard.classList.remove('is-flipped');
 
-  const starBtn = document.getElementById('star-btn');
-  if (starBtn) {
+  const updateStarBtnAppearance = (btn) => {
+    if (!btn) return;
     const isStarred = starredIds.has(item.id);
-    starBtn.className = isStarred
-      ? "w-10 h-10 rounded-md bg-white/80 hover:bg-white text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition is-starred"
-      : "w-10 h-10 rounded-md bg-white/80 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition";
-    starBtn.style.color = isStarred ? '#f59e0b' : '';
-    starBtn.title = isStarred ? '已加入難字本（需在「難字本拼字特訓」連續拼對 3 次方可移除）' : '點擊加入難字本';
-  }
+    btn.className = isStarred
+      ? "w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-amber-400 flex items-center justify-center text-xl shadow-lg border border-amber-200 transition-all transform hover:scale-105 active:scale-95 is-starred cursor-pointer"
+      : "w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer";
+    btn.style.color = isStarred ? '#f59e0b' : '';
+    btn.title = isStarred ? '已加入難字本（需在「難字本拼字特訓」連續拼對 3 次方可移除）' : '點擊加入難字本';
+  };
+  updateStarBtnAppearance(document.getElementById('star-btn'));
+  updateStarBtnAppearance(document.getElementById('star-btn-back'));
 
   const nextBtn = document.getElementById('btn-next-word');
   if (nextBtn) {
@@ -944,7 +946,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nav-calendar')?.addEventListener('click', () => switchAppTab('calendar'));
 
   // 單字卡互動按鈕
-  document.getElementById('star-btn')?.addEventListener('click', (e) => {
+  // 單字卡互動按鈕 (支援正面與背面難字星號按鈕)
+  const handleToggleStar = (e) => {
     e?.stopPropagation();
     if (today30Words.length === 0) return;
     const item = today30Words[currentIndex];
@@ -961,7 +964,10 @@ document.addEventListener('DOMContentLoaded', () => {
     saveStudentAppData();
     renderCard();
     showToast(`已將「${item.vocabulary || item.word}」加入難字本！`, 'fa-star');
-  });
+  };
+
+  document.getElementById('star-btn')?.addEventListener('click', handleToggleStar);
+  document.getElementById('star-btn-back')?.addEventListener('click', handleToggleStar);
 
   document.getElementById('btn-speak-word')?.addEventListener('click', () => {
       if (today30Words[currentIndex]) speakText(today30Words[currentIndex].vocabulary);

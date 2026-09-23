@@ -180,31 +180,24 @@
           <div id="flashcard" class="word-card-inner shadow-2xl cursor-pointer" onclick="this.classList.toggle('is-flipped')">
             
             <!-- 【正面】字卡正面 -->
-            <div class="word-card-face bg-gradient-to-br from-white via-rose-50/40 to-pink-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl">
-              <!-- 頂部資訊列：標籤與收藏按鈕 -->
+            <div class="word-card-face relative bg-gradient-to-br from-white via-rose-50/40 to-pink-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl select-none">
+              <!-- 頂部資訊列：章節與詞性標籤 -->
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-black text-xs tracking-wider">English 6</span>
                   <span id="card-part-of-speech" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px] italic">word</span>
                 </div>
-                <!-- 難字星號按鈕：點擊加入難字本 -->
-                <button id="star-btn" title="加入難字本" class="w-10 h-10 rounded-md bg-white/80 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200/60 transition" onclick="event.stopPropagation();">
-                  <i class="fa-solid fa-star"></i>
-                </button>
               </div>
 
               <!-- 隱藏圖片節點相容舊程式碼 -->
               <img id="card-image" src="https://placehold.co/1x1/transparent/transparent" alt="" class="hidden" aria-hidden="true">
 
-              <!-- 中間核心英文單字、發音與釋義 -->
+              <!-- 中間核心英文單字、音標與釋義 -->
               <div class="text-center my-auto py-6">
                 <h2 id="card-word" class="text-4xl sm:text-6xl font-black text-slate-800 tracking-wider font-['Fredoka','Noto_Sans_TC'] mb-3">word</h2>
                 
                 <div class="inline-flex items-center justify-center gap-2 mb-4">
-                  <button id="btn-speak-word" aria-label="播放單字發音" title="聽發音 (TTS)" class="px-3.5 py-1.5 rounded-xl bg-white/90 hover:bg-white text-rose-600 font-bold text-xs shadow-sm border border-rose-200/80 flex items-center gap-1.5 transition" onclick="event.stopPropagation();">
-                    <i class="fa-solid fa-volume-high"></i> 聽發音
-                  </button>
-                  <span id="card-phonetic" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-mono font-bold">[phonetic]</span>
+                  <span id="card-phonetic" class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs sm:text-sm font-mono font-bold tracking-wide">[phonetic]</span>
                 </div>
                 
                 <div class="mt-2">
@@ -213,15 +206,27 @@
               </div>
 
               <!-- 底部翻面提示 -->
-              <div class="flex items-center justify-center pt-4 border-t border-rose-100/60">
+              <div class="flex items-center justify-center pt-4 border-t border-rose-100/60 pr-14 sm:pr-0">
                 <span class="text-xs text-slate-400 font-bold flex items-center gap-1 animate-pulse">
                   <i class="fa-solid fa-arrows-rotate"></i> 點擊卡片翻面看例句
                 </span>
               </div>
+
+              <!-- 右下角單手操作快捷區：上方難字星號、下方單字發音按鈕 -->
+              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
+                <!-- 加入難字星號 (在發音按鈕上方) -->
+                <button type="button" id="star-btn" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-star"></i>
+                </button>
+                <!-- 單字發音按鈕 (在卡片右下角) -->
+                <button type="button" id="btn-speak-word" aria-label="播放單字發音" title="聽單字發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
+              </div>
             </div>
 
             <!-- 【背面】字卡背面 (實用例句) -->
-            <div class="word-card-face word-card-back bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto custom-scrollbar">
+            <div class="word-card-face word-card-back relative bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto custom-scrollbar">
               <div class="space-y-4">
                 <!-- 背面頂部標題列 -->
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -236,11 +241,8 @@
 
                 <!-- 實用生活例句框 -->
                 <div class="bg-rose-50/70 p-4 sm:p-5 rounded-lg border border-rose-100/80">
-                  <div class="flex items-start justify-between gap-3 mb-2">
+                  <div class="mb-2">
                     <strong class="block text-xs font-black text-rose-800"><i class="fa-solid fa-pen-nib mr-1"></i>例句與對話</strong>
-                    <button id="btn-speak-sentence" title="朗讀例句" class="px-3 py-1 rounded-lg bg-white text-rose-600 hover:bg-rose-100 font-bold text-xs shadow-sm border border-rose-200/80 flex items-center gap-1 transition" onclick="event.stopPropagation();">
-                      <i class="fa-solid fa-volume-low"></i> 朗讀例句
-                    </button>
                   </div>
                   <p id="card-sentence" class="text-base sm:text-lg font-black text-slate-800 leading-relaxed mb-3">Example sentence here.</p>
                   <div class="w-full h-px bg-rose-200/60 mb-2"></div>
@@ -249,8 +251,20 @@
               </div>
 
               <!-- 背面翻轉回正面提示 -->
-              <div class="pt-3 text-center text-[11px] font-bold text-slate-400">
+              <div class="pt-3 text-center text-[11px] font-bold text-slate-400 pr-14 sm:pr-0">
                 <i class="fa-solid fa-arrow-left mr-1"></i> 點擊任意處翻回正面
+              </div>
+
+              <!-- 右下角單手操作快捷區：上方難字星號、下方例句朗讀按鈕 -->
+              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
+                <!-- 加入難字星號 (在發音按鈕上方) -->
+                <button type="button" id="star-btn-back" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-star"></i>
+                </button>
+                <!-- 例句朗讀發音按鈕 (在卡片右下角) -->
+                <button type="button" id="btn-speak-sentence" aria-label="朗讀例句發音" title="聽例句朗讀 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
               </div>
             </div>
           </div>
