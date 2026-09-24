@@ -286,6 +286,83 @@
         osc.stop(t + 0.35);
       });
     }
+
+    // 魔豆藤急速生長音 (Beanstalk Spurt / Growth)
+    playSpurt() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(260, t);
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.32);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.35);
+    }
+
+    // 傑克失足墜落呼嘯音 (Falling Slide Whistle)
+    playFall() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(900, t);
+      osc.frequency.exponentialRampToValueAtTime(110, t + 0.55);
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.6);
+    }
+
+    // 雲端寶箱開啟魔幻音 (Treasure Chest Open)
+    playChestOpen() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51, 1760]; // A4 major arpeggio
+      notes.forEach((freq, idx) => {
+        const t = this.ctx.currentTime + idx * 0.07;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.28, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.4);
+      });
+    }
+
+    // 10秒倒數急促嘀嗒音 (Timer Tick)
+    playTick(isUrgent = false) {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isUrgent ? 1100 : 700, t);
+      gain.gain.setValueAtTime(isUrgent ? 0.35 : 0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.06);
+    }
   }
 
   const sounds = new SoundEngine();
@@ -2373,11 +2450,580 @@
   }
 
   // =========================================================================
-  // 5. 模組導出與全域初始化
+  // 5. 傑克與魔豆遊戲引擎 (BeanstalkGame)
+  //    自然科學 × 社會學科 測驗、魔豆攀爬、10秒極速計時、連對 Combo 衝刺、
+  //    三段高度變換 (0-500m 萌芽, 500-1500m 穿雲, 1500-3000m 雲端古堡)、雲端古堡開寶箱
+  // =========================================================================
+  class BeanstalkGame {
+    constructor() {
+      this.height = 0;
+      this.targetHeight = 3000;
+      this.combo = 0;
+      this.maxCombo = 0;
+      this.score = 0;
+      this.totalAttempts = 0;
+      this.timeLeft = 10.0;
+      this.timerInterval = null;
+      this.currentQuestion = null;
+      this.questionPool = [];
+      this.questionIndex = 0;
+      this.isRunning = false;
+      this.isTransitioning = false;
+      this.stage = 1;
+      this.platformStep = 0; // 0 ~ 5 (循環葉片站台)
+      this.chestOpened = false;
+
+      // 葉片平台座標定義 (對應 SVG viewBox 0 0 400 360)
+      this.platforms = [
+        { x: 175, y: 280, side: 'ground' },
+        { x: 125, y: 235, side: 'left' },
+        { x: 230, y: 185, side: 'right' },
+        { x: 120, y: 135, side: 'left' },
+        { x: 235, y: 85, side: 'right' },
+        { x: 180, y: 40, side: 'center' }
+      ];
+    }
+
+    start() {
+      // 1. 初始化題庫
+      const rawBank = (window.BEANSTALK_QUESTIONS && window.BEANSTALK_QUESTIONS.length > 0)
+        ? window.BEANSTALK_QUESTIONS
+        : [
+            {
+              category: "自然科學",
+              topic: "水溶液",
+              question: "小翔在 60 克重的水中加入 5 克重砂糖完全溶解，這杯砂糖水總重量是多少克重？",
+              options: ["65 克重", "60 克重", "70 克重", "55 克重"],
+              answer: "65 克重",
+              explanation: "物質溶解前後總重量不變，符合質量守恆定律。"
+            }
+          ];
+
+      // 隨機打亂題庫
+      this.questionPool = this.shuffleArray([...rawBank]);
+      this.questionIndex = 0;
+
+      // 2. 重置狀態
+      this.height = 0;
+      this.combo = 0;
+      this.maxCombo = 0;
+      this.score = 0;
+      this.totalAttempts = 0;
+      this.platformStep = 0;
+      this.stage = 1;
+      this.chestOpened = false;
+      this.isTransitioning = false;
+      this.isRunning = true;
+
+      // 3. 隱藏彈窗
+      const goModal = document.getElementById('beanstalk-gameover-modal');
+      const vicModal = document.getElementById('beanstalk-victory-modal');
+      if (goModal) { goModal.classList.add('hidden'); goModal.classList.remove('flex'); }
+      if (vicModal) { vicModal.classList.add('hidden'); vicModal.classList.remove('flex'); }
+
+      // 4. 重置場景與儀表
+      this.updateHeightDisplay();
+      this.updateComboDisplay();
+      this.updateStageScene();
+      this.positionJack(0, false);
+
+      // 5. 載入首題
+      this.loadNextQuestion();
+    }
+
+    shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    loadNextQuestion() {
+      if (!this.isRunning) return;
+
+      if (this.questionIndex >= this.questionPool.length) {
+        this.questionPool = this.shuffleArray([...this.questionPool]);
+        this.questionIndex = 0;
+      }
+
+      this.currentQuestion = this.questionPool[this.questionIndex++];
+      this.isTransitioning = false;
+
+      // 渲染題目分類與題幹
+      const catBadge = document.getElementById('beanstalk-question-category');
+      const topicBadge = document.getElementById('beanstalk-question-topic');
+      const qText = document.getElementById('beanstalk-question-text');
+
+      if (catBadge) {
+        catBadge.textContent = this.currentQuestion.category || '綜合題型';
+        catBadge.className = this.currentQuestion.category === '自然科學'
+          ? 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300'
+          : 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300';
+      }
+      if (topicBadge) {
+        topicBadge.textContent = this.currentQuestion.topic || '必考重點';
+      }
+      if (qText) {
+        qText.textContent = this.currentQuestion.question;
+      }
+
+      // 打亂 4 個選項
+      const shuffledOptions = this.shuffleArray([...this.currentQuestion.options]);
+      const optionsContainer = document.getElementById('beanstalk-options-container');
+
+      if (optionsContainer) {
+        optionsContainer.innerHTML = '';
+        const labels = ['A', 'B', 'C', 'D'];
+        shuffledOptions.forEach((optText, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.val = optText;
+          btn.className = 'beanstalk-opt-btn w-full p-3.5 sm:p-4 text-left rounded-xl border-2 border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 active:scale-[0.99] transition-all flex items-center justify-between group shadow-xs cursor-pointer';
+          btn.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-black text-sm flex items-center justify-center border border-slate-300 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-600 transition-colors">
+                ${labels[idx]}
+              </span>
+              <span class="font-bold text-slate-800 text-sm sm:text-base leading-snug">${optText}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-emerald-500 transition-colors text-sm"></i>
+          `;
+          btn.addEventListener('click', () => this.handleAnswer(btn, optText));
+          optionsContainer.appendChild(btn);
+        });
+      }
+
+      // 重置 10 秒計時器
+      this.resetTimer();
+    }
+
+    resetTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+
+      this.timeLeft = 10.0;
+      this.updateTimerUI();
+
+      this.timerInterval = setInterval(() => {
+        if (!this.isRunning) {
+          clearInterval(this.timerInterval);
+          return;
+        }
+
+        this.timeLeft = Math.max(0, +(this.timeLeft - 0.1).toFixed(1));
+        this.updateTimerUI();
+
+        // 倒數最後3秒每秒發出急促嘀嗒音警示
+        if (this.timeLeft <= 3.0 && Math.round(this.timeLeft * 10) % 10 === 0) {
+          sounds.playTick(true);
+        } else if (this.timeLeft > 3.0 && Math.round(this.timeLeft * 10) % 10 === 0) {
+          sounds.playTick(false);
+        }
+
+        if (this.timeLeft <= 0) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+          this.handleTimeout();
+        }
+      }, 100);
+    }
+
+    updateTimerUI() {
+      const timerBar = document.getElementById('beanstalk-timer-bar');
+      const timerText = document.getElementById('beanstalk-timer-text');
+      const percent = Math.max(0, Math.min(100, (this.timeLeft / 10.0) * 100));
+
+      if (timerBar) {
+        timerBar.style.width = `${percent}%`;
+        // 顏色漸層切換：>6s 翠綠，3~6s 暖黃，<3s 警示赤紅
+        if (this.timeLeft > 6.0) {
+          timerBar.className = 'h-full transition-all duration-100 ease-linear rounded-full bg-gradient-to-r from-emerald-500 to-teal-400';
+        } else if (this.timeLeft > 3.0) {
+          timerBar.className = 'h-full transition-all duration-100 ease-linear rounded-full bg-gradient-to-r from-amber-500 to-yellow-400';
+        } else {
+          timerBar.className = 'h-full transition-all duration-100 ease-linear rounded-full bg-gradient-to-r from-rose-600 to-red-500 animate-pulse';
+        }
+      }
+
+      if (timerText) {
+        timerText.textContent = `${this.timeLeft.toFixed(1)}s`;
+        if (this.timeLeft <= 3.0) {
+          timerText.className = 'font-black text-rose-600 text-sm animate-bounce';
+        } else {
+          timerText.className = 'font-black text-slate-700 text-sm';
+        }
+      }
+    }
+
+    handleAnswer(btn, chosenText) {
+      if (!this.isRunning || this.isTransitioning) return;
+      this.isTransitioning = true;
+
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+
+      // 禁用所有選項防止重複點擊
+      const allBtns = document.querySelectorAll('.beanstalk-opt-btn');
+      allBtns.forEach(b => {
+        b.disabled = true;
+        b.classList.remove('cursor-pointer');
+        b.classList.add('cursor-default');
+      });
+
+      const isCorrect = (chosenText === this.currentQuestion.answer);
+
+      if (isCorrect) {
+        // --- 答對邏輯 ---
+        this.score++;
+        this.totalAttempts++;
+        this.combo++;
+        if (this.combo > this.maxCombo) {
+          this.maxCombo = this.combo;
+        }
+
+        // 按鈕綠色高光
+        btn.classList.remove('bg-white', 'border-slate-200', 'hover:bg-emerald-50');
+        btn.classList.add('bg-emerald-500', 'border-emerald-600', 'text-white', 'shadow-md');
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-white text-emerald-600 font-black text-sm flex items-center justify-center">
+              <i class="fa-solid fa-check"></i>
+            </span>
+            <span class="font-black text-white text-sm sm:text-base leading-snug">${chosenText}</span>
+          </div>
+          <i class="fa-solid fa-circle-check text-white text-base"></i>
+        `;
+
+        sounds.playCatch();
+        sounds.playSpurt();
+
+        // 連對衝刺計算 (1-2題: +150m, 3-4題: +300m, 5+題: +450m)
+        let gain = 150;
+        let spurtLabel = '+150m';
+        if (this.combo >= 5) {
+          gain = 450;
+          spurtLabel = `+450m 🔥 ${this.combo}連擊極速暴風！`;
+        } else if (this.combo >= 3) {
+          gain = 300;
+          spurtLabel = `+300m ⚡ ${this.combo}連擊加速衝刺！`;
+        }
+
+        this.height = Math.min(this.targetHeight, this.height + gain);
+        this.showSpurtBadge(spurtLabel);
+
+        // 傑克往上跳到下一個葉片平台
+        this.platformStep = (this.platformStep + 1) % this.platforms.length;
+        this.positionJack(this.platformStep, true);
+
+        // 更新高度與階段
+        this.updateHeightDisplay();
+        this.updateComboDisplay();
+        this.updateStageScene();
+
+        // 檢查是否成功登頂雲端古堡
+        if (this.height >= this.targetHeight) {
+          setTimeout(() => {
+            this.showVictory();
+          }, 700);
+        } else {
+          setTimeout(() => {
+            this.loadNextQuestion();
+          }, 650);
+        }
+
+      } else {
+        // --- 答錯邏輯：直接摔落 Game Over ---
+        this.totalAttempts++;
+        this.combo = 0;
+
+        // 選錯按鈕紅色標記
+        btn.classList.remove('bg-white', 'border-slate-200');
+        btn.classList.add('bg-rose-500', 'border-rose-600', 'text-white', 'shadow-md');
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-white text-rose-600 font-black text-sm flex items-center justify-center">
+              <i class="fa-solid fa-xmark"></i>
+            </span>
+            <span class="font-black text-white text-sm sm:text-base leading-snug">${chosenText}</span>
+          </div>
+          <i class="fa-solid fa-circle-xmark text-white text-base"></i>
+        `;
+
+        // 將正確答案亮綠
+        allBtns.forEach(b => {
+          if (b.dataset.val === this.currentQuestion.answer) {
+            b.classList.remove('bg-white', 'border-slate-200');
+            b.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-900', 'font-black');
+          }
+        });
+
+        sounds.playHurt();
+        sounds.playFall();
+
+        // 手機震動 0.5 秒 (500ms)
+        if (navigator.vibrate) {
+          try { navigator.vibrate(500); } catch (_) {}
+        }
+
+        this.animateJackFall();
+
+        setTimeout(() => {
+          this.showGameOver('wrong');
+        }, 900);
+      }
+    }
+
+    handleTimeout() {
+      this.totalAttempts++;
+      this.combo = 0;
+
+      // 禁用所有按鈕並高光正確答案
+      const allBtns = document.querySelectorAll('.beanstalk-opt-btn');
+      allBtns.forEach(b => {
+        b.disabled = true;
+        b.classList.remove('cursor-pointer');
+        b.classList.add('cursor-default');
+        if (b.dataset.val === this.currentQuestion.answer) {
+          b.classList.remove('bg-white', 'border-slate-200');
+          b.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-900', 'font-black');
+        }
+      });
+
+      sounds.playHurt();
+      sounds.playFall();
+
+      // 手機震動 0.5 秒 (500ms)
+      if (navigator.vibrate) {
+        try { navigator.vibrate(500); } catch (_) {}
+      }
+
+      this.animateJackFall();
+
+      setTimeout(() => {
+        this.showGameOver('timeout');
+      }, 900);
+    }
+
+    updateHeightDisplay() {
+      const heightText = document.getElementById('beanstalk-height-text');
+      const heightBar = document.getElementById('beanstalk-height-bar');
+      const percent = Math.min(100, (this.height / this.targetHeight) * 100);
+
+      if (heightText) {
+        heightText.textContent = this.height.toLocaleString();
+      }
+      if (heightBar) {
+        heightBar.style.width = `${percent}%`;
+      }
+    }
+
+    updateComboDisplay() {
+      const badge = document.getElementById('beanstalk-combo-badge');
+      const comboText = document.getElementById('beanstalk-combo-text');
+      if (!badge || !comboText) return;
+
+      if (this.combo >= 2) {
+        badge.classList.remove('hidden');
+        badge.classList.add('inline-flex');
+        comboText.textContent = `${this.combo} 連對！`;
+        if (this.combo >= 5) {
+          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black text-xs shadow-md animate-bounce';
+        } else {
+          badge.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-xs shadow-xs';
+        }
+      } else {
+        badge.classList.add('hidden');
+        badge.classList.remove('inline-flex');
+      }
+    }
+
+    updateStageScene() {
+      const oldStage = this.stage;
+      if (this.height < 500) {
+        this.stage = 1; // 萌芽生長 (0-500m)
+      } else if (this.height < 1500) {
+        this.stage = 2; // 穿雲破霧 (500-1500m)
+      } else {
+        this.stage = 3; // 雲端古堡 (1500-3000m)
+      }
+
+      // 更新頂部階段徽章
+      const stageBadge = document.getElementById('beanstalk-stage-badge');
+      const stageText = document.getElementById('beanstalk-stage-text');
+      if (stageBadge && stageText) {
+        if (this.stage === 1) {
+          stageText.textContent = '🌱 萌芽生長 (0~500m)';
+          stageBadge.className = 'px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5';
+        } else if (this.stage === 2) {
+          stageText.textContent = '☁️ 穿雲破霧 (500~1500m)';
+          stageBadge.className = 'px-3 py-1 rounded-full text-xs font-black bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1.5';
+        } else {
+          stageText.textContent = '🏰 雲端古堡 (1500~3000m)';
+          stageBadge.className = 'px-3 py-1 rounded-full text-xs font-black bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1.5 animate-pulse';
+        }
+      }
+
+      // 更新 SVG 場景背景與元素透明度
+      const bgRect = document.getElementById('beanstalk-svg-bg');
+      const s1Group = document.getElementById('beanstalk-stage1-group');
+      const s2Group = document.getElementById('beanstalk-stage2-group');
+      const s3Group = document.getElementById('beanstalk-stage3-group');
+
+      if (bgRect) {
+        if (this.stage === 1) {
+          bgRect.setAttribute('fill', 'url(#sky-stage1)');
+        } else if (this.stage === 2) {
+          bgRect.setAttribute('fill', 'url(#sky-stage2)');
+        } else {
+          bgRect.setAttribute('fill', 'url(#sky-stage3)');
+        }
+      }
+
+      if (s1Group) s1Group.setAttribute('opacity', this.stage === 1 ? '1' : '0.15');
+      if (s2Group) s2Group.setAttribute('opacity', this.stage === 2 ? '1' : (this.stage === 3 ? '0.4' : '0.1'));
+      if (s3Group) s3Group.setAttribute('opacity', this.stage === 3 ? '1' : '0');
+    }
+
+    positionJack(platformIdx, isJumping = true) {
+      const jackGroup = document.getElementById('beanstalk-jack-group');
+      if (!jackGroup) return;
+
+      const p = this.platforms[platformIdx];
+      if (!p) return;
+
+      if (isJumping) {
+        jackGroup.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      } else {
+        jackGroup.style.transition = 'none';
+      }
+
+      jackGroup.style.transform = `translate(${p.x}px, ${p.y}px)`;
+    }
+
+    animateJackFall() {
+      const jackGroup = document.getElementById('beanstalk-jack-group');
+      if (!jackGroup) return;
+
+      jackGroup.style.transition = 'transform 0.75s cubic-bezier(0.55, 0.085, 0.68, 0.53)';
+      jackGroup.style.transform = `translate(180px, 420px) rotate(160deg)`;
+    }
+
+    showSpurtBadge(text) {
+      const badge = document.getElementById('beanstalk-spurt-badge');
+      if (!badge) return;
+
+      badge.textContent = text;
+      badge.classList.remove('hidden', 'opacity-0');
+      badge.classList.add('opacity-100', 'scale-110');
+
+      clearTimeout(this._spurtTimer);
+      this._spurtTimer = setTimeout(() => {
+        badge.classList.add('opacity-0', 'scale-90');
+        badge.classList.remove('opacity-100', 'scale-110');
+        setTimeout(() => badge.classList.add('hidden'), 300);
+      }, 1000);
+    }
+
+    showGameOver(reason) {
+      this.isRunning = false;
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+
+      const modal = document.getElementById('beanstalk-gameover-modal');
+      const titleEl = document.getElementById('beanstalk-gameover-title');
+      const reasonEl = document.getElementById('beanstalk-gameover-reason');
+      const qEl = document.getElementById('beanstalk-gameover-question');
+      const ansEl = document.getElementById('beanstalk-gameover-answer');
+      const expEl = document.getElementById('beanstalk-gameover-explanation');
+      const hEl = document.getElementById('beanstalk-gameover-height');
+      const sEl = document.getElementById('beanstalk-gameover-score');
+      const cEl = document.getElementById('beanstalk-gameover-combo');
+
+      if (reason === 'timeout') {
+        if (titleEl) titleEl.textContent = '哎呀！答題超時摔落！';
+        if (reasonEl) reasonEl.textContent = '每一題只有 10 秒作答時間！魔豆藤蔓劇烈晃動，傑克沒抓穩掉下去啦！';
+      } else {
+        if (titleEl) titleEl.textContent = '哎呀！魔豆失去養分萎縮！';
+        if (reasonEl) reasonEl.textContent = '答錯題目導致魔豆缺乏灌溉養分枯退，傑克從藤蔓上滑落摔了下來！';
+      }
+
+      if (this.currentQuestion) {
+        if (qEl) qEl.textContent = this.currentQuestion.question;
+        if (ansEl) ansEl.textContent = `【${this.currentQuestion.answer}】`;
+        if (expEl) expEl.textContent = this.currentQuestion.explanation;
+      }
+
+      if (hEl) hEl.textContent = `${this.height.toLocaleString()} m`;
+      if (sEl) sEl.textContent = `${this.score} 題`;
+      if (cEl) cEl.textContent = `${this.maxCombo} 次`;
+
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    showVictory() {
+      this.isRunning = false;
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+
+      sounds.playFanfare();
+
+      const modal = document.getElementById('beanstalk-victory-modal');
+      const hEl = document.getElementById('beanstalk-victory-height');
+      const sEl = document.getElementById('beanstalk-victory-score');
+      const cEl = document.getElementById('beanstalk-victory-combo');
+      const chestClosed = document.getElementById('beanstalk-chest-closed');
+      const chestOpened = document.getElementById('beanstalk-chest-opened');
+
+      if (hEl) hEl.textContent = '3,000 m (登頂)';
+      if (sEl) sEl.textContent = `${this.score} 題`;
+      if (cEl) cEl.textContent = `${this.maxCombo} 次`;
+
+      if (chestClosed) chestClosed.classList.remove('hidden');
+      if (chestOpened) chestOpened.classList.add('hidden');
+
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    openChest() {
+      if (this.chestOpened) return;
+      this.chestOpened = true;
+
+      sounds.playChestOpen();
+
+      const chestClosed = document.getElementById('beanstalk-chest-closed');
+      const chestOpened = document.getElementById('beanstalk-chest-opened');
+
+      if (chestClosed) chestClosed.classList.add('hidden');
+      if (chestOpened) {
+        chestOpened.classList.remove('hidden');
+        chestOpened.classList.add('animate-bounce');
+        setTimeout(() => chestOpened.classList.remove('animate-bounce'), 1000);
+      }
+    }
+  }
+
+  // =========================================================================
+  // 6. 模組導出與全域初始化
   // =========================================================================
   window.coolGameRescue = new WordRescueGame();
   window.coolGameSpeedyMouse = new SpeedyMouseGame();
   window.coolGameIdiom = new IdiomStackerGame();
+  window.coolGameBeanstalk = new BeanstalkGame();
   window.coolGameSounds = sounds;
   window.speakCurrentWord = () => {
     if (window.coolGameRescue && window.coolGameRescue.currentWord) {
@@ -2385,3 +3031,4 @@
     }
   };
 })();
+

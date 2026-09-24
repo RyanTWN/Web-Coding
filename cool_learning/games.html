@@ -410,20 +410,20 @@
           </div>
         </div>
 
-        <!-- 遊戲 4: 傑克與魔豆 (即將推出) -->
-        <div onclick="showGameToast('傑克與魔豆正在發芽中，敬請期待！')" class="game-card bg-gradient-to-br from-purple-50 via-fuchsia-50 to-amber-50/80 border-2 border-purple-300/70 hover:border-purple-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+        <!-- 遊戲 4: 傑克與魔豆 (即刻攀登) -->
+        <div onclick="openBeanstalkGame()" class="game-card bg-gradient-to-br from-emerald-50 via-teal-50 to-purple-50/80 border-2 border-emerald-300/80 hover:border-emerald-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-600 text-white font-bold text-xs">
-                <i class="fa-solid fa-clock"></i> 即將推出
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-xs shadow-xs animate-bounce">
+                <i class="fa-solid fa-fire"></i> 即刻攀登
               </span>
-              <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
-                綜合學科 × 雲端冒險
+              <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                自然×社會 × 雲端冒險
               </span>
             </div>
 
             <!-- 生動插畫 SVG: 通天魔豆樹、雲朵與金幣寶箱 -->
-            <div class="w-full h-36 bg-gradient-to-b from-purple-100/60 to-white/80 rounded-lg border border-purple-200/60 flex items-center justify-center p-3 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+            <div class="w-full h-36 bg-gradient-to-b from-emerald-100/60 via-sky-100/40 to-white/80 rounded-lg border border-emerald-200/60 flex items-center justify-center p-3 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
               <svg viewBox="0 0 320 140" class="w-full h-full max-w-[280px]">
                 <!-- 雲端仙境背景 -->
                 <circle cx="160" cy="30" r="26" fill="#f8fafc" opacity="0.9"/>
@@ -451,16 +451,16 @@
             </div>
 
             <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
-              傑克與魔豆 <i class="fa-solid fa-seedling text-purple-600"></i>
+              傑克與魔豆 <i class="fa-solid fa-seedling text-emerald-600"></i>
             </h3>
             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-              答對題目灌溉神聖魔豆，看著藤蔓節節攀升！突破重重關卡登頂雲端巨人古堡，贏得神秘寶藏！
+              自然科學與社會跨領域測驗！10秒內答對快速灌溉魔豆長高，連對衝刺突破三段高度直衝3000公尺，開箱雲端城堡神祕寶藏！
             </p>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-purple-200/80 flex items-center justify-between text-purple-700 font-bold text-sm">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-hourglass-half"></i> 敬請期待</span>
-            <i class="fa-solid fa-lock text-purple-400"></i>
+          <div class="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-emerald-700 font-black text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始攀登！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
           </div>
         </div>
 
@@ -842,8 +842,433 @@
     </div>
   </div>
 
+  
+  <!-- ========================================================================= -->
+  <!-- 視圖 5: 傑克與魔豆 - 遊戲主畫面 (模式B：藤蔓攀爬闖關)                         -->
+  <!-- ========================================================================= -->
+  <section id="view-game-beanstalk" class="w-full max-w-3xl mx-auto my-auto hidden card-flip-enter pb-6">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl border border-white flex flex-col gap-4">
+      
+      <!-- 頂部控制與階段儀表 -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <button onclick="backToGamesLobbyFromBeanstalk()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i> 回大廳
+          </button>
+          <span id="beanstalk-stage-badge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
+            <span id="beanstalk-stage-text">🌱 萌芽生長 (0~500m)</span>
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 連對指示徽章 -->
+          <span id="beanstalk-combo-badge" class="hidden items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-xs shadow-xs">
+            <i class="fa-solid fa-fire text-amber-200"></i>
+            <span id="beanstalk-combo-text">0 連對！</span>
+          </span>
+
+          <!-- 音效切換 -->
+          <button onclick="toggleGameSound()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-sm transition-all" title="切換音效">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 高度攀爬進度條 -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-inner">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-1.5">
+          <span class="flex items-center gap-1.5">
+            <i class="fa-solid fa-mountain text-emerald-600"></i> 目前高度:
+            <span id="beanstalk-height-text" class="text-base font-black text-emerald-700 font-mono">0</span> m
+          </span>
+          <span class="text-slate-400">雲端城堡目標：3,000 m</span>
+        </div>
+        <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden p-0.5">
+          <div id="beanstalk-height-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-sky-500 to-purple-600 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- 10 秒倒數計時進度條 -->
+      <div class="bg-amber-50/60 border border-amber-200/80 rounded-xl px-3 py-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-amber-900 flex items-center gap-1">
+            <i class="fa-solid fa-stopwatch text-amber-600"></i> 答題倒數 (超過 10 秒摔落！)
+          </span>
+          <span id="beanstalk-timer-text" class="font-black text-slate-700 text-sm font-mono">10.0s</span>
+        </div>
+        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div id="beanstalk-timer-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-100 ease-linear" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 魔豆樹與傑克攀爬 SVG 互動舞台 -->
+      <div id="beanstalk-scene-container" class="w-full h-56 sm:h-64 rounded-xl border border-slate-200 shadow-inner relative overflow-hidden flex items-center justify-center">
+        <!-- 浮動加速衝刺標籤 -->
+        <div id="beanstalk-spurt-badge" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1 rounded-full bg-amber-400 text-amber-950 font-black text-xs sm:text-sm shadow-lg pointer-events-none transition-all duration-300">
+          +150m
+        </div>
+
+        <svg id="beanstalk-svg" viewBox="0 0 400 360" class="w-full h-full select-none">
+          <defs>
+            <!-- 階段1天空漸層 (地表鄉村) -->
+            <linearGradient id="sky-stage1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#bae6fd"/>
+              <stop offset="60%" stop-color="#e0f2fe"/>
+              <stop offset="100%" stop-color="#dcfce7"/>
+            </linearGradient>
+
+            <!-- 階段2天空漸層 (浩瀚藍天雲層) -->
+            <linearGradient id="sky-stage2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0284c7"/>
+              <stop offset="50%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#bae6fd"/>
+            </linearGradient>
+
+            <!-- 階段3天空漸層 (天界暮光與金色城堡) -->
+            <linearGradient id="sky-stage3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2e1065"/>
+              <stop offset="45%" stop-color="#6b21a8"/>
+              <stop offset="85%" stop-color="#c084fc"/>
+              <stop offset="100%" stop-color="#fef08a"/>
+            </linearGradient>
+
+            <!-- 藤蔓枝幹漸層 -->
+            <linearGradient id="vine-grad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#15803d"/>
+              <stop offset="50%" stop-color="#22c55e"/>
+              <stop offset="100%" stop-color="#4ade80"/>
+            </linearGradient>
+
+            <!-- 城堡金色漸層 -->
+            <linearGradient id="castle-gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fef08a"/>
+              <stop offset="50%" stop-color="#facc15"/>
+              <stop offset="100%" stop-color="#eab308"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 背景天空 -->
+          <rect id="beanstalk-svg-bg" width="400" height="360" fill="url(#sky-stage1)"/>
+
+          <!-- 階段1背景裝飾：地面丘陵與草地 (0~500m) -->
+          <g id="beanstalk-stage1-group" opacity="1" class="transition-opacity duration-700">
+            <!-- 遠方丘陵 -->
+            <ellipse cx="80" cy="350" rx="140" ry="40" fill="#86efac" opacity="0.6"/>
+            <ellipse cx="320" cy="355" rx="130" ry="38" fill="#4ade80" opacity="0.7"/>
+            <rect x="0" y="335" width="400" height="25" fill="#16a34a"/>
+            <!-- 小花朵 -->
+            <circle cx="60" cy="336" r="3" fill="#f43f5e"/>
+            <circle cx="75" cy="338" r="2.5" fill="#fde047"/>
+            <circle cx="340" cy="337" r="3" fill="#ec4899"/>
+            <circle cx="325" cy="339" r="2.5" fill="#38bdf8"/>
+          </g>
+
+          <!-- 階段2背景裝飾：漂浮立體白雲 (500~1500m) -->
+          <g id="beanstalk-stage2-group" opacity="0" class="transition-opacity duration-700 pointer-events-none">
+            <!-- 左浮雲 -->
+            <g transform="translate(20, 90)">
+              <ellipse cx="40" cy="20" rx="35" ry="18" fill="#ffffff" opacity="0.9"/>
+              <ellipse cx="60" cy="15" rx="25" ry="20" fill="#ffffff" opacity="0.95"/>
+              <ellipse cx="25" cy="22" rx="20" ry="14" fill="#ffffff" opacity="0.85"/>
+            </g>
+            <!-- 右浮雲 -->
+            <g transform="translate(280, 160)">
+              <ellipse cx="45" cy="20" rx="40" ry="18" fill="#ffffff" opacity="0.9"/>
+              <ellipse cx="65" cy="14" rx="28" ry="20" fill="#ffffff" opacity="0.95"/>
+              <ellipse cx="25" cy="22" rx="22" ry="15" fill="#ffffff" opacity="0.85"/>
+            </g>
+            <!-- 氣流線條 -->
+            <path d="M 50 180 Q 90 175 140 182" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="8 6"/>
+            <path d="M 270 110 Q 320 105 370 112" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="8 6"/>
+          </g>
+
+          <!-- 階段3背景裝飾：彩虹與雲端巨人古堡 (1500~3000m) -->
+          <g id="beanstalk-stage3-group" opacity="0" class="transition-opacity duration-700 pointer-events-none">
+            <!-- 彩虹光芒 -->
+            <path d="M 40 180 A 180 180 0 0 1 360 180" fill="none" stroke="#f43f5e" stroke-width="3" opacity="0.4"/>
+            <path d="M 45 180 A 175 175 0 0 1 355 180" fill="none" stroke="#facc15" stroke-width="3" opacity="0.4"/>
+            <path d="M 50 180 A 170 170 0 0 1 350 180" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.4"/>
+
+            <!-- 閃閃金星 -->
+            <polygon points="90,45 92,50 97,52 92,54 90,59 88,54 83,52 88,50" fill="#fef08a"/>
+            <polygon points="310,35 312,40 317,42 312,44 310,49 308,44 303,42 308,40" fill="#fef08a"/>
+
+            <!-- 頂部巨大金黃雲端城堡 -->
+            <g transform="translate(130, 8)">
+              <!-- 城堡底座雲朵 -->
+              <ellipse cx="70" cy="50" rx="85" ry="18" fill="#ffffff" opacity="0.95"/>
+              <ellipse cx="40" cy="46" rx="45" ry="16" fill="#ffffff"/>
+              <ellipse cx="100" cy="46" rx="45" ry="16" fill="#ffffff"/>
+              <!-- 城堡主體塔樓 -->
+              <rect x="35" y="16" width="70" height="30" fill="url(#castle-gold)" rx="3" stroke="#ca8a04" stroke-width="1.5"/>
+              <!-- 左側小塔樓 -->
+              <rect x="22" y="10" width="18" height="35" fill="url(#castle-gold)" stroke="#ca8a04" stroke-width="1.5"/>
+              <polygon points="22,10 31,0 40,10" fill="#f43f5e" stroke="#be123c" stroke-width="1.5"/>
+              <!-- 右側小塔樓 -->
+              <rect x="100" y="10" width="18" height="35" fill="url(#castle-gold)" stroke="#ca8a04" stroke-width="1.5"/>
+              <polygon points="100,10 109,0 118,10" fill="#f43f5e" stroke="#be123c" stroke-width="1.5"/>
+              <!-- 中央大主塔 -->
+              <rect x="58" y="2" width="24" height="25" fill="url(#castle-gold)" stroke="#ca8a04" stroke-width="1.5"/>
+              <polygon points="56,2 70,-10 84,2" fill="#e11d48" stroke="#9f1239" stroke-width="1.5"/>
+              <!-- 旗幟 -->
+              <line x1="70" y1="-10" x2="70" y2="-18" stroke="#ca8a04" stroke-width="2"/>
+              <polygon points="70,-18 82,-14 70,-10" fill="#38bdf8"/>
+              <!-- 城堡大門拱門 -->
+              <path d="M 62 46 L 62 30 Q 70 24 78 30 L 78 46 Z" fill="#713f12"/>
+            </g>
+          </g>
+
+          <!-- 中央通天魔豆藤主藤蔓 -->
+          <g id="beanstalk-vine-group">
+            <!-- 蜿蜒主藤蔓 -->
+            <path d="M 200 360 Q 155 300 200 240 Q 245 180 190 120 Q 145 70 200 30" 
+                  fill="none" stroke="url(#vine-grad)" stroke-width="22" stroke-linecap="round"/>
+            <path d="M 200 360 Q 155 300 200 240 Q 245 180 190 120 Q 145 70 200 30" 
+                  fill="none" stroke="#15803d" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+
+            <!-- 捲曲藤蔓細鬚裝飾 -->
+            <path d="M 180 270 Q 150 280 145 260 Q 140 245 155 248" fill="none" stroke="#22c55e" stroke-width="3"/>
+            <path d="M 220 160 Q 255 170 258 150 Q 260 135 245 140" fill="none" stroke="#22c55e" stroke-width="3"/>
+            <path d="M 175 100 Q 145 110 140 90 Q 135 75 150 80" fill="none" stroke="#22c55e" stroke-width="3"/>
+
+            <!-- 葉片站台 0: 地表出發點 (x:175, y:280) -->
+            <g transform="translate(165, 305)">
+              <ellipse cx="35" cy="15" rx="30" ry="12" fill="#15803d" opacity="0.3"/>
+            </g>
+
+            <!-- 葉片站台 1: 左下大葉片 (x:125, y:235) -->
+            <g transform="translate(90, 240) rotate(-10)">
+              <path d="M 85 10 Q 30 -5 10 18 Q 40 38 85 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 85 14 Q 50 12 25 18" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 2: 右下大葉片 (x:230, y:185) -->
+            <g transform="translate(205, 190) rotate(15)">
+              <path d="M 0 14 Q 50 -8 85 15 Q 50 35 0 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 0 16 Q 40 12 70 15" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 3: 左中大葉片 (x:120, y:135) -->
+            <g transform="translate(85, 140) rotate(-12)">
+              <path d="M 85 10 Q 30 -5 10 18 Q 40 38 85 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 85 14 Q 50 12 25 18" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 4: 右中大葉片 (x:235, y:85) -->
+            <g transform="translate(210, 90) rotate(12)">
+              <path d="M 0 14 Q 50 -8 85 15 Q 50 35 0 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 0 16 Q 40 12 70 15" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 5: 頂端雲端入口雲台 (x:180, y:40) -->
+            <g transform="translate(150, 48)">
+              <ellipse cx="50" cy="15" rx="45" ry="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+              <ellipse cx="30" cy="12" rx="22" ry="12" fill="#ffffff"/>
+              <ellipse cx="70" cy="12" rx="22" ry="12" fill="#ffffff"/>
+            </g>
+          </g>
+
+          <!-- 冒險小傑克 (Jack Character Group) -->
+          <g id="beanstalk-jack-group" transform="translate(175, 280)" class="transition-transform duration-500 ease-out">
+            <!-- 陰影 -->
+            <ellipse cx="25" cy="38" rx="14" ry="5" fill="#0f172a" opacity="0.3"/>
+            <!-- 身體與服裝 (藍色吊帶褲) -->
+            <rect x="17" y="16" width="16" height="18" rx="4" fill="#2563eb"/>
+            <!-- 黃色襯衫袖子與手臂 -->
+            <rect x="14" y="16" width="22" height="7" rx="3" fill="#facc15"/>
+            <!-- 雙手抓握姿勢 -->
+            <circle cx="12" cy="20" r="3.5" fill="#fed7aa"/>
+            <circle cx="38" cy="20" r="3.5" fill="#fed7aa"/>
+            <!-- 雙腿 -->
+            <rect x="17" y="32" width="6" height="7" fill="#1e40af"/>
+            <rect x="27" y="32" width="6" height="7" fill="#1e40af"/>
+            <!-- 咖啡色靴子 -->
+            <rect x="15" y="36" width="8" height="4" rx="2" fill="#78350f"/>
+            <rect x="27" y="36" width="8" height="4" rx="2" fill="#78350f"/>
+            <!-- 傑克頭部 (生動圓臉) -->
+            <circle cx="25" cy="8" r="9" fill="#fed7aa" stroke="#ea580c" stroke-width="1"/>
+            <!-- 眼睛 -->
+            <circle cx="22" cy="7" r="1.5" fill="#1e293b"/>
+            <circle cx="28" cy="7" r="1.5" fill="#1e293b"/>
+            <!-- 微笑 -->
+            <path d="M 23 11 Q 25 14 27 11" fill="none" stroke="#e11d48" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- 冒險草帽 (草黃色 + 紅緞帶) -->
+            <ellipse cx="25" cy="3" rx="16" ry="5" fill="#fde047" stroke="#ca8a04" stroke-width="1.2"/>
+            <path d="M 16 2 Q 25 -8 34 2 Z" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+            <rect x="18" y="1" width="14" height="2" fill="#ef4444"/>
+            <!-- 冒險小水壺 -->
+            <circle cx="35" cy="24" r="3.5" fill="#06b6d4" stroke="#0891b2" stroke-width="1"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 題目與選項面板 -->
+      <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
+        <!-- 題目類別與標籤 -->
+        <div class="flex items-center gap-2 mb-2">
+          <span id="beanstalk-question-category" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            自然科學
+          </span>
+          <span id="beanstalk-question-topic" class="text-xs font-bold text-slate-500">
+            水溶液與酸鹼
+          </span>
+        </div>
+
+        <!-- 題幹 -->
+        <h4 id="beanstalk-question-text" class="text-base sm:text-lg font-black text-slate-800 leading-relaxed mb-4">
+          載入題目中...
+        </h4>
+
+        <!-- 四個選項按鈕 (A, B, C, D) -->
+        <div id="beanstalk-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+          <!-- 由 JS 動態注入選項按鈕 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 傑克與魔豆 - 摔落 Game Over 彈窗 (超時10秒或答錯摔落，含答案與解析)   -->
+  <!-- ========================================================================= -->
+  <div id="beanstalk-gameover-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border-2 border-rose-200 transform transition-all flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      
+      <!-- 頂部摔落插畫 -->
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-2 text-2xl shadow-inner animate-bounce">
+          <i class="fa-solid fa-person-falling"></i>
+        </div>
+        <h3 id="beanstalk-gameover-title" class="text-xl font-black text-slate-800">
+          哎呀！攀爬失足摔落！
+        </h3>
+        <p id="beanstalk-gameover-reason" class="text-xs text-rose-600 font-bold mt-1">
+          每一題作答時間為 10 秒，魔豆藤蔓劇烈晃動，傑克沒抓穩掉下去啦！
+        </p>
+      </div>
+
+      <!-- 成績簡報 -->
+      <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">攀爬高度</div>
+          <div id="beanstalk-gameover-height" class="text-base font-black text-emerald-600 font-mono">0 m</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">答對題數</div>
+          <div id="beanstalk-gameover-score" class="text-base font-black text-indigo-600 font-mono">0 題</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">最高連擊</div>
+          <div id="beanstalk-gameover-combo" class="text-base font-black text-amber-500 font-mono">0 次</div>
+        </div>
+      </div>
+
+      <!-- 錯題檢視與解析 -->
+      <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 text-xs text-left">
+        <div class="font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-lightbulb text-amber-600"></i> 本題正解與觀念解析：
+        </div>
+        <div id="beanstalk-gameover-question" class="text-slate-800 font-bold mb-2 text-xs sm:text-sm leading-relaxed">
+          -
+        </div>
+        <div class="bg-white p-2.5 rounded-lg border border-amber-200 mb-2">
+          <span class="text-slate-500 font-medium">正確答案：</span>
+          <span id="beanstalk-gameover-answer" class="font-black text-emerald-600 text-sm">-</span>
+        </div>
+        <p id="beanstalk-gameover-explanation" class="text-slate-600 leading-relaxed text-[11px]">
+          -
+        </p>
+      </div>
+
+      <!-- 按鈕區 -->
+      <div class="flex flex-col gap-2 pt-1">
+        <button onclick="restartBeanstalkGame()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再次攀登新挑戰！
+        </button>
+        <button onclick="closeBeanstalkGameOverAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 傑克與魔豆 - 雲端古堡登頂開寶箱 (Victory Modal)                          -->
+  <!-- ========================================================================= -->
+  <div id="beanstalk-victory-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-purple-50 via-white to-amber-50 rounded-2xl max-w-lg w-full p-6 shadow-2xl border-2 border-amber-300 transform transition-all flex flex-col gap-4 text-center">
+      
+      <!-- 登頂皇冠 -->
+      <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center mx-auto text-3xl shadow-md animate-bounce">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800">
+        🎉 成功登頂雲端巨人古堡！
+      </h3>
+      <p class="text-xs text-purple-700 font-bold">
+        恭喜你勇破 3,000 公尺天界！神聖魔豆直衝雲霄，解鎖傳說中的天界寶藏！
+      </p>
+
+      <!-- 寶箱開箱互動區 -->
+      <div class="bg-white/80 p-5 rounded-xl border border-amber-200 shadow-inner flex flex-col items-center justify-center min-h-[160px]">
+        
+        <!-- 未開箱狀態 -->
+        <div id="beanstalk-chest-closed" onclick="openBeanstalkChest()" class="cursor-pointer group flex flex-col items-center">
+          <div class="text-6xl text-amber-500 drop-shadow-md group-hover:scale-110 transition-transform animate-pulse">
+            <i class="fa-solid fa-box-open"></i>
+          </div>
+          <span class="mt-3 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-black text-xs shadow-md group-hover:scale-105 transition-transform flex items-center gap-1.5">
+            <i class="fa-solid fa-key"></i> 點擊開啟金色寶箱！
+          </span>
+        </div>
+
+        <!-- 開箱後榮耀展示 -->
+        <div id="beanstalk-chest-opened" class="hidden flex flex-col items-center gap-2">
+          <div class="flex items-center justify-center gap-4 text-4xl text-amber-500 my-1">
+            <span title="生金蛋的鵝"><i class="fa-solid fa-egg text-yellow-400 drop-shadow-sm"></i></span>
+            <span title="黃金金幣"><i class="fa-solid fa-coins text-amber-500 drop-shadow-sm"></i></span>
+            <span title="會唱歌的魔法豎琴"><i class="fa-solid fa-music text-purple-500 drop-shadow-sm"></i></span>
+          </div>
+          <h4 class="text-lg font-black text-amber-800">
+            獲得「👑 雲端巨人征服者」傳奇勳章！
+          </h4>
+          <p class="text-xs text-slate-600 leading-relaxed max-w-xs">
+            你獲得了金蛋、魔法豎琴與無數金幣！你的自然與社會學科知識已登峰造極！
+          </p>
+        </div>
+      </div>
+
+      <!-- 成績總覽 -->
+      <div class="grid grid-cols-3 gap-2 bg-white/70 p-3 rounded-xl border border-purple-200 text-center">
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">登頂高度</div>
+          <div id="beanstalk-victory-height" class="text-base font-black text-emerald-600 font-mono">3,000 m</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">總答對</div>
+          <div id="beanstalk-victory-score" class="text-base font-black text-indigo-600 font-mono">-</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">最高連擊</div>
+          <div id="beanstalk-victory-combo" class="text-base font-black text-amber-500 font-mono">-</div>
+        </div>
+      </div>
+
+      <!-- 按鈕區 -->
+      <div class="flex flex-col gap-2 pt-2">
+        <button onclick="restartBeanstalkGame()" class="w-full py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再玩一局！
+        </button>
+        <button onclick="closeBeanstalkVictoryAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/config.js"></script>
   <script src="assets/js/data/idioms200.js"></script>
+  <script src="assets/js/data/beanstalk_questions.js"></script>
   <script src="assets/js/games.js"></script>
 
   <script>
@@ -870,6 +1295,8 @@
     function openRescueGame() {
       document.getElementById('view-games-lobby').classList.add('hidden');
       document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
       const gameView = document.getElementById('view-game-rescue');
       gameView.classList.remove('hidden');
       
@@ -910,6 +1337,8 @@
     function openSpeedyMouseGame() {
       document.getElementById('view-games-lobby').classList.add('hidden');
       document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
       const mouseView = document.getElementById('view-game-mouse');
       mouseView.classList.remove('hidden');
 
@@ -952,6 +1381,7 @@
       document.getElementById('view-games-lobby').classList.add('hidden');
       document.getElementById('view-game-rescue').classList.add('hidden');
       document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
       const idiomView = document.getElementById('view-game-idiom');
       idiomView.classList.remove('hidden');
 
@@ -986,6 +1416,68 @@
         modal.classList.remove('flex');
       }
       backToGamesLobbyFromIdiom();
+    }
+
+    
+    // 傑克與魔豆控制器
+    function openBeanstalkGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      const beanstalkView = document.getElementById('view-game-beanstalk');
+      beanstalkView.classList.remove('hidden');
+
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.start();
+      }
+    }
+
+    function backToGamesLobbyFromBeanstalk() {
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.isRunning = false;
+        if (window.coolGameBeanstalk.timerInterval) {
+          clearInterval(window.coolGameBeanstalk.timerInterval);
+          window.coolGameBeanstalk.timerInterval = null;
+        }
+      }
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartBeanstalkGame() {
+      const goModal = document.getElementById('beanstalk-gameover-modal');
+      const vicModal = document.getElementById('beanstalk-victory-modal');
+      if (goModal) { goModal.classList.add('hidden'); goModal.classList.remove('flex'); }
+      if (vicModal) { vicModal.classList.add('hidden'); vicModal.classList.remove('flex'); }
+
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.start();
+      }
+    }
+
+    function closeBeanstalkGameOverAndBack() {
+      const modal = document.getElementById('beanstalk-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromBeanstalk();
+    }
+
+    function closeBeanstalkVictoryAndBack() {
+      const modal = document.getElementById('beanstalk-victory-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromBeanstalk();
+    }
+
+    function openBeanstalkChest() {
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.openChest();
+      }
     }
 
     function toggleGameSound() {
