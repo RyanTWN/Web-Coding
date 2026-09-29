@@ -86,6 +86,45 @@
     return list;
   }
 
+  // 記錄邊玩邊學小遊戲成績與最高紀錄 (通訊後端與本機同步)
+  function recordGameResult(gameId, score, stat) {
+    try {
+      const user = JSON.parse(sessionStorage.getItem('g6_portal_user') || 'null');
+      if (!user || !user.seatNo) return;
+      const base = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '/api';
+      const numScore = Math.max(0, Math.round(Number(score) || 0));
+      const numStat = Math.max(0, Math.round(Number(stat) || 0));
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
+      fetch(`${base}/games/record`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          seatNo: user.seatNo,
+          gameId,
+          score: numScore,
+          stat: numStat
+        })
+      }).catch(err => console.warn('小遊戲成績伺服端記錄失敗:', err));
+
+      // 同步更新本機 localStorage 快取
+      const localKey = `g6_game_records_${user.seatNo}`;
+      const localRecords = JSON.parse(localStorage.getItem(localKey) || '{}');
+      const prev = localRecords[gameId] || { playCount: 0, highScore: 0, maxStat: 0 };
+      localRecords[gameId] = {
+        playCount: (Number(prev.playCount) || 0) + 1,
+        highScore: Math.max(Number(prev.highScore) || 0, numScore),
+        maxStat: Math.max(Number(prev.maxStat) || 0, numStat),
+        lastPlayedAt: new Date().toISOString()
+      };
+      localStorage.setItem(localKey, JSON.stringify(localRecords));
+    } catch (err) {
+      console.warn('記錄小遊戲成績異常:', err);
+    }
+  }
+
   // =========================================================================
   // 2. Web Audio API 音效生成引擎 (零依賴、純代碼即時合成)
   // =========================================================================
@@ -817,6 +856,8 @@
       if (finalScoreEl) finalScoreEl.textContent = this.score;
       if (finalCountEl) finalCountEl.textContent = this.rescuedCount;
 
+      recordGameResult('rescue', this.score, this.rescuedCount);
+
       if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -1525,6 +1566,10 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
       }
+
+      const player = this.racers.find(r => r.isPlayer);
+      const distance = player ? Math.round(player.distance) : 0;
+      recordGameResult('mouse', distance, this.stats ? this.stats.correctCount : 0);
     }
 
     // 繪製賽跑主畫面
@@ -2163,6 +2208,7 @@
         // 完全正確！通關！
         this.solved = true;
         this.score += 1;
+        recordGameResult('idiom', this.score, this.level);
         sounds.playFanfare();
 
         // 觸發手機震動 (成功雙響 0.1s + 0.1s)
@@ -2379,6 +2425,8 @@
       const detailsEl = document.getElementById('idiom-gameover-details');
 
       if (scoreEl) scoreEl.textContent = this.score;
+
+      recordGameResult('idiom', this.score, this.level);
 
       const p = this.currentPuzzle;
       if (p) {
@@ -2968,6 +3016,8 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
       }
+
+      recordGameResult('beanstalk', this.score, this.height);
     }
 
     showVictory() {
@@ -2997,6 +3047,8 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
       }
+
+      recordGameResult('beanstalk', this.score, 3000);
     }
 
     openChest() {

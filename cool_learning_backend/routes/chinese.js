@@ -330,5 +330,27 @@ module.exports = function createChineseRouter({ pool, requireAuth, requireOwnSea
     }
   });
 
+  // 儲存成語測驗歷程
+  router.post('/chinese/idiom-quiz', requireAuth, requireOwnSeat, async (req, res) => {
+    const seatNo = String(req.body?.seatNo || '').trim();
+    const score = Math.max(0, Math.min(100, Math.round(Number(req.body?.score || 0))));
+    const correctCount = Math.max(0, Math.round(Number(req.body?.correctCount || 0)));
+    const totalQuestions = Math.max(1, Math.round(Number(req.body?.totalQuestions || 10)));
+
+    if (!seatNo) {
+      return res.status(400).json({ success: false, error: '缺少學生座號' });
+    }
+
+    try {
+      await pool.query(
+        'INSERT INTO student_idiom_quiz_logs (seat_no, score, correct_count, total_questions) VALUES (?, ?, ?, ?)',
+        [seatNo, score, correctCount, totalQuestions]
+      );
+      res.json({ success: true, score, correctCount, totalQuestions });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   return router;
 };

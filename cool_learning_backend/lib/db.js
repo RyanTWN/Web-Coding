@@ -231,6 +231,29 @@ async function initializeDatabaseSchema(pool, AUTH_SECRET) {
       PRIMARY KEY (seat_no)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS student_idiom_quiz_logs (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      seat_no VARCHAR(32) NOT NULL,
+      score TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      correct_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      total_questions TINYINT UNSIGNED NOT NULL DEFAULT 10,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY ix_idiom_quiz_seat (seat_no, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS student_game_records (
+      seat_no VARCHAR(32) NOT NULL,
+      game_id VARCHAR(32) NOT NULL,
+      play_count INT UNSIGNED NOT NULL DEFAULT 0,
+      high_score INT UNSIGNED NOT NULL DEFAULT 0,
+      max_stat INT UNSIGNED NOT NULL DEFAULT 0,
+      last_played_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (seat_no, game_id),
+      KEY ix_game_seat (seat_no)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
   // B2C 家長付費模式：家長帳號、子女檔案、訂閱狀態，與既有 students/seat_no 系統並存。
   await pool.query(`
     CREATE TABLE IF NOT EXISTS guardians (

@@ -407,56 +407,190 @@
       </div>
 
       <!-- 2. 學習追蹤面板 -->
-      <div id="guardian-panel-tracking" class="hidden space-y-5">
+      <div id="guardian-panel-tracking" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
           <div class="flex items-center gap-2">
             <label class="text-xs font-bold text-slate-700">選擇檢視子女：</label>
             <select id="tracking-child-select" class="py-1.5 px-3 text-xs font-bold rounded-xl border border-slate-300 bg-white">
             </select>
           </div>
-          <span class="text-xs text-slate-500">數據涵蓋小六四大核心學科累計進度</span>
+          <span class="text-xs text-slate-500">數據涵蓋小六五大核心學科與邊玩邊學小遊戲學習歷程</span>
         </div>
 
-        <div id="tracking-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- 英文單字追蹤卡 -->
-          <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4 rounded-lg border border-blue-200">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-blue-900">英文天地</span>
-              <i class="fa-solid fa-book-open text-blue-500"></i>
-            </div>
-            <div class="text-2xl font-black text-blue-700 mb-1"><span id="track-eng-days">0</span> <span class="text-xs font-bold text-blue-500">天完成</span></div>
-            <p class="text-[11px] text-blue-700 font-semibold mb-0.5">進度：<span id="track-eng-words" class="text-indigo-600 font-black">0</span> / 2000 字 ｜ 難字：<span id="track-eng-starred" class="text-purple-600 font-black">0</span> 個</p>
-            <p class="text-[11px] text-blue-600/80 font-medium">測驗平均：<span id="track-eng-score">0</span> 分 (共 <span id="track-eng-quizzes">0</span> 次)</p>
+        <!-- 五大學科學習追蹤 -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-graduation-cap text-indigo-500"></i> 五大學科每日自主學習追蹤
+            </h4>
+            <span class="text-xs text-slate-400">每日自學累積</span>
           </div>
 
-          <!-- 數學天地追蹤卡 -->
-          <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 rounded-lg border border-emerald-200">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-emerald-900">數學天地</span>
-              <i class="fa-solid fa-calculator text-emerald-500"></i>
+          <div id="tracking-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <!-- 英文單字追蹤卡 -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4 rounded-lg border border-blue-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-blue-900">英文天地</span>
+                <i class="fa-solid fa-book-open text-blue-500"></i>
+              </div>
+              <div class="text-2xl font-black text-blue-700 mb-1"><span id="track-eng-days">0</span> <span class="text-xs font-bold text-blue-500">天完成</span></div>
+              <p class="text-[11px] text-blue-700 font-semibold mb-0.5">單字：<span id="track-eng-words" class="text-indigo-600 font-black">0</span> / 2000 字 ｜ 難字：<span id="track-eng-starred" class="text-purple-600 font-black">0</span></p>
+              <p class="text-[11px] text-blue-600/80 font-medium">測驗均分：<span id="track-eng-score">0</span> 分 (共 <span id="track-eng-quizzes">0</span> 次)</p>
             </div>
-            <div class="text-2xl font-black text-emerald-700 mb-1"><span id="track-math-quizzes">0</span> <span class="text-xs font-bold text-emerald-500">回測驗</span></div>
-            <p class="text-[11px] text-emerald-600/80 font-medium">均分：<span id="track-math-score">0</span> 分 | 已掌握錯題：<span id="track-math-mastered">0</span> 題</p>
+
+            <!-- 國語文學與成語追蹤卡 -->
+            <div class="bg-gradient-to-br from-violet-50 to-purple-50/60 p-4 rounded-lg border border-violet-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-violet-900">國語與成語</span>
+                <i class="fa-solid fa-feather text-violet-500"></i>
+              </div>
+              <div class="text-2xl font-black text-violet-700 mb-1"><span id="track-chinese-days">0</span> <span class="text-xs font-bold text-violet-500">天完成</span></div>
+              <p class="text-[11px] text-violet-700 font-semibold mb-0.5">每日測驗：均分 <span id="track-chinese-score" class="font-black text-violet-800">0</span> 分 ｜ 掌握：<span id="track-chinese-mastered" class="font-black text-emerald-600">0</span> 題</p>
+              <p class="text-[11px] text-purple-700 font-medium mb-0.5">成語研讀：<span id="track-idiom-learned" class="text-purple-800 font-black">0</span> / 200 則 ｜ 收藏：<span id="track-idiom-starred" class="text-amber-600 font-black">0</span> 則</p>
+              <p class="text-[11px] text-purple-600/80 font-medium">成語測驗：均分 <span id="track-idiom-score" class="font-black">0</span> 分 (<span id="track-idiom-quizzes">0</span> 回，最高 <span id="track-idiom-max-score" class="font-black text-rose-600">0</span> 分)</p>
+            </div>
+
+            <!-- 數學天地追蹤卡 -->
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 rounded-lg border border-emerald-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-emerald-900">數學天地</span>
+                <i class="fa-solid fa-calculator text-emerald-500"></i>
+              </div>
+              <div class="text-2xl font-black text-emerald-700 mb-1"><span id="track-math-quizzes">0</span> <span class="text-xs font-bold text-emerald-500">回測驗</span></div>
+              <p class="text-[11px] text-emerald-600/80 font-medium">均分：<span id="track-math-score">0</span> 分 | 已掌握錯題：<span id="track-math-mastered">0</span> 題</p>
+            </div>
+
+            <!-- 自然科學追蹤卡 -->
+            <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 p-4 rounded-lg border border-amber-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-amber-900">自然科學</span>
+                <i class="fa-solid fa-flask text-amber-500"></i>
+              </div>
+              <div class="text-2xl font-black text-amber-700 mb-1"><span id="track-nature-days">0</span> <span class="text-xs font-bold text-amber-500">回完成</span></div>
+              <p class="text-[11px] text-amber-600/80 font-medium">均分：<span id="track-nature-score">0</span> 分 | 已掌握：<span id="track-nature-mastered">0</span> 題</p>
+            </div>
+
+            <!-- 社會人文追蹤卡 -->
+            <div class="bg-gradient-to-br from-rose-50 to-orange-50/60 p-4 rounded-lg border border-rose-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-rose-900">社會人文</span>
+                <i class="fa-solid fa-earth-americas text-rose-500"></i>
+              </div>
+              <div class="text-2xl font-black text-rose-700 mb-1"><span id="track-social-days">0</span> <span class="text-xs font-bold text-rose-500">回完成</span></div>
+              <p class="text-[11px] text-rose-600/80 font-medium">均分：<span id="track-social-score">0</span> 分 | 已掌握：<span id="track-social-mastered">0</span> 題</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 四款小遊戲歷程追蹤 -->
+        <div class="pt-2">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-gamepad text-indigo-500"></i> 邊玩邊學小遊戲歷程（遊玩次數與最高紀錄）
+            </h4>
+            <span class="text-xs text-slate-400">寓教於樂自主挑戰</span>
           </div>
 
-          <!-- 自然科學追蹤卡 -->
-          <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 p-4 rounded-lg border border-amber-200">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-amber-900">自然科學</span>
-              <i class="fa-solid fa-flask text-amber-500"></i>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 搶救字母大作戰 -->
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-lg">🔤</span>
+                  <span class="text-xs font-bold text-slate-800">搶救字母大作戰</span>
+                </div>
+                <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">英文單字</span>
+              </div>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class="text-xs text-slate-500">遊玩次數</span>
+                <span class="text-xl font-black text-blue-600"><span id="track-game-rescue-count">0</span> <span class="text-xs text-slate-400 font-bold">次</span></span>
+              </div>
+              <div class="space-y-1 pt-1.5 border-t border-slate-100 text-[11px]">
+                <div class="flex justify-between text-slate-600">
+                  <span>最高得分：</span>
+                  <span class="font-black text-slate-800"><span id="track-game-rescue-score">0</span> 分</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                  <span>最多搶救單字：</span>
+                  <span class="font-black text-indigo-600"><span id="track-game-rescue-stat">0</span> 個字</span>
+                </div>
+              </div>
             </div>
-            <div class="text-2xl font-black text-amber-700 mb-1"><span id="track-nature-days">0</span> <span class="text-xs font-bold text-amber-500">回完成</span></div>
-            <p class="text-[11px] text-amber-600/80 font-medium">均分：<span id="track-nature-score">0</span> 分 | 已掌握：<span id="track-nature-mastered">0</span> 題</p>
-          </div>
 
-          <!-- 社會人文追蹤卡 -->
-          <div class="bg-gradient-to-br from-rose-50 to-orange-50/60 p-4 rounded-lg border border-rose-200">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-rose-900">社會人文</span>
-              <i class="fa-solid fa-earth-americas text-rose-500"></i>
+            <!-- 洞築機先 -->
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:border-purple-300 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-lg">🧩</span>
+                  <span class="text-xs font-bold text-slate-800">洞築機先</span>
+                </div>
+                <span class="text-[11px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">成語填空</span>
+              </div>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class="text-xs text-slate-500">遊玩次數</span>
+                <span class="text-xl font-black text-purple-600"><span id="track-game-idiom-count">0</span> <span class="text-xs text-slate-400 font-bold">次</span></span>
+              </div>
+              <div class="space-y-1 pt-1.5 border-t border-slate-100 text-[11px]">
+                <div class="flex justify-between text-slate-600">
+                  <span>最高得分：</span>
+                  <span class="font-black text-slate-800"><span id="track-game-idiom-score">0</span> 分</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                  <span>最高通關關卡：</span>
+                  <span class="font-black text-purple-600">第 <span id="track-game-idiom-stat">0</span> 關</span>
+                </div>
+              </div>
             </div>
-            <div class="text-2xl font-black text-rose-700 mb-1"><span id="track-social-days">0</span> <span class="text-xs font-bold text-rose-500">回完成</span></div>
-            <p class="text-[11px] text-rose-600/80 font-medium">均分：<span id="track-social-score">0</span> 分 | 已掌握：<span id="track-social-mastered">0</span> 題</p>
+
+            <!-- 光速小鼠 -->
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:border-amber-300 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-lg">🐹</span>
+                  <span class="text-xs font-bold text-slate-800">光速小鼠</span>
+                </div>
+                <span class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">極速心算</span>
+              </div>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class="text-xs text-slate-500">遊玩次數</span>
+                <span class="text-xl font-black text-amber-600"><span id="track-game-mouse-count">0</span> <span class="text-xs text-slate-400 font-bold">次</span></span>
+              </div>
+              <div class="space-y-1 pt-1.5 border-t border-slate-100 text-[11px]">
+                <div class="flex justify-between text-slate-600">
+                  <span>最遠奔跑：</span>
+                  <span class="font-black text-slate-800"><span id="track-game-mouse-score">0</span> 公尺</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                  <span>單場最多答對：</span>
+                  <span class="font-black text-amber-600"><span id="track-game-mouse-stat">0</span> 題</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 傑克與魔豆 -->
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:border-emerald-300 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-lg">🌱</span>
+                  <span class="text-xs font-bold text-slate-800">傑克與魔豆</span>
+                </div>
+                <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">跨科知識</span>
+              </div>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class="text-xs text-slate-500">遊玩次數</span>
+                <span class="text-xl font-black text-emerald-600"><span id="track-game-beanstalk-count">0</span> <span class="text-xs text-slate-400 font-bold">次</span></span>
+              </div>
+              <div class="space-y-1 pt-1.5 border-t border-slate-100 text-[11px]">
+                <div class="flex justify-between text-slate-600">
+                  <span>最高攀爬高度：</span>
+                  <span class="font-black text-slate-800"><span id="track-game-beanstalk-stat">0</span> 公尺</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                  <span>單場最多答對：</span>
+                  <span class="font-black text-emerald-600"><span id="track-game-beanstalk-score">0</span> 題</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -506,7 +640,17 @@
               <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
                 <div id="growth-social-bar" class="bg-orange-500 h-3 rounded-full transition-all" style="width: 0%"></div>
               </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                <span>國語錯題掌握</span>
+                <span id="growth-chinese-rate">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="growth-chinese-bar" class="bg-violet-500 h-3 rounded-full transition-all" style="width: 0%"></div>
+              </div>
             </div>
+          </div>
           </div>
 
           <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">

@@ -1068,6 +1068,34 @@ function finishIdiomQuiz() {
 
   document.getElementById('idiom-quiz-result-correct').textContent = `${correctCount} / ${questions.length}`;
   document.getElementById('idiom-quiz-result-score').textContent = `${finalScore} 分`;
+
+  // 記錄成語測驗歷程至後端與本機快取
+  try {
+    if (currentUser && currentUser.seatNo) {
+      chineseFetch('/chinese/idiom-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seatNo: currentUser.seatNo,
+          score: finalScore,
+          correctCount,
+          totalQuestions: questions.length
+        })
+      }).catch(err => console.warn('成語測驗歷程傳送失敗:', err));
+
+      const localKey = `g6_idiom_quizzes_${currentUser.seatNo}`;
+      const localHistory = JSON.parse(localStorage.getItem(localKey) || '[]');
+      localHistory.push({
+        score: finalScore,
+        correctCount,
+        totalQuestions: questions.length,
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem(localKey, JSON.stringify(localHistory));
+    }
+  } catch (err) {
+    console.warn('成語測驗歷程存檔異常:', err);
+  }
 }
 
 function exitIdiomQuiz() {

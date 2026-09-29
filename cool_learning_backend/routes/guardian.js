@@ -347,7 +347,14 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     }
     const seatNo = rows[0].linked_seat_no;
     if (seatNo) {
-      for (const table of ['english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state', 'student_learning_state', 'student_math_state', 'math_quiz_logs', 'math_wrong_questions', 'nature_daily_progress', 'nature_wrong_questions', 'social_daily_progress', 'social_wrong_questions', 'learning_progress', 'quiz_logs', 'login_logs']) {
+      for (const table of [
+        'english_daily_assignments', 'english_daily_progress', 'english_word_cycle_state',
+        'student_learning_state', 'student_math_state', 'math_quiz_logs', 'math_wrong_questions',
+        'nature_daily_progress', 'nature_wrong_questions', 'social_daily_progress', 'social_wrong_questions',
+        'chinese_daily_progress', 'chinese_wrong_questions', 'student_idiom_stars', 'student_idiom_progress',
+        'student_idiom_quiz_logs', 'student_game_records',
+        'learning_progress', 'quiz_logs', 'login_logs'
+      ]) {
         await connection.query(`DELETE FROM ${table} WHERE seat_no = ?`, [seatNo]);
       }
       await connection.query('DELETE FROM students WHERE seat_no = ?', [seatNo]);
@@ -446,10 +453,50 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     const [socialProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM social_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
     const [socialWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM social_wrong_questions WHERE seat_no = ?', [seatNo]);
 
-    // 5. 國語學習統計
+    // 5. 國語學習統計與成語研讀進度、成語測驗
     const [chineseProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM chinese_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
     const [chineseWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM chinese_wrong_questions WHERE seat_no = ?', [seatNo]);
     const [idiomStars] = await pool.query('SELECT COUNT(*) AS star_count FROM student_idiom_stars WHERE seat_no = ?', [seatNo]);
+
+    const [idiomProgressRows] = await pool.query('SELECT last_idiom_id, daily_history_json FROM student_idiom_progress WHERE seat_no = ?', [seatNo]);
+    let idiomLearnedCount = 0;
+    if (idiomProgressRows.length > 0 && idiomProgressRows[0].daily_history_json) {
+      try {
+        const history = JSON.parse(idiomProgressRows[0].daily_history_json || '[]');
+        const idSet = new Set();
+        history.forEach(item => (item.viewedIds || []).forEach(id => idSet.add(Number(id))));
+        idiomLearnedCount = idSet.size;
+      } catch (_) {}
+    }
+
+    const [idiomQuizRows] = await pool.query(
+      'SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score, MAX(score) AS max_score FROM student_idiom_quiz_logs WHERE seat_no = ?',
+      [seatNo]
+    );
+    const idiomQuizCount = Number(idiomQuizRows[0]?.total_quizzes || 0);
+    const idiomQuizAvgScore = Math.round(Number(idiomQuizRows[0]?.avg_score || 0));
+    const idiomQuizMaxScore = Math.round(Number(idiomQuizRows[0]?.max_score || 0));
+
+    // 6. 邊玩邊學四款小遊戲歷程統計
+    const [gameRows] = await pool.query(
+      'SELECT game_id, play_count, high_score, max_stat, last_played_at FROM student_game_records WHERE seat_no = ?',
+      [seatNo]
+    );
+    const gameMap = {};
+    gameRows.forEach(r => {
+      gameMap[r.game_id] = {
+        playCount: Number(r.play_count || 0),
+        highScore: Number(r.high_score || 0),
+        maxStat: Number(r.max_stat || 0),
+        lastPlayedAt: r.last_played_at
+      };
+    });
+    const gamesPayload = {
+      rescue: gameMap.rescue || { playCount: 0, highScore: 0, maxStat: 0 },
+      idiom: gameMap.idiom || { playCount: 0, highScore: 0, maxStat: 0 },
+      mouse: gameMap.mouse || { playCount: 0, highScore: 0, maxStat: 0 },
+      beanstalk: gameMap.beanstalk || { playCount: 0, highScore: 0, maxStat: 0 }
+    };
 
     const engDays = Number(engProgress[0]?.days_count || 0);
     const engQuizTotal = Number(engQuizzes[0]?.total_quizzes || 0);
@@ -525,8 +572,14 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
         wrongCount: chineseWrongTotal,
         masteredWrong: chineseMastered,
         masteredCount: chineseMastered,
-        idiomStars: idiomStarTotal
-      }
+        idiomStars: idiomStarTotal,
+        idiomLearnedCount,
+        idiomTotal: 200,
+        idiomQuizCount,
+        idiomQuizAvgScore,
+        idiomQuizMaxScore
+      },
+      games: gamesPayload
     };
 
     res.json({

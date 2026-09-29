@@ -1882,6 +1882,70 @@ async function loadChildSummary(childId) {
     const elSocialMastered = document.getElementById('track-social-mastered');
     if (elSocialMastered) elSocialMastered.textContent = social.masteredWrong ?? social.masteredCount ?? 0;
 
+    // 國語與成語追蹤
+    const chinese = summary.chinese || {};
+    const elChineseDays = document.getElementById('track-chinese-days');
+    if (elChineseDays) elChineseDays.textContent = chinese.completedDays ?? chinese.daysCompleted ?? chinese.quizCount ?? 0;
+    const elChineseScore = document.getElementById('track-chinese-score');
+    if (elChineseScore) elChineseScore.textContent = chinese.avgScore ?? 0;
+    const elChineseMastered = document.getElementById('track-chinese-mastered');
+    if (elChineseMastered) elChineseMastered.textContent = chinese.masteredWrong ?? chinese.masteredCount ?? 0;
+    const elIdiomLearned = document.getElementById('track-idiom-learned');
+    if (elIdiomLearned) elIdiomLearned.textContent = chinese.idiomLearnedCount ?? 0;
+    const elIdiomStars = document.getElementById('track-idiom-starred');
+    if (elIdiomStars) elIdiomStars.textContent = chinese.idiomStars ?? 0;
+    const elIdiomQuizzes = document.getElementById('track-idiom-quizzes');
+    if (elIdiomQuizzes) elIdiomQuizzes.textContent = chinese.idiomQuizCount ?? 0;
+    const elIdiomScore = document.getElementById('track-idiom-score');
+    if (elIdiomScore) elIdiomScore.textContent = chinese.idiomQuizAvgScore ?? 0;
+    const elIdiomMaxScore = document.getElementById('track-idiom-max-score');
+    if (elIdiomMaxScore) elIdiomMaxScore.textContent = chinese.idiomQuizMaxScore ?? 0;
+
+    // 四款小遊戲歷程追蹤
+    const games = summary.games || {};
+    let localGames = {};
+    try {
+      const child = (typeof guardianChildren !== 'undefined' && Array.isArray(guardianChildren))
+        ? guardianChildren.find(c => c.id == childId) : null;
+      const seatNo = child?.linked_seat_no || child?.seatNo;
+      if (seatNo) {
+        localGames = JSON.parse(localStorage.getItem(`g6_game_records_${seatNo}`) || '{}');
+      }
+    } catch (_) {}
+
+    const rescue = games.rescue || localGames.rescue || {};
+    const idiomG = games.idiom || localGames.idiom || {};
+    const mouse = games.mouse || localGames.mouse || {};
+    const beanstalk = games.beanstalk || localGames.beanstalk || {};
+
+    const elRescueCount = document.getElementById('track-game-rescue-count');
+    if (elRescueCount) elRescueCount.textContent = rescue.playCount || 0;
+    const elRescueScore = document.getElementById('track-game-rescue-score');
+    if (elRescueScore) elRescueScore.textContent = rescue.highScore || 0;
+    const elRescueStat = document.getElementById('track-game-rescue-stat');
+    if (elRescueStat) elRescueStat.textContent = rescue.maxStat || 0;
+
+    const elIdiomGCount = document.getElementById('track-game-idiom-count');
+    if (elIdiomGCount) elIdiomGCount.textContent = idiomG.playCount || 0;
+    const elIdiomGScore = document.getElementById('track-game-idiom-score');
+    if (elIdiomGScore) elIdiomGScore.textContent = idiomG.highScore || 0;
+    const elIdiomGStat = document.getElementById('track-game-idiom-stat');
+    if (elIdiomGStat) elIdiomGStat.textContent = idiomG.maxStat || 0;
+
+    const elMouseCount = document.getElementById('track-game-mouse-count');
+    if (elMouseCount) elMouseCount.textContent = mouse.playCount || 0;
+    const elMouseScore = document.getElementById('track-game-mouse-score');
+    if (elMouseScore) elMouseScore.textContent = mouse.highScore || 0;
+    const elMouseStat = document.getElementById('track-game-mouse-stat');
+    if (elMouseStat) elMouseStat.textContent = mouse.maxStat || 0;
+
+    const elBeanstalkCount = document.getElementById('track-game-beanstalk-count');
+    if (elBeanstalkCount) elBeanstalkCount.textContent = beanstalk.playCount || 0;
+    const elBeanstalkScore = document.getElementById('track-game-beanstalk-score');
+    if (elBeanstalkScore) elBeanstalkScore.textContent = beanstalk.highScore || 0;
+    const elBeanstalkStat = document.getElementById('track-game-beanstalk-stat');
+    if (elBeanstalkStat) elBeanstalkStat.textContent = beanstalk.maxStat || 0;
+
     // 成長記錄精熟率進度條
     const mathTotal = Number(math.totalWrong ?? math.wrongCount ?? 0);
     const mathMastered = Number(math.masteredWrong ?? math.masteredCount ?? 0);
@@ -1906,6 +1970,14 @@ async function loadChildSummary(childId) {
     if (elGrowthSocialRate) elGrowthSocialRate.textContent = `${socialRate}%`;
     const elGrowthSocialBar = document.getElementById('growth-social-bar');
     if (elGrowthSocialBar) elGrowthSocialBar.style.width = `${socialRate}%`;
+
+    const chineseTotal = Number(chinese.totalWrong ?? chinese.wrongCount ?? 0);
+    const chineseMastered = Number(chinese.masteredWrong ?? chinese.masteredCount ?? 0);
+    const chineseRate = chineseTotal > 0 ? Math.round((chineseMastered / chineseTotal) * 100) : ((chinese.quizCount ?? chinese.completedDays ?? 0) > 0 ? 100 : 0);
+    const elGrowthChineseRate = document.getElementById('growth-chinese-rate');
+    if (elGrowthChineseRate) elGrowthChineseRate.textContent = `${chineseRate}%`;
+    const elGrowthChineseBar = document.getElementById('growth-chinese-bar');
+    if (elGrowthChineseBar) elGrowthChineseBar.style.width = `${chineseRate}%`;
   } catch (err) {
     console.error('loadChildSummary error:', err);
   }

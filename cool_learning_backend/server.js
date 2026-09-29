@@ -86,6 +86,8 @@ app.use('/api', require('./routes/chinese')({
   pool, requireAuth, requireOwnSeat, getTaipeiDateKey, isDateKey,
 }));
 
+app.use('/api', require('./routes/games')({ pool, requireAuth, requireOwnSeat }));
+
 app.use('/api', require('./routes/misc')({ pool, requireAuth, requireOwnSeat }));
 
 initializeDatabaseSchema(pool, AUTH_SECRET)
