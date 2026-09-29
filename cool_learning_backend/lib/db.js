@@ -92,6 +92,7 @@ async function initializeDatabaseSchema(pool, AUTH_SECRET) {
       learning_date DATE NOT NULL,
       publisher VARCHAR(32) NOT NULL,
       unit_name VARCHAR(255) NOT NULL,
+      quiz_mode VARCHAR(32) NOT NULL DEFAULT 'mixed',
       score INT NOT NULL,
       completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
@@ -351,6 +352,14 @@ async function initializeDatabaseSchema(pool, AUTH_SECRET) {
     try {
       await pool.query("ALTER TABLE math_quiz_logs ADD UNIQUE KEY uq_math_daily_attempt (seat_no, learning_date, attempt_no)");
     } catch (_) {}
+  }
+  const [mathLogsModeCols] = await pool.query("SHOW COLUMNS FROM math_quiz_logs LIKE 'quiz_mode'");
+  if (mathLogsModeCols.length === 0) {
+    await pool.query("ALTER TABLE math_quiz_logs ADD COLUMN quiz_mode VARCHAR(32) NOT NULL DEFAULT 'mixed' AFTER unit_name");
+  }
+  const [mathStateModeCols] = await pool.query("SHOW COLUMNS FROM student_math_state LIKE 'quiz_mode'");
+  if (mathStateModeCols.length === 0) {
+    await pool.query("ALTER TABLE student_math_state ADD COLUMN quiz_mode VARCHAR(32) NOT NULL DEFAULT 'mixed' AFTER unit_name");
   }
 
   // 子女檔案性別與生日（生理成長曲線分析）

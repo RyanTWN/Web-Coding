@@ -31,7 +31,8 @@ module.exports = function createMathRouter({
       const [states] = await pool.query(
         `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS learning_date,
                 COALESCE(attempt_no, 1) AS attempt_no,
-                publisher, unit_name, questions_json, wrong_questions_json,
+                publisher, unit_name, COALESCE(quiz_mode, 'mixed') AS quiz_mode,
+                questions_json, wrong_questions_json,
                 current_question_index, completed, updated_at
          FROM student_math_state WHERE seat_no = ? AND learning_date = ?`,
         [seatNo, date]
@@ -47,7 +48,7 @@ module.exports = function createMathRouter({
       const [history] = await pool.query(
         `SELECT DATE_FORMAT(learning_date, '%Y-%m-%d') AS date,
                 COALESCE(attempt_no, 1) AS attempt_no,
-                publisher, unit_name AS unit, score, completed_at
+                publisher, unit_name AS unit, COALESCE(quiz_mode, 'mixed') AS mode, score, completed_at
          FROM math_quiz_logs WHERE seat_no = ? ORDER BY learning_date DESC, attempt_no DESC LIMIT 100`,
         [seatNo]
       );
@@ -68,6 +69,7 @@ module.exports = function createMathRouter({
           attemptNo: Number(state.attempt_no || 1),
           publisher: state.publisher,
           unit: state.unit_name,
+          mode: state.quiz_mode || 'mixed',
           questions: parseJson(state.questions_json, []),
           wrongQuestions: parseJson(state.wrong_questions_json, []),
           currentIndex: state.current_question_index,
@@ -94,6 +96,7 @@ module.exports = function createMathRouter({
       attemptNo = 1,
       publisher,
       unit,
+      mode = 'mixed',
       questions,
       wrongQuestions = [],
       currentIndex = 0,
@@ -105,6 +108,8 @@ module.exports = function createMathRouter({
       return res.status(400).json({ success: false, error: '數學進度資料格式錯誤' });
     }
 
+    const VALID_MATH_MODES = new Set(['mixed', 'easy', 'challenge', 'competency']);
+    const safeMode = VALID_MATH_MODES.has(String(mode || '').toLowerCase()) ? String(mode).toLowerCase() : 'mixed';
     const safeAttemptNo = Math.max(1, Math.min(999, Number(attemptNo) || 1));
     const safeIndex = Math.max(0, Math.min(questions.length, Number(currentIndex) || 0));
     const safeScore = completed ? Math.max(0, Math.min(100, Number(score) || 0)) : 0;
@@ -116,12 +121,13 @@ module.exports = function createMathRouter({
 
       await connection.query(
         `INSERT INTO student_math_state
-          (seat_no, learning_date, attempt_no, publisher, unit_name, questions_json, wrong_questions_json, current_question_index, completed)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (seat_no, learning_date, attempt_no, publisher, unit_name, quiz_mode, questions_json, wrong_questions_json, current_question_index, completed)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            attempt_no = VALUES(attempt_no),
            publisher = VALUES(publisher),
            unit_name = VALUES(unit_name),
+           quiz_mode = VALUES(quiz_mode),
            questions_json = VALUES(questions_json),
            wrong_questions_json = VALUES(wrong_questions_json),
            current_question_index = VALUES(current_question_index),
@@ -132,6 +138,7 @@ module.exports = function createMathRouter({
           safeAttemptNo,
           publisher,
           unit,
+          safeMode,
           JSON.stringify(questions),
           JSON.stringify(Array.isArray(wrongQuestions) ? wrongQuestions : []),
           safeIndex,
@@ -160,14 +167,15 @@ module.exports = function createMathRouter({
       // 測驗完成時，寫入 math_quiz_logs
       if (completed) {
         await connection.query(
-          `INSERT INTO math_quiz_logs (seat_no, learning_date, attempt_no, publisher, unit_name, score)
-           VALUES (?, ?, ?, ?, ?, ?)
+          `INSERT INTO math_quiz_logs (seat_no, learning_date, attempt_no, publisher, unit_name, quiz_mode, score)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE
              publisher = VALUES(publisher),
              unit_name = VALUES(unit_name),
+             quiz_mode = VALUES(quiz_mode),
              score = VALUES(score),
              completed_at = CURRENT_TIMESTAMP`,
-          [seatNo, date, safeAttemptNo, publisher, unit, safeScore]
+          [seatNo, date, safeAttemptNo, publisher, unit, safeMode, safeScore]
         );
       }
 

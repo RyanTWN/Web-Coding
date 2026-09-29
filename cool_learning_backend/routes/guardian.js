@@ -441,9 +441,33 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
     );
     const totalWordsCount = Number(totalPoolRow?.total || 2000);
 
-    // 2. 數學學習統計
+    // 2. 數學學習統計（含 4 種練習模式統計：mixed 每日綜合、easy 基礎打底、challenge 進階挑戰、competency 素養特訓）
     const [mathLogs] = await pool.query('SELECT COUNT(*) AS total_quizzes, AVG(score) AS avg_score FROM math_quiz_logs WHERE seat_no = ?', [seatNo]);
     const [mathWrong] = await pool.query('SELECT COUNT(*) AS wrong_count, SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) AS mastered_count FROM math_wrong_questions WHERE seat_no = ?', [seatNo]);
+    const [mathModeRows] = await pool.query(
+      `SELECT COALESCE(quiz_mode, 'mixed') AS mode,
+              COUNT(*) AS quiz_count,
+              AVG(score) AS avg_score,
+              MAX(score) AS max_score
+       FROM math_quiz_logs
+       WHERE seat_no = ?
+       GROUP BY COALESCE(quiz_mode, 'mixed')`,
+      [seatNo]
+    );
+    const mathModes = {
+      mixed: { count: 0, avgScore: 0, maxScore: 0 },
+      easy: { count: 0, avgScore: 0, maxScore: 0 },
+      challenge: { count: 0, avgScore: 0, maxScore: 0 },
+      competency: { count: 0, avgScore: 0, maxScore: 0 }
+    };
+    mathModeRows.forEach(r => {
+      const m = r.mode && mathModes[r.mode] ? r.mode : 'mixed';
+      mathModes[m] = {
+        count: Number(r.quiz_count || 0),
+        avgScore: Math.round(Number(r.avg_score || 0)),
+        maxScore: Math.round(Number(r.max_score || 0))
+      };
+    });
 
     // 3. 自然學習統計
     const [natureProgress] = await pool.query('SELECT COUNT(*) AS days_count, AVG(score) AS avg_score FROM nature_daily_progress WHERE seat_no = ? AND completed = 1', [seatNo]);
@@ -541,7 +565,8 @@ async function findOrCreateGuardianByOAuth({ provider, sub, email, displayName }
         totalWrong: mathWrongTotal,
         wrongCount: mathWrongTotal,
         masteredWrong: mathMastered,
-        masteredCount: mathMastered
+        masteredCount: mathMastered,
+        modes: mathModes
       },
       nature: {
         completedDays: natureDays,

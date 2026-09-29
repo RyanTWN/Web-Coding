@@ -1858,13 +1858,47 @@ async function loadChildSummary(childId) {
     const elEngStarred = document.getElementById('track-eng-starred');
     if (elEngStarred) elEngStarred.textContent = engStarred;
 
-    // 數學追蹤
+    // 數學追蹤（含 4 種模式：每日綜合、基礎打底、進階挑戰、素養特訓）
     const elMathQuizzes = document.getElementById('track-math-quizzes');
     if (elMathQuizzes) elMathQuizzes.textContent = math.quizCount ?? math.totalQuizzes ?? 0;
     const elMathScore = document.getElementById('track-math-score');
     if (elMathScore) elMathScore.textContent = math.avgScore ?? 0;
     const elMathMastered = document.getElementById('track-math-mastered');
     if (elMathMastered) elMathMastered.textContent = math.masteredWrong ?? math.masteredCount ?? 0;
+
+    const mathModes = math.modes || {};
+    const modeMixed = mathModes.mixed || { count: 0, avgScore: 0, maxScore: 0 };
+    const modeEasy = mathModes.easy || { count: 0, avgScore: 0, maxScore: 0 };
+    const modeChallenge = mathModes.challenge || { count: 0, avgScore: 0, maxScore: 0 };
+    const modeCompetency = mathModes.competency || { count: 0, avgScore: 0, maxScore: 0 };
+
+    const elMathMixedCount = document.getElementById('track-math-mixed-count');
+    if (elMathMixedCount) elMathMixedCount.textContent = modeMixed.count || 0;
+    const elMathMixedScore = document.getElementById('track-math-mixed-score');
+    if (elMathMixedScore) elMathMixedScore.textContent = modeMixed.avgScore || 0;
+    const elMathMixedMax = document.getElementById('track-math-mixed-max');
+    if (elMathMixedMax) elMathMixedMax.textContent = modeMixed.maxScore || 0;
+
+    const elMathEasyCount = document.getElementById('track-math-easy-count');
+    if (elMathEasyCount) elMathEasyCount.textContent = modeEasy.count || 0;
+    const elMathEasyScore = document.getElementById('track-math-easy-score');
+    if (elMathEasyScore) elMathEasyScore.textContent = modeEasy.avgScore || 0;
+    const elMathEasyMax = document.getElementById('track-math-easy-max');
+    if (elMathEasyMax) elMathEasyMax.textContent = modeEasy.maxScore || 0;
+
+    const elMathChallengeCount = document.getElementById('track-math-challenge-count');
+    if (elMathChallengeCount) elMathChallengeCount.textContent = modeChallenge.count || 0;
+    const elMathChallengeScore = document.getElementById('track-math-challenge-score');
+    if (elMathChallengeScore) elMathChallengeScore.textContent = modeChallenge.avgScore || 0;
+    const elMathChallengeMax = document.getElementById('track-math-challenge-max');
+    if (elMathChallengeMax) elMathChallengeMax.textContent = modeChallenge.maxScore || 0;
+
+    const elMathCompetencyCount = document.getElementById('track-math-competency-count');
+    if (elMathCompetencyCount) elMathCompetencyCount.textContent = modeCompetency.count || 0;
+    const elMathCompetencyScore = document.getElementById('track-math-competency-score');
+    if (elMathCompetencyScore) elMathCompetencyScore.textContent = modeCompetency.avgScore || 0;
+    const elMathCompetencyMax = document.getElementById('track-math-competency-max');
+    if (elMathCompetencyMax) elMathCompetencyMax.textContent = modeCompetency.maxScore || 0;
 
     // 自然追蹤
     const elNatureDays = document.getElementById('track-nature-days');
