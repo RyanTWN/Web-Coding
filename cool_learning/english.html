@@ -141,14 +141,14 @@
 
   <!-- 子功能導引列：位於頂端列正下方 (與成語200頂部導引一致) -->
   <nav id="english-tabs" aria-label="英文學習子功能導引" class="w-full max-w-5xl mx-auto mb-5 flex gap-2 p-1.5 bg-rose-100/70 rounded-lg border border-rose-200/60 shadow-inner">
-    <button id="nav-learn" type="button" class="tab-btn flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-rose-700 shadow-md is-active" aria-selected="true">
-      <i class="fa-solid fa-book-open"></i> 每日學習 (單字卡)
+    <button id="nav-learn" type="button" class="tab-btn flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 bg-white text-rose-700 shadow-md is-active whitespace-nowrap" aria-selected="true">
+      <i class="fa-solid fa-book-open"></i> <span>每日學習 (單字卡)</span>
     </button>
-    <button id="nav-starred" type="button" class="tab-btn flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50" aria-selected="false">
-      <i class="fa-solid fa-bookmark"></i> 難字本 (<span id="starred-count-badge">0</span>)
+    <button id="nav-starred" type="button" class="tab-btn flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50 whitespace-nowrap" aria-selected="false">
+      <i class="fa-solid fa-bookmark"></i> <span>難字卡(<span id="starred-count-badge">0</span>)</span>
     </button>
-    <button id="nav-quiz" type="button" class="tab-btn flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50" aria-selected="false">
-      <i class="fa-solid fa-circle-check"></i> 每日測驗
+    <button id="nav-quiz" type="button" class="tab-btn flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50 whitespace-nowrap" aria-selected="false">
+      <i class="fa-solid fa-circle-check"></i> <span>每日測驗</span>
     </button>
     <!-- 相容原本JS的日曆按鈕 (隱藏或備用) -->
     <button id="nav-calendar" type="button" class="hidden"></button>
@@ -450,7 +450,7 @@
 
   <!-- 載入腳本 -->
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260929-starred-card-learn"></script>
+  <script src="assets/js/app.js?v=20260929-starred-badge-fix"></script>
   <script src="assets/js/quiz.js?v=20260924-layout-sync"></script> 
   
   <!-- 網頁載入完成後的初始化邏輯 -->

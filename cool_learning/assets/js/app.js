@@ -352,6 +352,7 @@ async function loadStudentAppData(seatNo) {
     return;
   }
   saveStudentAppData();
+  updateStarredCounter();
   renderCard();
   renderCalendar();
   if (allWordsCompleted) showToast('恭喜所有單字已學習完成！', 'fa-trophy');
@@ -564,6 +565,12 @@ window.openStarredCardLearning = openStarredCardLearning;
 window.returnToDailyLearn = returnToDailyLearn;
 window.returnToStarredList = returnToStarredList;
 
+function updateStarredCounter() {
+  const starBadge = document.getElementById('starred-count-badge');
+  if (starBadge) starBadge.textContent = String(starredIds.size);
+}
+window.updateStarredCounter = updateStarredCounter;
+
 // 渲染單字卡 (加入全方位防呆，支援每日單字與難字卡片學習雙模式)
 function renderCard() {
   const words = getActiveWords();
@@ -683,12 +690,12 @@ function renderCard() {
     counterBadge.textContent = `${cur} / ${tot}`;
   }
 
-  const starBadge = document.getElementById('starred-count-badge');
-  if (starBadge) starBadge.textContent = `${starredIds.size} 難字`;
+  updateStarredCounter();
 }
 
 // 渲染難字本列表 (支援點擊進入卡片學習模式)
 function renderStarredList() {
+  updateStarredCounter();
   const container = document.getElementById('starred-list-container');
   if (!container) return; // 防呆
   
@@ -1081,6 +1088,7 @@ document.addEventListener('DOMContentLoaded', () => {
     starredWordsMap.set(item.id, item);
     saveStudentAppData();
     syncStudentProgressToCloud();
+    updateStarredCounter();
     renderCard();
     showToast(`已將「${item.vocabulary || item.word}」加入難字本！`, 'fa-star');
   };
