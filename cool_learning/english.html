@@ -167,10 +167,15 @@
         <!-- 今日單字進度條 -->
         <div id="progress-container" class="bg-white/95 rounded-lg p-4 sm:p-5 shadow-lg border border-white">
           <div class="flex justify-between items-center text-xs font-black text-slate-600 mb-2">
-            <span class="flex items-center gap-1.5 text-rose-700">
-              <i class="fa-solid fa-graduation-cap"></i> 今日單字學習進度
+            <span id="progress-title" class="flex items-center gap-1.5 text-rose-700">
+              <i id="progress-icon" class="fa-solid fa-graduation-cap"></i> <span id="progress-label">今日單字學習進度</span>
             </span>
-            <span id="progress-text" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">1 / 30</span>
+            <div class="flex items-center gap-2">
+              <button type="button" id="btn-return-starred-list" onclick="returnToStarredList()" class="hidden px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-[11px] transition-all cursor-pointer items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> 返回難字本
+              </button>
+              <span id="progress-text" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">1 / 30</span>
+            </div>
           </div>
           <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
             <div id="progress-bar" class="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-300" style="width: 3.33%;"></div>
@@ -188,6 +193,7 @@
                 <div class="flex items-center gap-2">
                   <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-black text-xs tracking-wider">English 6</span>
                   <span id="card-part-of-speech" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px] italic">word</span>
+                  <span id="card-mode-badge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px] hidden"><i class="fa-solid fa-star text-amber-500 mr-1"></i>難字卡片</span>
                 </div>
               </div>
 
@@ -353,9 +359,9 @@
             <h2 class="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
               <i class="fa-solid fa-bookmark text-rose-500"></i>難字複習寶典
             </h2>
-            <p class="text-xs text-slate-500 mt-1">需在「難字本拼字特訓」連續拼對 3 次才能移除</p>
+            <p class="text-xs text-slate-500 mt-1">點擊難字可直接進入卡片學習；需在「難字本拼字特訓」連續拼對 3 次才能移除</p>
           </div>
-          <button type="button" onclick="switchAppTab('learn')" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1 cursor-pointer">
+          <button type="button" onclick="returnToDailyLearn()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-arrow-left"></i> 返回單字卡
           </button>
         </div>
@@ -444,7 +450,7 @@
 
   <!-- 載入腳本 -->
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js?v=20260924-layout-sync"></script>
+  <script src="assets/js/app.js?v=20260929-starred-card-learn"></script>
   <script src="assets/js/quiz.js?v=20260924-layout-sync"></script> 
   
   <!-- 網頁載入完成後的初始化邏輯 -->

@@ -9,6 +9,8 @@ let studentsList = [];
 
 let today30Words = [];
 let currentIndex = 0;
+let learningMode = 'daily'; // 'daily' | 'starred'
+let starredLearningList = [];
 let starredIds = new Set();
 let starredWordsMap = new Map(); 
 let starredSpellingCounts = {};
@@ -229,8 +231,10 @@ function saveStudentAppData() {
   localStorage.setItem(`g6_vocab_completed_${seatNo}`, JSON.stringify([...completedDates]));
   localStorage.setItem(`g6_learned_ids_${seatNo}`, JSON.stringify([...learnedWordIds]));
   
-  localStorage.setItem(`g6_daily_words_${seatNo}_${selectedLearningDate}`, JSON.stringify(today30Words));
-  localStorage.setItem(`g6_daily_index_${seatNo}_${selectedLearningDate}`, currentIndex);
+  if (learningMode === 'daily') {
+    localStorage.setItem(`g6_daily_words_${seatNo}_${selectedLearningDate}`, JSON.stringify(today30Words));
+    localStorage.setItem(`g6_daily_index_${seatNo}_${selectedLearningDate}`, currentIndex);
+  }
   scheduleProgressSync();
 }
 
@@ -250,7 +254,7 @@ async function syncStudentProgressToCloud() {
       body: JSON.stringify({
         seatNo: currentUser.seatNo,
         learningDate: selectedLearningDate,
-        currentWordIndex: currentIndex,
+        currentWordIndex: (learningMode === 'daily') ? currentIndex : (parseInt(localStorage.getItem(`g6_daily_index_${currentUser.seatNo}_${selectedLearningDate}`), 10) || 0),
         completed: completedDates.has(selectedLearningDate),
         completedDates: [...completedDates],
         learnedWordIds: [...learnedWordIds],
@@ -326,6 +330,7 @@ async function loadStudentAppData(seatNo) {
     }
   }
 
+  learningMode = 'daily';
   selectedLearningDate = todayStr;
   const dailyResult = await fetchDailyWordsFromCloud(seatNo, todayStr);
   if (dailyResult) {
@@ -357,6 +362,7 @@ async function openLearningDate(learningDate) {
   updateSyncStatus('載入指定日期…', 'text-amber-600');
   const result = await fetchDailyWordsFromCloud(currentUser.seatNo, learningDate);
   if (!result) return;
+  learningMode = 'daily';
   selectedLearningDate = learningDate;
   today30Words = result.dailyWords || [];
   currentIndex = result.completed ? 0 : Number(result.currentWordIndex || 0);
@@ -500,62 +506,77 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
-function renderCard() {
-    if (today30Words.length === 0) return;
-    const item = today30Words[currentIndex];
-
-    // 1. 渲染圖片
-    const imgEl = document.getElementById('card-image');
-    if (imgEl) {
-        // 💡 優化：在載入新圖片前先清空 src，有助於瀏覽器流暢切換。
-        imgEl.src = '';
-        if (item.img) {
-            // 如果資料庫中已經有指定好的真實圖片，優先顯示
-            imgEl.src = item.img;
-        } else {
-            // 呼叫函數產生網址。函數內部會處理強制快取清除、seed 計算與提示詞優化
-            imgEl.src = getVocabularyImageUrl(item.vocabulary, item.chinese);
-        }
-    }
-
-    // 2. 渲染單字與音標
-    const wordEl = document.getElementById('card-vocabulary');
-    if (wordEl) wordEl.textContent = item.vocabulary;
-
-    const phoneticEl = document.getElementById('card-phonetic');
-    if (phoneticEl) phoneticEl.textContent = item.phonetic;
-
-    // 3. 渲染中文翻譯與例句
-    const chineseEl = document.getElementById('card-chinese');
-    if (chineseEl) chineseEl.textContent = item.chinese;
-
-    const sentenceEl = document.getElementById('card-sentence');
-    if (sentenceEl) sentenceEl.textContent = item.sentence;
-
-    const translateEl = document.getElementById('card-translate');
-    if (translateEl) translateEl.textContent = item.translate;
-
-    fixedSeed = fixedSeed * 1024 + 42; 
-
-    // 使用官方最新 GET 端點，並指定 model=flux 與 seed
-    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&model=flux&seed=${fixedSeed}`;
+// 取得目前作用中字庫 (依每日學習或難字本卡片學習模式切換)
+function getActiveWords() {
+  if (learningMode === 'starred') {
+    return starredLearningList.length > 0 ? starredLearningList : [...starredWordsMap.values()];
+  }
+  return today30Words;
 }
 
-// 渲染單字卡 (加入全方位防呆，確保部分標籤不存在也不會報錯)
+// 取得目前單字物件
+function getActiveWord() {
+  const words = getActiveWords();
+  if (words.length === 0) return null;
+  if (currentIndex >= words.length) currentIndex = words.length - 1;
+  if (currentIndex < 0) currentIndex = 0;
+  return words[currentIndex];
+}
+
+// 開啟指定難字的卡片學習模式
+function openStarredCardLearning(targetWordId) {
+  const list = [...starredWordsMap.values()];
+  if (list.length === 0) {
+    showToast('目前難字本沒有單字喔！', 'fa-info-circle');
+    return;
+  }
+
+  learningMode = 'starred';
+  starredLearningList = list;
+
+  const foundIdx = list.findIndex(w => String(w.id) === String(targetWordId));
+  currentIndex = foundIdx !== -1 ? foundIdx : 0;
+
+  switchAppTab('learn');
+  renderCard();
+
+  const currentWord = getActiveWord();
+  const wordName = currentWord?.vocabulary || currentWord?.word || '';
+  showToast(`進入難字卡片學習：${wordName}`, 'fa-book-open');
+}
+
+// 從難字模式返回每日學習
+function returnToDailyLearn() {
+  learningMode = 'daily';
+  const todayStr = selectedLearningDate || getTodayKey();
+  const cachedIndex = localStorage.getItem(`g6_daily_index_${currentUser?.seatNo}_${todayStr}`);
+  currentIndex = cachedIndex ? parseInt(cachedIndex, 10) : 0;
+  if (currentIndex >= today30Words.length) currentIndex = 0;
+  switchAppTab('learn');
+  renderCard();
+}
+
+function returnToStarredList() {
+  switchAppTab('starred');
+}
+
+window.openStarredCardLearning = openStarredCardLearning;
+window.returnToDailyLearn = returnToDailyLearn;
+window.returnToStarredList = returnToStarredList;
+
+// 渲染單字卡 (加入全方位防呆，支援每日單字與難字卡片學習雙模式)
 function renderCard() {
-  if (today30Words.length === 0) return;
-  const item = today30Words[currentIndex];
+  const words = getActiveWords();
+  if (words.length === 0) return;
+  const item = getActiveWord();
+  if (!item) return;
 
   const imgEl = document.getElementById('card-image');
   if (imgEl) {
     if (item.img) {
-      // 如果資料庫中已經有指定好的真實圖片，優先顯示
       imgEl.src = item.img;
     } else {
-      // 【動態生成】：呼叫函數，傳入英文單字與對應的中文，產生可愛專屬插圖！
-      // 若資料表中文欄位叫 translation，請改為 item.translation
-      imgEl.src = getVocabularyImageUrl(item.vocabulary, item.chinese);
+      imgEl.src = getVocabularyImageUrl(item.vocabulary || item.word, item.chinese || item.translation);
     }
   }
   
@@ -568,18 +589,27 @@ function renderCard() {
 
   const partOfSpeechEl = document.getElementById('card-part-of-speech');
   if (partOfSpeechEl) partOfSpeechEl.textContent = getPartOfSpeechLabel(item);
+
+  const modeBadge = document.getElementById('card-mode-badge');
+  if (modeBadge) {
+    if (learningMode === 'starred') {
+      modeBadge.classList.remove('hidden');
+    } else {
+      modeBadge.classList.add('hidden');
+    }
+  }
   
   const phoneticEl = document.getElementById('card-phonetic');
-  if (phoneticEl) phoneticEl.textContent = item.phonetic;
+  if (phoneticEl) phoneticEl.textContent = item.phonetic || '';
   
   const chineseEl = document.getElementById('card-chinese');
-  if (chineseEl) chineseEl.textContent = item.chinese;
+  if (chineseEl) chineseEl.textContent = item.chinese || item.translation || '';
   
   const sentenceEl = document.getElementById('card-sentence');
-  if (sentenceEl) sentenceEl.textContent = item.sentence;
+  if (sentenceEl) sentenceEl.textContent = item.sentence || 'No example sentence available.';
   
   const translateEl = document.getElementById('card-translate');
-  if (translateEl) translateEl.textContent = item.translate;
+  if (translateEl) translateEl.textContent = item.translate || item.sentence_chinese || '暫無例句中文翻譯';
 
   // 切換單字時自動翻回正面
   const flashcard = document.getElementById('flashcard');
@@ -599,29 +629,57 @@ function renderCard() {
 
   const nextBtn = document.getElementById('btn-next-word');
   if (nextBtn) {
-      if (currentIndex === today30Words.length - 1) {
+    if (currentIndex === words.length - 1) {
+      if (learningMode === 'starred') {
+        nextBtn.innerHTML = '完成難字複習 <i class="fa-solid fa-circle-check"></i>';
+      } else {
         nextBtn.innerHTML = '完成學習 <i class="fa-solid fa-circle-check"></i>';
-        nextBtn.className = "flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm";
+      }
+      nextBtn.className = "flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm";
+    } else {
+      if (learningMode === 'starred') {
+        nextBtn.innerHTML = '下一個難字 <i class="fa-solid fa-chevron-right text-base ml-1"></i>';
       } else {
         nextBtn.innerHTML = '下一個單字 <i class="fa-solid fa-chevron-right text-base ml-1"></i>';
-        nextBtn.className = "flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm";
       }
+      nextBtn.className = "flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm";
+    }
   }
 
   const progBar = document.getElementById('progress-bar');
-  if (progBar) progBar.style.width = `${((currentIndex + 1) / today30Words.length) * 100}%`;
+  if (progBar) progBar.style.width = `${((currentIndex + 1) / words.length) * 100}%`;
   
   const progText = document.getElementById('progress-text');
   if (progText) {
-    const percent = Math.round(((currentIndex + 1) / today30Words.length) * 100);
-    const dateLabel = selectedLearningDate === getTodayKey() ? '' : `${selectedLearningDate} · `;
-    progText.textContent = `${dateLabel}${currentIndex + 1} / ${today30Words.length} · ${percent}%`;
+    const percent = Math.round(((currentIndex + 1) / words.length) * 100);
+    if (learningMode === 'starred') {
+      progText.textContent = `難字複習 · ${currentIndex + 1} / ${words.length} · ${percent}%`;
+    } else {
+      const dateLabel = selectedLearningDate === getTodayKey() ? '' : `${selectedLearningDate} · `;
+      progText.textContent = `${dateLabel}${currentIndex + 1} / ${words.length} · ${percent}%`;
+    }
+  }
+
+  const progLabel = document.getElementById('progress-label');
+  const progIcon = document.getElementById('progress-icon');
+  if (progLabel) progLabel.textContent = (learningMode === 'starred') ? '難字本卡片學習進度' : '今日單字學習進度';
+  if (progIcon) progIcon.className = (learningMode === 'starred') ? 'fa-solid fa-bookmark text-rose-500' : 'fa-solid fa-graduation-cap text-rose-700';
+
+  const btnReturn = document.getElementById('btn-return-starred-list');
+  if (btnReturn) {
+    if (learningMode === 'starred') {
+      btnReturn.classList.remove('hidden');
+      btnReturn.classList.add('inline-flex');
+    } else {
+      btnReturn.classList.add('hidden');
+      btnReturn.classList.remove('inline-flex');
+    }
   }
   
   const counterBadge = document.getElementById('word-counter-badge');
   if (counterBadge) {
     const cur = String(currentIndex + 1).padStart(2, '0');
-    const tot = String(today30Words.length).padStart(2, '0');
+    const tot = String(words.length).padStart(2, '0');
     counterBadge.textContent = `${cur} / ${tot}`;
   }
 
@@ -629,6 +687,7 @@ function renderCard() {
   if (starBadge) starBadge.textContent = `${starredIds.size} 難字`;
 }
 
+// 渲染難字本列表 (支援點擊進入卡片學習模式)
 function renderStarredList() {
   const container = document.getElementById('starred-list-container');
   if (!container) return; // 防呆
@@ -637,20 +696,69 @@ function renderStarredList() {
   const list = [...starredWordsMap.values()];
 
   if (list.length === 0) {
-    container.innerHTML = `<p class="text-center py-8 text-slate-400 font-bold text-xs">目前無標記難字喔！</p>`;
+    container.innerHTML = `
+      <div class="text-center py-12 text-slate-400">
+        <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
+          <i class="fa-regular fa-bookmark"></i>
+        </div>
+        <p class="font-bold text-sm text-slate-600">目前難字本空空如也！</p>
+        <p class="text-xs text-slate-400 mt-1">在每日單字學習或測驗遇到不熟的單字，點擊星號即可收藏至此。</p>
+      </div>
+    `;
     return;
   }
 
   list.forEach(item => {
     const div = document.createElement('div');
-    div.className = "bg-slate-50 border rounded-lg p-3 flex items-center justify-between";
+    const wordText = String(item.vocabulary || item.word || '').toLowerCase();
+    const chineseText = item.chinese || item.translation || '';
+    const posText = item.part_of_speech || item.partOfSpeech || item.pos || '';
+
+    div.className = "bg-white hover:bg-rose-50/50 border border-slate-200/90 hover:border-rose-300 rounded-xl p-3.5 sm:p-4 flex items-center justify-between shadow-xs hover:shadow-md transition-all cursor-pointer group select-none";
+    div.title = `點擊進入「${wordText}」卡片學習模式`;
+    div.setAttribute('role', 'button');
+    div.setAttribute('tabindex', '0');
+
     div.innerHTML = `
-      <div><span class="font-bold text-slate-800 lowercase">${String(item.vocabulary || item.word || '').toLowerCase()}</span> <span class="text-xs text-rose-600 ml-2">${item.chinese || item.translation}</span></div>
-      <button class="text-amber-400 p-1" data-id="${item.id}"><i class="fa-solid fa-star"></i></button>
+      <div class="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+        <div class="w-9 h-9 rounded-xl bg-rose-100/70 text-rose-600 flex items-center justify-center text-sm font-black group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-xs flex-shrink-0">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-black text-slate-800 text-base sm:text-lg lowercase group-hover:text-rose-600 transition-colors tracking-wide">${wordText}</span>
+            ${posText ? `<span class="text-[10px] text-slate-500 italic bg-slate-100 px-2 py-0.5 rounded font-mono">${posText}</span>` : ''}
+            <span class="text-xs text-rose-600 font-bold bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100/80">${chineseText}</span>
+          </div>
+          ${item.sentence ? `<p class="text-xs text-slate-500 truncate max-w-md mt-1 font-medium leading-relaxed">${item.sentence}</p>` : ''}
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <span class="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-rose-500/80 group-hover:text-rose-600 group-hover:translate-x-0.5 transition-all">
+          卡片學習 <i class="fa-solid fa-chevron-right text-[11px]"></i>
+        </span>
+        <button type="button" class="w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-400 hover:text-amber-500 flex items-center justify-center text-base transition-all p-1" data-id="${item.id}" title="難字需在「難字本拼字特訓」連續拼對 3 次才能移除">
+          <i class="fa-solid fa-star"></i>
+        </button>
+      </div>
     `;
-    div.querySelector('button').onclick = () => {
+
+    div.querySelector('button')?.addEventListener('click', (e) => {
+      e.stopPropagation();
       showToast('難字需在「難字本拼字特訓」連續拼對 3 次才能移除喔！', 'fa-info-circle');
-    };
+    });
+
+    div.addEventListener('click', () => {
+      openStarredCardLearning(item.id);
+    });
+
+    div.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openStarredCardLearning(item.id);
+      }
+    });
+
     container.appendChild(div);
   });
 }
@@ -940,7 +1048,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-back-subjects')?.addEventListener('click', () => showView('view-subjects'));
 
   // 底部導航列
-  document.getElementById('nav-learn')?.addEventListener('click', () => switchAppTab('learn'));
+  document.getElementById('nav-learn')?.addEventListener('click', () => {
+    if (learningMode === 'starred') {
+      learningMode = 'daily';
+      const todayStr = selectedLearningDate || getTodayKey();
+      const cachedIndex = localStorage.getItem(`g6_daily_index_${currentUser?.seatNo}_${todayStr}`);
+      currentIndex = cachedIndex ? parseInt(cachedIndex, 10) : 0;
+      if (currentIndex >= today30Words.length) currentIndex = 0;
+      renderCard();
+    }
+    switchAppTab('learn');
+  });
   document.getElementById('nav-starred')?.addEventListener('click', () => switchAppTab('starred'));
   document.getElementById('nav-quiz')?.addEventListener('click', () => switchAppTab('quiz'));
   document.getElementById('nav-calendar')?.addEventListener('click', () => switchAppTab('calendar'));
@@ -949,12 +1067,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 單字卡互動按鈕 (支援正面與背面難字星號按鈕)
   const handleToggleStar = (e) => {
     e?.stopPropagation();
-    if (today30Words.length === 0) return;
-    const item = today30Words[currentIndex];
+    const words = getActiveWords();
+    if (words.length === 0) return;
+    const item = getActiveWord();
     if (!item) return;
 
     if (starredIds.has(item.id)) {
-      // 依規定：難字一旦加入即常亮，除非透過難字拼字測驗答對三次外，不得手動取消
       showToast('已在難字本中，需在「難字本拼字特訓」連續拼對 3 次方可移除！', 'fa-info-circle');
       return;
     }
@@ -962,6 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
     starredIds.add(item.id);
     starredWordsMap.set(item.id, item);
     saveStudentAppData();
+    syncStudentProgressToCloud();
     renderCard();
     showToast(`已將「${item.vocabulary || item.word}」加入難字本！`, 'fa-star');
   };
@@ -970,38 +1089,64 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('star-btn-back')?.addEventListener('click', handleToggleStar);
 
   document.getElementById('btn-speak-word')?.addEventListener('click', () => {
-      if (today30Words[currentIndex]) speakText(today30Words[currentIndex].vocabulary);
+      const item = getActiveWord(); if (item) speakText(item.vocabulary || item.word);
   });
   document.getElementById('btn-speak-sentence')?.addEventListener('click', () => {
-      if (today30Words[currentIndex]) speakText(today30Words[currentIndex].sentence);
+      const item = getActiveWord(); if (item) speakText(item.sentence);
   });
 
   document.getElementById('btn-next-word')?.addEventListener('click', () => {
-    if (currentIndex < today30Words.length - 1) {
+    const words = getActiveWords();
+    if (words.length === 0) return;
+
+    if (currentIndex < words.length - 1) {
       currentIndex++;
-      saveStudentAppData(); 
+      if (learningMode === 'daily') saveStudentAppData();
       renderCard();
     } else {
-      today30Words.forEach(w => learnedWordIds.add(w.id));
-      completedDates.add(selectedLearningDate);
-      dailyProgressMap.set(selectedLearningDate, { learningDate: selectedLearningDate, currentWordIndex: 29, completed: true });
-      saveStudentAppData();
-      syncStudentProgressToCloud();
-      renderCalendar();
-      showToast('恭喜完成今日 30 字學習，已成功打卡！', 'fa-trophy');
-      switchAppTab('calendar');
+      if (learningMode === 'starred') {
+        showToast('恭喜完成難字卡片複習！', 'fa-trophy');
+        switchAppTab('starred');
+      } else {
+        today30Words.forEach(w => learnedWordIds.add(w.id));
+        completedDates.add(selectedLearningDate);
+        dailyProgressMap.set(selectedLearningDate, { learningDate: selectedLearningDate, currentWordIndex: 29, completed: true });
+        saveStudentAppData();
+        syncStudentProgressToCloud();
+        renderCalendar();
+        showToast('恭喜完成今日 30 字學習，已成功打卡！', 'fa-trophy');
+        switchAppTab('calendar');
+      }
     }
   });
 
   document.getElementById('btn-prev-word')?.addEventListener('click', () => {
     if (currentIndex > 0) {
       currentIndex--;
-      saveStudentAppData(); 
+      if (learningMode === 'daily') saveStudentAppData();
       renderCard();
     }
   });
 
-// 初始化畫面狀態：先判斷是否在首頁 (是否有登入區塊)
+  // 鍵盤左右方向鍵切換單字、空白鍵翻面
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+    const isLearnActive = document.body.dataset.englishTab === 'learn' && !document.getElementById('app-view-learn')?.classList.contains('hidden');
+    if (!isLearnActive) return;
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      document.getElementById('btn-next-word')?.click();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      document.getElementById('btn-prev-word')?.click();
+    } else if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      document.getElementById('flashcard')?.classList.toggle('is-flipped');
+    }
+  });
+
+  // 初始化畫面狀態：先判斷是否在首頁 (是否有登入區塊)
   const loginView = document.getElementById('view-login');
   if (loginView) {
     if (currentUser) {
