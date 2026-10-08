@@ -1221,8 +1221,24 @@ async function answerDailyQuestion(option, selectedBtn) {
 
   const fb = document.getElementById('feedback');
   fb.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
-  fb.innerHTML = `<strong>${isCorrect ? '答對了！' : `正確答案：${targetAns}`}</strong><br>${q.explanation}`;
+  fb.innerHTML = `<strong>${isCorrect ? '答對了！' : `正確答案：${targetAns}`}</strong><br>${q.explanation}${
+    !isCorrect ? `<div class="mt-2.5"><button type="button" id="btn-chinese-daily-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">🦉 召喚 AI 貓頭鷹小助教引導</button></div>` : ''
+  }`;
   fb.classList.remove('hidden');
+
+  if (!isCorrect) {
+    document.getElementById('btn-chinese-daily-ai-tutor')?.addEventListener('click', () => {
+      if (typeof window.openAiTutorModal === 'function') {
+        window.openAiTutorModal({
+          subject: 'chinese',
+          question: q.question || q.prompt || '',
+          options: q.options || [],
+          studentAnswer: option,
+          attemptCount: 1
+        });
+      }
+    });
+  }
 
   const btnNext = document.getElementById('btn-next');
   btnNext.classList.remove('hidden');
@@ -1428,8 +1444,24 @@ async function answerReviewQuestion(option, btn, q, targetAns) {
 
   const fb = document.getElementById('review-feedback');
   fb.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
-  fb.innerHTML = `<strong>${isCorrect ? '答對了！已從錯題本精熟移除。' : `正確答案：${targetAns}`}</strong><br>${q.explanation}`;
+  fb.innerHTML = `<strong>${isCorrect ? '答對了！已從錯題本精熟移除。' : `正確答案：${targetAns}`}</strong><br>${q.explanation}${
+    !isCorrect ? `<div class="mt-2.5"><button type="button" id="btn-chinese-review-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">🦉 召喚 AI 貓頭鷹小助教引導</button></div>` : ''
+  }`;
   fb.classList.remove('hidden');
+
+  if (!isCorrect) {
+    document.getElementById('btn-chinese-review-ai-tutor')?.addEventListener('click', () => {
+      if (typeof window.openAiTutorModal === 'function') {
+        window.openAiTutorModal({
+          subject: 'chinese',
+          question: q.question || q.prompt || '',
+          options: q.options || [],
+          studentAnswer: option,
+          attemptCount: 1
+        });
+      }
+    });
+  }
 
   if (isCorrect) {
     wrongBank = wrongBank.filter(item => item.id !== q.id);

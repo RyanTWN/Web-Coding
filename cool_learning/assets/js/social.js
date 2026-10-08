@@ -766,7 +766,23 @@ async function answerDailyQuestion(option, selectedButton) {
   }
   const feedback = document.getElementById('feedback');
   feedback.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
-  feedback.innerHTML = `<strong>${correct ? '答對了！' : `正確答案：${question.answer}`}</strong><br>${question.explanation}`;
+  feedback.innerHTML = `<strong>${correct ? '答對了！' : `正確答案：${question.answer}`}</strong><br>${question.explanation}${
+    !correct ? `<div class="mt-2.5"><button type="button" id="btn-social-daily-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">🦉 召喚 AI 貓頭鷹小助教引導</button></div>` : ''
+  }`;
+
+  if (!correct) {
+    document.getElementById('btn-social-daily-ai-tutor')?.addEventListener('click', () => {
+      if (typeof window.openAiTutorModal === 'function') {
+        window.openAiTutorModal({
+          subject: 'social',
+          question: question.question || question.prompt || '',
+          options: question.options || [],
+          studentAnswer: option,
+          attemptCount: 1
+        });
+      }
+    });
+  }
   
   const btnNext = document.getElementById('btn-next');
   if (btnNext) {
@@ -1103,7 +1119,24 @@ async function answerReviewQuestion(option, selectedButton) {
   }
   const feedback = document.getElementById('review-feedback');
   feedback.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
-  feedback.innerHTML = `<strong>${correct ? '答對了！已移出錯題清單' : `正確答案：${item.answer}`}</strong><br>${item.explanation}`;
+  const aiTutorBtn = !correct
+    ? `<div class="mt-2.5"><button type="button" id="btn-social-review-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">🦉 召喚 AI 貓頭鷹小助教引導</button></div>`
+    : '';
+  feedback.innerHTML = `<strong>${correct ? '答對了！已移出錯題清單' : `正確答案：${item.answer}`}</strong><br>${item.explanation}${aiTutorBtn}`;
+
+  if (!correct) {
+    document.getElementById('btn-social-review-ai-tutor')?.addEventListener('click', () => {
+      if (typeof window.openAiTutorModal === 'function') {
+        window.openAiTutorModal({
+          subject: 'social',
+          question: item.question || item.prompt || '',
+          options: item.options || [],
+          studentAnswer: option,
+          attemptCount: 1
+        });
+      }
+    });
+  }
   const reviewNext = document.getElementById('review-next');
   if (reviewNext) {
     reviewNext.disabled = false;

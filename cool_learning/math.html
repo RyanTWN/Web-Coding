@@ -717,6 +717,8 @@
       }
     }
 
+    let lastStudentAnswer = '';
+
     // 送出作答判定（核心兩次機會制）
     function submitUserAnswer(givenAnswer) {
       const q = dailyQuestions[currentIndex];
@@ -729,6 +731,7 @@
         input.focus();
         return;
       }
+      lastStudentAnswer = answer;
 
       const trialCount = (attemptTrials[currentIndex] || 0) + 1;
       attemptTrials[currentIndex] = trialCount;
@@ -982,7 +985,23 @@
         };
       } else {
         feedback.className = 'rounded-lg p-4 text-sm font-bold bg-rose-100 text-rose-800';
-        feedback.innerHTML = `❌ 還是不太對喔！正確答案是：<strong>${q.a}</strong><br><small class="font-normal mt-1 block">${q.explanation || ''}</small>`;
+        feedback.innerHTML = `❌ 還是不太對喔！正確答案是：<strong>${q.a}</strong><br><small class="font-normal mt-1 block">${q.explanation || ''}</small>
+          <div class="mt-2.5">
+            <button type="button" id="btn-review-call-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">
+              🦉 召喚 AI 貓頭鷹小助教引導
+            </button>
+          </div>`;
+        document.getElementById('btn-review-call-ai-tutor')?.addEventListener('click', () => {
+          if (typeof window.openAiTutorModal === 'function' && q) {
+            window.openAiTutorModal({
+              subject: 'math',
+              question: q.q,
+              options: q.options || [],
+              studentAnswer: String(userAnswer || '').trim(),
+              attemptCount: 1
+            });
+          }
+        });
         nextBtn.classList.remove('hidden');
         nextBtn.onclick = () => {
           currentReviewIndex++;
@@ -1116,8 +1135,8 @@
 
       // AI 貓頭鷹小助教啟動監聽
       const triggerAiTutor = (attempt) => {
-        const q = currentQuizQuestions[currentIndex];
-        const studentAns = document.getElementById('answer-input')?.value || '';
+        const q = dailyQuestions[currentIndex];
+        const studentAns = lastStudentAnswer || document.getElementById('answer-input')?.value || '';
         if (typeof window.openAiTutorModal === 'function' && q) {
           window.openAiTutorModal({
             subject: 'math',

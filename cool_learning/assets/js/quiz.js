@@ -199,8 +199,21 @@ function submitSpellingAnswer() {
       starredSpellingCounts[q.id] = 0; // 答錯則歸零，需重新連續拼對 3 次
       saveStudentAppData();
     }
-    document.getElementById('quiz-feedback').textContent = `❌ 答錯了，正確答案是：${correctWord}`;
+    document.getElementById('quiz-feedback').innerHTML = `<span>❌ 答錯了，正確答案是：<strong>${correctWord}</strong></span>
+      <div class="mt-2"><button type="button" id="btn-english-quiz-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">🦉 召喚 AI 貓頭鷹小助教引導</button></div>`;
     document.getElementById('quiz-feedback').className = 'text-center font-bold text-sm min-h-[24px] my-2 text-rose-600';
+
+    document.getElementById('btn-english-quiz-ai-tutor')?.addEventListener('click', () => {
+      if (typeof window.openAiTutorModal === 'function') {
+        window.openAiTutorModal({
+          subject: 'english',
+          question: `英文單字學習：${q.chinese || ''}（例句：${q.sentence || ''}）`,
+          options: [],
+          studentAnswer: selectedWord || '',
+          attemptCount: 1
+        });
+      }
+    });
   }
   
   document.getElementById('quiz-next-btn').classList.remove('hidden');
