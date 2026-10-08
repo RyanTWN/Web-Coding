@@ -1083,7 +1083,10 @@ async function answerReviewQuestion(option, selectedButton) {
   }
   const feedback = document.getElementById('review-feedback');
   feedback.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
-  feedback.innerHTML = `<strong>${correct ? '答對了！已移出錯題清單' : `正確答案：${item.answer}`}</strong><br>${item.explanation}`;
+  const aiTutorBtn = !correct
+    ? `<div class="mt-2.5"><button type="button" onclick="if(typeof window.openAiTutorModal==='function') window.openAiTutorModal({ subject: 'nature', question: decodeURIComponent('${encodeURIComponent(item.question)}') })" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">🦉 召喚 AI 貓頭鷹小助教引導</button></div>`
+    : '';
+  feedback.innerHTML = `<strong>${correct ? '答對了！已移出錯題清單' : `正確答案：${item.answer}`}</strong><br>${item.explanation}${aiTutorBtn}`;
   const reviewNext = document.getElementById('review-next');
   if (reviewNext) {
     reviewNext.disabled = false;

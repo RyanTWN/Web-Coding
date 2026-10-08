@@ -90,6 +90,8 @@ app.use('/api', require('./routes/games')({ pool, requireAuth, requireOwnSeat })
 
 app.use('/api', require('./routes/misc')({ pool, requireAuth, requireOwnSeat }));
 
+app.use('/api', require('./routes/aiTutor')({ pool }));
+
 initializeDatabaseSchema(pool, AUTH_SECRET)
   .then(() => app.listen(4060, () => console.log('酷學習 API 服務已在 Port 4060 啟動')))
   .catch(err => {

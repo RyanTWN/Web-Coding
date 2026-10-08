@@ -240,7 +240,12 @@
           <div class="flex items-start gap-3">
             <div class="w-9 h-9 rounded-md bg-amber-200 text-amber-700 flex items-center justify-center shrink-0 font-bold text-lg"><i class="fa-solid fa-lightbulb"></i></div>
             <div class="flex-1">
-              <strong class="block text-sm font-black text-amber-900">再想想看喔！還有 1 次機會</strong>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <strong class="block text-sm font-black text-amber-900">再想想看喔！還有 1 次機會</strong>
+                <button type="button" id="btn-call-ai-tutor" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                  <span>🦉 召喚 AI 貓頭鷹小助教</span>
+                </button>
+              </div>
               <p id="hint-card-text" class="text-xs sm:text-sm mt-1 leading-relaxed font-medium"></p>
             </div>
           </div>
@@ -251,9 +256,14 @@
           <div class="flex items-start gap-3 mb-3">
             <div class="w-9 h-9 rounded-md bg-rose-200 text-rose-700 flex items-center justify-center shrink-0 font-bold text-lg"><i class="fa-solid fa-book-open"></i></div>
             <div class="flex-1">
-              <div class="flex items-center justify-between">
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <strong class="block text-sm font-black text-rose-900">正確解答與步驟解析</strong>
-                <span class="text-[11px] bg-rose-200/80 text-rose-800 px-2 py-0.5 rounded-md font-bold">已記錄至錯題本</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] bg-rose-200/80 text-rose-800 px-2 py-0.5 rounded-md font-bold">已記錄至錯題本</span>
+                  <button type="button" id="btn-call-ai-tutor-exp" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all cursor-pointer">
+                    🦉 詢問小助教
+                  </button>
+                </div>
               </div>
               <div class="mt-2 bg-white/80 p-3 rounded-lg border border-rose-100">
                 <p class="text-xs font-bold text-slate-500 mb-1">標準答案：<strong id="exp-correct-answer" class="text-rose-600 text-sm font-black"></strong></p>
@@ -388,7 +398,9 @@
 
   <!-- 依序載入全站設定檔與數學模組 -->
   <script src="assets/js/config.js"></script>
+  <script src="assets/js/components.js"></script>
   <script src="assets/js/math.js"></script>
+  <script src="assets/js/ai-tutor.js"></script>
   <script>
     // ==========================================
     // 數學天地 前端狀態機與 DOM 互動邏輯
@@ -1101,6 +1113,24 @@
         calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
         renderMathCalendar();
       };
+
+      // AI 貓頭鷹小助教啟動監聽
+      const triggerAiTutor = (attempt) => {
+        const q = currentQuizQuestions[currentIndex];
+        const studentAns = document.getElementById('answer-input')?.value || '';
+        if (typeof window.openAiTutorModal === 'function' && q) {
+          window.openAiTutorModal({
+            subject: 'math',
+            question: q.q,
+            options: q.options || [],
+            studentAnswer: studentAns,
+            attemptCount: attempt
+          });
+        }
+      };
+
+      document.getElementById('btn-call-ai-tutor')?.addEventListener('click', () => triggerAiTutor(1));
+      document.getElementById('btn-call-ai-tutor-exp')?.addEventListener('click', () => triggerAiTutor(2));
     });
   </script>
 </body>
