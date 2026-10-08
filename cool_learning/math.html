@@ -998,6 +998,10 @@
               question: q.q,
               options: q.options || [],
               studentAnswer: String(userAnswer || '').trim(),
+              correctAnswer: q.a || '',
+              hint: q.hint || '',
+              explanation: q.explanation || '',
+              unit: q.unit || '數學錯題複習',
               attemptCount: 1
             });
           }
@@ -1143,6 +1147,10 @@
             question: q.q,
             options: q.options || [],
             studentAnswer: studentAns,
+            correctAnswer: q.a || '',
+            hint: q.hint || '',
+            explanation: q.explanation || '',
+            unit: q.unit || document.getElementById('quiz-unit-badge')?.textContent || '',
             attemptCount: attempt
           });
         }

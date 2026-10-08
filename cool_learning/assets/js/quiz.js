@@ -210,6 +210,10 @@ function submitSpellingAnswer() {
           question: `英文單字學習：${q.chinese || ''}（例句：${q.sentence || ''}）`,
           options: [],
           studentAnswer: selectedWord || '',
+          correctAnswer: correctWord || '',
+          hint: q.phonetic ? `音標發音：${q.phonetic}` : '',
+          explanation: `中文涵義：${q.chinese || ''}；例句：${q.sentence || ''}（翻譯：${q.translate || ''}）`,
+          unit: '核心字彙',
           attemptCount: 1
         });
       }

@@ -1,7 +1,7 @@
 /**
  * 酷學習 (Cool Learning) - AI 蘇格拉底智能學科助教前端元件 (ai-tutor.js)
  * 在學生做錯或遇到難題時，提供啟發式思考引導（絕不直接給出答案）。
- * 支援全站各學科（數學、自然、國語、社會、英語），具備端點自動連線與本機即時保底規則引擎。
+ * 支援多輪追問對話、題幹教材線索動態整合、全學科即時診斷與本機智慧保底引擎。
  */
 
 (function() {
@@ -12,104 +12,84 @@
     question: '',
     options: [],
     studentAnswer: '',
+    correctAnswer: '',
+    hint: '',
+    explanation: '',
+    unit: '',
     attemptCount: 1
   };
 
-  // 本機端智慧啟發式規則庫（網路延遲、離線或 API 逾時之即時保底引擎）
-  function getClientFallbackGuidance({ subject = 'math', question = '', studentAnswer = '' }) {
-    const qLower = String(question || '').toLowerCase();
+  let chatHistory = []; // 對話歷程 [{ role: 'tutor'|'user', text: string, step?: string }]
 
-    if (subject === 'math') {
-      if (qLower.includes('公因數') || qLower.includes('公倍數') || qLower.includes('質因數') || qLower.includes('短除法')) {
+  // 清除詳解中洩漏的答案字眼
+  function sanitizeExplanation(rawExp, correctAnswer = '') {
+    if (!rawExp || typeof rawExp !== 'string') return '';
+    let exp = rawExp.replace(/^📝\s*詳解[：:]\s*/i, '').trim();
+    if (correctAnswer) {
+      const escaped = String(correctAnswer).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      exp = exp.replace(new RegExp(`(?:因此|故|所以|答案為|即為)[^，。！？\n]*${escaped}[^，。！？\n]*[。！？\n]?`, 'gi'), '');
+    }
+    return exp.trim();
+  }
+
+  // 本機動態啟發式規則庫（網路離線或逾時之動態保底引擎）
+  // 深度利用本題的 hint、explanation、數字與學生作答，絕不給出千篇一律的罐頭文字！
+  function getClientFallbackGuidance(userQuery = '') {
+    const cleanHint = String(activeContext.hint || '').replace(/^[💡📝]\s*提示[：:]\s*/, '').trim();
+    const cleanExp = sanitizeExplanation(activeContext.explanation, activeContext.correctAnswer);
+    const studentAns = String(activeContext.studentAnswer || '').trim();
+
+    if (userQuery && userQuery.trim()) {
+      const qLower = userQuery.toLowerCase();
+      if (qLower.includes('答案') || qLower.includes('是多少') || qLower.includes('直接講')) {
         return {
           title: '🦉 貓頭鷹小助教提點',
-          guide: '先別急著猜答案喔！我們可以先用「短除法」列出這兩個數字的共同質因數。\n\n💡 想想看：要找的是「能同時整除它們的最大數字」，還是「它們共同的倍數」呢？試著在草稿紙把質因數相乘看看！',
-          hintStep: '步驟一：觀察兩個數能否同時被 2、3、5 整除，列出短除法。'
-        };
-      }
-      if (qLower.includes('速率') || qLower.includes('時速') || qLower.includes('距離') || qLower.includes('時間')) {
-        return {
-          title: '🦉 貓頭鷹小助教提點',
-          guide: '還記得速率三兄弟的三角關係嗎？\n\n💡 距離 ＝ 速率 × 時間。\n先檢查題目給的單位：時間是「小時」還是「分鐘」？距離是「公里」還是「公尺」？先統一單位再計算就不會算錯囉！',
-          hintStep: '步驟一：確認「時間單位」與「速率單位」是否一致。'
-        };
-      }
-      if (qLower.includes('圓') || qLower.includes('扇形') || qLower.includes('3.14') || qLower.includes('半徑') || qLower.includes('直徑')) {
-        return {
-          title: '🦉 貓頭鷹小助教提點',
-          guide: '計算圓形或扇形時，最容易看錯的是「直徑」還是「半徑」喔！\n\n💡 圓面積是「半徑 × 半徑 × 3.14」，圓周長則是「直徑 × 3.14」。\n題目問的是面積還是周長？給你的線索是半徑還是直徑呢？',
-          hintStep: '步驟一：先把直徑換算成半徑，再套入公式。'
-        };
-      }
-      if (qLower.includes('柱體') || qLower.includes('表面積') || qLower.includes('體積') || qLower.includes('圓柱') || qLower.includes('角柱')) {
-        return {
-          title: '🦉 貓頭鷹小助教提點',
-          guide: '柱體體積的秘密口訣是：底面積 × 柱高！\n\n💡 如果算表面積，記得要拆成「2 個底面積 ＋ 側面積（底面周長 × 柱高）」。先在草稿紙畫出展開圖會更清楚喔！',
-          hintStep: '步驟一：先算出底面底形（三角形或圓形）的面積。'
-        };
-      }
-      if (qLower.includes('分數') || qLower.includes('小數') || qLower.includes('除法') || qLower.includes('倒數')) {
-        return {
-          title: '🦉 貓頭鷹小助教提點',
-          guide: '分數除法的小口訣：「除以一個分數，等於乘以它的倒數」！\n\n💡 小數除法要記得先把除數變成整數，被除數的小數點跟著往右移相同的位數喔！',
-          hintStep: '步驟一：檢查除數的小數點是否已經移乾淨，再進行計算。'
-        };
-      }
-      if (qLower.includes('比') || qLower.includes('比值') || qLower.includes('比例尺')) {
-        return {
-          title: '🦉 貓頭鷹小助教提點',
-          guide: '「比」是前項比後項，而「比值」就是前項除以後項！\n\n💡 前後項同乘或同除以一個不為 0 的數，比值都不會改變喔！試著化為最簡整數比看看。',
-          hintStep: '步驟一：先把兩邊的單位化為一致，再算比值。'
+          guide: `哈哈，貓頭鷹小助教是有教育原則的！蘇格拉底啟發法絕對不能直接洩漏答案喔！\n\n💡 再給你一個關鍵線索：${cleanHint || cleanExp || '先把已知數字在草稿紙畫出步驟圖。'}\n試著依這個方向動筆，你一定能自己算出來！`,
+          hintStep: '自己推導出來的答案最踏實！'
         };
       }
       return {
         title: '🦉 貓頭鷹小助教提點',
-        guide: `這題的題目條件很豐富喔！\n\n💡 試著把題目裡的已知數字在草稿紙圈起來，列成關係算式。\n剛剛填寫的「${studentAnswer || '這個答案'}」可能在哪個運算步驟或單位漏看了呢？靜下心再檢驗一次！`,
-        hintStep: '步驟一：先列出已知與未知的關係算式，再逐步反求答案。'
+        guide: `針對你剛才問的「${userQuery}」：\n\n💡 關鍵解題步驟建議：${cleanHint || cleanExp || '重新檢視題目的已知條件與單位是否一致。'}\n試著把數字代入這個步驟檢查看看！`,
+        hintStep: '靜下心重新檢驗草稿紙，答案就在下一步！'
       };
     }
 
-    if (subject === 'nature') {
-      if (qLower.includes('水溶液') || qLower.includes('酸') || qLower.includes('鹼') || qLower.includes('石蕊') || qLower.includes('紫色高麗菜')) {
-        return {
-          title: '🦉 貓頭鷹實驗小助教',
-          guide: '回想一下自然課實驗室的情境！\n\n💡 藍色石蕊試紙變紅代表「酸性」；紅色石蕊試紙變藍代表「鹼性」（口訣：藍色像大海一樣鹹/鹼）。如果是檸檬酸或白醋，試紙會呈現什麼顏色呢？',
-          hintStep: '實驗線索：酸性讓藍變紅，鹼性讓紅變藍，中性兩者皆不變。'
-        };
-      }
-      if (qLower.includes('熱') || qLower.includes('傳導') || qLower.includes('對流') || qLower.includes('輻射') || qLower.includes('保溫')) {
-        return {
-          title: '🦉 貓頭鷹實驗小助教',
-          guide: '熱的傳播有三種方式：傳導、對流與輻射！\n\n💡 固體接觸主要靠「傳導」，液體和氣體流動靠「對流」，不需要介質直接照耀的是「輻射」。保溫瓶是用什麼方法阻隔熱能散失的呢？',
-          hintStep: '實驗線索：真空間隔能同時阻斷傳導與對流。'
-        };
-      }
-      if (qLower.includes('天氣') || qLower.includes('鋒面') || qLower.includes('水循環') || qLower.includes('蒸發') || qLower.includes('凝結')) {
-        return {
-          title: '🦉 貓頭鷹氣象小助教',
-          guide: '觀察天氣圖上的符號！\n\n💡 藍色三角形鋸齒是「冷鋒」，代表冷空氣推動；紅色半圓形是「暖鋒」。水蒸氣遇冷變成水滴叫「凝結」，水受熱變成水蒸氣叫「蒸發」喔！',
-          hintStep: '氣象線索：冷空氣密度大沉在下方，促使暖空氣抬升成雲致雨。'
-        };
-      }
-      return {
-        title: '🦉 貓頭鷹實驗小助教',
-        guide: '自然科學的關鍵在於觀察變因與生活經驗！\n\n💡 想想看生活中的自然現象或課本上的對照實驗，哪個選項最符合科學原理呢？',
-        hintStep: '思考線索：找出操縱變因與不變的控制變因。'
-      };
+    let guideParts = [];
+    if (cleanHint) {
+      guideParts.push(`💡 本題核心思考關鍵：\n${cleanHint}`);
+    } else if (cleanExp) {
+      guideParts.push(`💡 解題思考方向：\n${cleanExp}`);
     }
 
-    if (subject === 'chinese' || subject === 'social') {
-      return {
-        title: '🦉 貓頭鷹學科小助教',
-        guide: '閱讀題目的語境是解題的金鑰匙！\n\n💡 句子前後文要表達的是褒義（稱讚）還是貶義（批評）？觀察前後句的因果關係，答案往往就藏在題幹的關鍵字裡！',
-        hintStep: '推敲線索：分析題幹前後文的情緒脈絡與歷史時間軸。'
-      };
+    if (studentAns && studentAns !== '（初次卡關）') {
+      guideParts.push(`🧐 檢驗你的嘗試「${studentAns}」：\n想一想，這個數字符合題目要求的單位與關係嗎？檢查草稿紙是否有運算或移項的小粗心！`);
+    }
+
+    let step = '步驟：先在草稿紙列出題目給予的已知條件，再逐步求值。';
+    const qLower = String(activeContext.question || '').toLowerCase();
+    if (activeContext.subject === 'math') {
+      if (qLower.includes('公因數') || qLower.includes('公倍數') || qLower.includes('短除法')) {
+        step = '步驟：在草稿紙畫出短除法，從質因數 2、3 或 5 開始整除。';
+      } else if (qLower.includes('速率') || qLower.includes('時間') || qLower.includes('距離')) {
+        step = '步驟：檢查「時間單位」（分/時）與「長度單位」（公尺/公里）是否統一。';
+      } else if (qLower.includes('圓') || qLower.includes('扇形')) {
+        step = '步驟：確認題目給的是「半徑」還是「直徑」，再套用 3.14 公式。';
+      }
+    } else if (activeContext.subject === 'nature') {
+      step = '線索：回想實驗情境，找出題目要探討的操縱變因與不變量。';
+    } else if (activeContext.subject === 'english') {
+      step = '線索：結合例句情境推敲字義，並跟著大聲朗讀體會自然發音。';
+    }
+
+    if (guideParts.length === 0) {
+      guideParts.push(`這道題目很有深度喔！\n\n💡 先在草稿紙圈出題目的已知數字與單位。\n剛剛作答的「${studentAns || '這個選項'}」可能在思考時漏掉了哪個關鍵線索呢？`);
     }
 
     return {
       title: '🦉 貓頭鷹小助教提點',
-      guide: '好問題！做錯是學習最強大的催化劑。\n\n💡 先把題目拆解成兩個小問題，你覺得第一步應該先確認什麼線索呢？',
-      hintStep: '靜下心重新審題，成功就在下一步！'
+      guide: guideParts.join('\n\n'),
+      hintStep: step
     };
   }
 
@@ -120,23 +100,25 @@
 
     modal = document.createElement('div');
     modal.id = 'ai-tutor-modal';
-    modal.className = 'fixed inset-0 flex items-center justify-center p-4 transition-opacity duration-200';
-    // 嚴格使用 inline style 確保跨瀏覽器與 CSS 樣式庫獨立性（避免 precompiled Tailwind 缺 class 導致隱形）
+    modal.className = 'fixed inset-0 flex items-center justify-center p-3 sm:p-4 transition-opacity duration-200';
     modal.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 999999; display: none; align-items: center; justify-content: center; padding: 1rem;';
 
     modal.innerHTML = `
-      <div class="bg-white rounded-2xl p-5 sm:p-7 max-w-lg w-full shadow-2xl border border-teal-200 relative overflow-hidden text-left" style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="bg-white rounded-2xl p-4 sm:p-6 max-w-lg w-full shadow-2xl border border-teal-200 relative overflow-hidden text-left flex flex-col" style="max-height: 90vh;">
         <!-- 頂部裝飾光暈 -->
         <div class="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-teal-200/40 pointer-events-none" style="filter: blur(24px);"></div>
 
         <!-- 標題列 -->
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
-          <div class="flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-600 text-white flex items-center justify-center text-xl shadow-md shrink-0">
               🦉
             </div>
             <div>
-              <h3 id="ai-tutor-title" class="text-base sm:text-lg font-black text-slate-800 leading-tight">AI 貓頭鷹小助教</h3>
+              <div class="flex items-center gap-1.5">
+                <h3 id="ai-tutor-title" class="text-base font-black text-slate-800 leading-tight">AI 貓頭鷹小助教</h3>
+                <span id="ai-tutor-source-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">思考中</span>
+              </div>
               <p class="text-[11px] text-teal-700 font-bold">蘇格拉底啟發式解題思維引導</p>
             </div>
           </div>
@@ -145,47 +127,36 @@
           </button>
         </div>
 
-        <!-- 內容滾動區 -->
-        <div class="flex-1 overflow-y-auto space-y-3.5 pr-1">
-          <!-- 題目摘要預覽 -->
-          <div id="ai-tutor-question-preview" class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 font-medium leading-relaxed">
-            題目載入中...
-          </div>
+        <!-- 題目摘要預覽 -->
+        <div id="ai-tutor-question-preview" class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 font-medium leading-relaxed shrink-0 mb-3 max-h-24 overflow-y-auto">
+          題目載入中...
+        </div>
 
-          <!-- AI 思考中動畫 -->
-          <div id="ai-tutor-loading" class="py-6 flex flex-col items-center justify-center gap-2.5 text-teal-700">
+        <!-- 對話訊息串流滾動區 -->
+        <div id="ai-tutor-chat-stream" class="flex-1 overflow-y-auto space-y-3 pr-1 min-h-[140px] max-h-[48vh]">
+          <!-- 思考中動畫 -->
+          <div id="ai-tutor-loading" class="py-6 flex flex-col items-center justify-center gap-2 text-teal-700">
             <div class="flex items-center gap-2 text-2xl animate-bounce">
               <span>🦉</span>
               <span class="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping"></span>
             </div>
-            <span class="text-xs font-bold tracking-wide">貓頭鷹小助教正在為你推敲思考線索...</span>
+            <span class="text-xs font-bold tracking-wide">小助教正在針對這道題的關鍵步驟為你思考線索...</span>
           </div>
+        </div>
 
-          <!-- AI 引導內容卡 -->
-          <div id="ai-tutor-content-box" class="space-y-3" style="display: none;">
-            <div class="p-4 bg-teal-50/90 border border-teal-200/80 rounded-xl text-slate-800 text-xs sm:text-sm leading-relaxed space-y-2.5 shadow-xs">
-              <div id="ai-tutor-guide-text" class="whitespace-pre-line font-medium text-slate-700"></div>
-            </div>
-            <div id="ai-tutor-hint-step" class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 font-bold flex items-center gap-2">
-              <i class="fa-solid fa-lightbulb text-amber-500 shrink-0"></i>
-              <span id="ai-tutor-step-text"></span>
-            </div>
-          </div>
-
-          <!-- 追問輸入區 -->
-          <div id="ai-tutor-interactive-box" class="pt-2 border-t border-slate-100 space-y-2" style="display: none;">
-            <div class="flex gap-2">
-              <input type="text" id="ai-tutor-input-query" placeholder="還有哪一步想不通？問問小助教..." class="flex-1 py-2 px-3 text-xs rounded-xl border border-slate-300 focus:border-teal-500 focus:outline-none">
-              <button type="button" id="ai-tutor-btn-send" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer shrink-0">
-                發問
-              </button>
-            </div>
+        <!-- 追問輸入區 -->
+        <div id="ai-tutor-interactive-box" class="pt-3 border-t border-slate-100 mt-2 space-y-2 shrink-0">
+          <div class="flex gap-2">
+            <input type="text" id="ai-tutor-input-query" placeholder="還有哪一步想不通？直接問小助教（例如：第一步怎麼算）..." class="flex-1 py-2 px-3 text-xs rounded-xl border border-slate-300 focus:border-teal-500 focus:outline-none">
+            <button type="button" id="ai-tutor-btn-send" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer shrink-0">
+              發問
+            </button>
           </div>
         </div>
 
         <!-- 底部關閉按鈕 -->
-        <div class="pt-3 mt-3 border-t border-slate-100 flex justify-end shrink-0">
-          <button type="button" id="ai-tutor-btn-finish" class="px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer">
+        <div class="pt-2.5 mt-2 border-t border-slate-100 flex justify-end shrink-0">
+          <button type="button" id="ai-tutor-btn-finish" class="px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer">
             我知道該怎麼想了，再做一次！
           </button>
         </div>
@@ -220,6 +191,7 @@
       if (input && input.value.trim()) {
         const query = input.value.trim();
         input.value = '';
+        appendUserMessage(query);
         fetchAiTutorAdvice(query);
       }
     };
@@ -235,34 +207,94 @@
     return modal;
   }
 
-  // 向後端請求啟發式引導，並支援逾時自動降級保底
+  // 渲染學生訊息氣泡
+  function appendUserMessage(text) {
+    const stream = document.getElementById('ai-tutor-chat-stream');
+    if (!stream) return;
+    const msgEl = document.createElement('div');
+    msgEl.className = 'flex justify-end';
+    msgEl.innerHTML = `
+      <div class="bg-slate-800 text-white text-xs font-medium px-3.5 py-2.5 rounded-2xl rounded-tr-xs max-w-[85%] shadow-sm leading-relaxed">
+        ${escapeHtml(text)}
+      </div>
+    `;
+    stream.appendChild(msgEl);
+    stream.scrollTop = stream.scrollHeight;
+    chatHistory.push({ role: 'user', text });
+  }
+
+  // 渲染貓頭鷹助教訊息氣泡
+  function appendTutorMessage({ guide, hintStep, source }) {
+    const stream = document.getElementById('ai-tutor-chat-stream');
+    if (!stream) return;
+
+    const sourceBadge = document.getElementById('ai-tutor-source-badge');
+    if (sourceBadge) {
+      if (source && source.startsWith('gemini')) {
+        sourceBadge.textContent = 'Gemini 智能推理';
+        sourceBadge.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800';
+      } else {
+        sourceBadge.textContent = '啟發規則引擎';
+        sourceBadge.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800';
+      }
+    }
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'flex gap-2.5 items-start';
+    msgEl.innerHTML = `
+      <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center text-sm shrink-0 shadow-xs">
+        🦉
+      </div>
+      <div class="flex-1 space-y-2">
+        <div class="p-3.5 bg-teal-50/90 border border-teal-200/80 rounded-2xl rounded-tl-xs text-slate-800 text-xs sm:text-sm leading-relaxed space-y-2 shadow-xs">
+          <div class="whitespace-pre-line font-medium text-slate-700">${escapeHtml(guide)}</div>
+        </div>
+        ${hintStep ? `
+          <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-bold flex items-center gap-2">
+            <i class="fa-solid fa-lightbulb text-amber-500 shrink-0"></i>
+            <span>${escapeHtml(hintStep)}</span>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    stream.appendChild(msgEl);
+    stream.scrollTop = stream.scrollHeight;
+    chatHistory.push({ role: 'tutor', text: guide });
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // 向後端請求啟發式引導，並支援多模型與動態保底引擎
   async function fetchAiTutorAdvice(userQuery = '') {
-    const modal = ensureAiTutorModal();
-    const loading = document.getElementById('ai-tutor-loading');
-    const contentBox = document.getElementById('ai-tutor-content-box');
-    const interactiveBox = document.getElementById('ai-tutor-interactive-box');
-    const guideText = document.getElementById('ai-tutor-guide-text');
-    const stepText = document.getElementById('ai-tutor-step-text');
+    ensureAiTutorModal();
+    const stream = document.getElementById('ai-tutor-chat-stream');
+    let loading = document.getElementById('ai-tutor-loading');
 
-    if (loading) loading.style.display = 'flex';
-    if (contentBox) contentBox.style.display = 'none';
-    if (interactiveBox) interactiveBox.style.display = 'none';
-
-    // 取得本機保底內容
-    const fallbackData = getClientFallbackGuidance({
-      subject: activeContext.subject,
-      question: activeContext.question,
-      studentAnswer: activeContext.studentAnswer
-    });
+    if (!loading && stream) {
+      loading = document.createElement('div');
+      loading.id = 'ai-tutor-loading';
+      loading.className = 'py-3 flex items-center justify-center gap-2 text-teal-700 text-xs font-bold';
+      loading.innerHTML = '<span>🦉</span><span class="animate-pulse">貓頭鷹正在為你想下一步...</span>';
+      stream.appendChild(loading);
+      stream.scrollTop = stream.scrollHeight;
+    } else if (loading) {
+      loading.style.display = 'flex';
+      stream.appendChild(loading);
+    }
 
     let rendered = false;
 
     try {
       const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'https://learning.ifit.myds.me:4061/api';
-
-      // 設置 5 秒超時控制器，避免網路卡住
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 6500);
 
       const res = await fetch(`${baseUrl}/ai-tutor/guide`, {
         method: 'POST',
@@ -273,7 +305,12 @@
           question: activeContext.question,
           options: activeContext.options,
           studentAnswer: activeContext.studentAnswer,
+          correctAnswer: activeContext.correctAnswer,
+          hint: activeContext.hint,
+          explanation: activeContext.explanation,
+          unit: activeContext.unit,
           attemptCount: activeContext.attemptCount,
+          chatHistory,
           userQuery
         })
       });
@@ -282,38 +319,57 @@
 
       if (res.ok) {
         const data = await res.json();
-        if (data && data.success) {
-          if (guideText) guideText.textContent = data.guide || fallbackData.guide;
-          if (stepText) stepText.textContent = data.hintStep || fallbackData.hintStep;
-          if (contentBox) contentBox.style.display = 'block';
-          if (interactiveBox) interactiveBox.style.display = 'block';
+        if (data && data.success && data.guide) {
+          if (loading) loading.remove();
+          appendTutorMessage({
+            guide: data.guide,
+            hintStep: data.hintStep,
+            source: data.source
+          });
           rendered = true;
         }
       }
     } catch (err) {
-      console.warn('AI 助教連線異常或超時，自動啟用本機智慧保底引擎:', err.message);
+      console.warn('AI 助教連線異常或超時，自動切換至本機動態題幹保底引擎:', err.message);
     } finally {
       if (!rendered) {
-        // 使用本機智慧保底引擎渲染
-        if (guideText) guideText.textContent = fallbackData.guide;
-        if (stepText) stepText.textContent = fallbackData.hintStep;
-        if (contentBox) contentBox.style.display = 'block';
-        if (interactiveBox) interactiveBox.style.display = 'block';
+        if (loading) loading.remove();
+        const fallback = getClientFallbackGuidance(userQuery);
+        appendTutorMessage({
+          guide: fallback.guide,
+          hintStep: fallback.hintStep,
+          source: 'client-pedagogical-engine'
+        });
       }
-      if (loading) loading.style.display = 'none';
     }
   }
 
   // 全域公開呼叫介面
-  window.openAiTutorModal = function({ subject = 'math', question = '', options = [], studentAnswer = '', attemptCount = 1 } = {}) {
+  window.openAiTutorModal = function({
+    subject = 'math',
+    question = '',
+    options = [],
+    studentAnswer = '',
+    correctAnswer = '',
+    hint = '',
+    explanation = '',
+    unit = '',
+    attemptCount = 1
+  } = {}) {
     const rawQuestion = String(question || '').trim();
     activeContext = {
       subject: subject || 'math',
       question: rawQuestion,
       options: Array.isArray(options) ? options : [],
       studentAnswer: String(studentAnswer || '').trim(),
+      correctAnswer: String(correctAnswer || '').trim(),
+      hint: String(hint || '').trim(),
+      explanation: String(explanation || '').trim(),
+      unit: String(unit || '').trim(),
       attemptCount: Number(attemptCount) || 1
     };
+
+    chatHistory = []; // 每次開啟新題目，重設對話歷程
 
     const modal = ensureAiTutorModal();
     const preview = document.getElementById('ai-tutor-question-preview');
@@ -321,7 +377,9 @@
       preview.textContent = rawQuestion ? `📝 當前題目：${rawQuestion}` : '📝 正在檢視目前題目...';
     }
 
-    // 顯式展示彈窗（雙重保證 class 與 inline style）
+    const stream = document.getElementById('ai-tutor-chat-stream');
+    if (stream) stream.innerHTML = ''; // 清空上一題的聊天記錄
+
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
 

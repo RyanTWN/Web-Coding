@@ -778,6 +778,10 @@ async function answerDailyQuestion(option, selectedButton) {
           question: question.question || question.prompt || '',
           options: question.options || [],
           studentAnswer: option,
+          correctAnswer: question.answer || '',
+          hint: question.hint || '',
+          explanation: question.explanation || '',
+          unit: dailyState.chapter || '',
           attemptCount: 1
         });
       }
@@ -1132,6 +1136,10 @@ async function answerReviewQuestion(option, selectedButton) {
           question: item.question || item.prompt || '',
           options: item.options || [],
           studentAnswer: option,
+          correctAnswer: item.answer || '',
+          hint: item.hint || '',
+          explanation: item.explanation || '',
+          unit: item.chapter || '社會錯題複習',
           attemptCount: 1
         });
       }
