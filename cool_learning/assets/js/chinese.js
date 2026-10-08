@@ -1513,11 +1513,11 @@ if (typeof document !== 'undefined') {
 
   // 日曆切換
   document.getElementById('cal-prev')?.addEventListener('click', () => {
-    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
     renderCalendar();
   });
   document.getElementById('cal-next')?.addEventListener('click', () => {
-    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
     renderCalendar();
   });
 
@@ -1582,11 +1582,11 @@ if (typeof document !== 'undefined') {
 
   // 成語日曆月份切換
   document.getElementById('idiom-cal-prev')?.addEventListener('click', () => {
-    idiomCalendarDate.setMonth(idiomCalendarDate.getMonth() - 1);
+    idiomCalendarDate = new Date(idiomCalendarDate.getFullYear(), idiomCalendarDate.getMonth() - 1, 1);
     renderIdiomCalendar();
   });
   document.getElementById('idiom-cal-next')?.addEventListener('click', () => {
-    idiomCalendarDate.setMonth(idiomCalendarDate.getMonth() + 1);
+    idiomCalendarDate = new Date(idiomCalendarDate.getFullYear(), idiomCalendarDate.getMonth() + 1, 1);
     renderIdiomCalendar();
   });
 

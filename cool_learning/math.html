@@ -1094,11 +1094,11 @@
 
       // 月曆上/下個月切換
       document.getElementById('cal-prev').onclick = () => {
-        calendarDate.setMonth(calendarDate.getMonth() - 1);
+        calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
         renderMathCalendar();
       };
       document.getElementById('cal-next').onclick = () => {
-        calendarDate.setMonth(calendarDate.getMonth() + 1);
+        calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
         renderMathCalendar();
       };
     });

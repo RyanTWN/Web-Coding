@@ -842,6 +842,16 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('custom-modal')?.classList.add('hidden');
   });
 
+  // 學習打卡日曆月份切換
+  document.getElementById('btn-prev-month')?.addEventListener('click', () => {
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  document.getElementById('btn-next-month')?.addEventListener('click', () => {
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
+    renderCalendar();
+  });
+
   // 本機開發快速進入（免驗證直接進大廳）
   const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const devQuickBox = document.getElementById('dev-quick-box');

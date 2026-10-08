@@ -1138,9 +1138,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultReview = document.getElementById('result-review');
   if (resultReview) resultReview.onclick = startReview;
   const calPrev = document.getElementById('cal-prev');
-  if (calPrev) calPrev.onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); };
+  if (calPrev) calPrev.onclick = () => { calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1); renderCalendar(); };
   const calNext = document.getElementById('cal-next');
-  if (calNext) calNext.onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); };
+  if (calNext) calNext.onclick = () => { calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1); renderCalendar(); };
   const chapterSelect = document.getElementById('chapter-select');
   if (chapterSelect) chapterSelect.onchange = updateChapterSummary;
 
