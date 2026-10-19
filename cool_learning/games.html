@@ -759,22 +759,33 @@
         </div>
         <div class="flex items-center gap-1.5 flex-1 max-w-lg ml-auto">
           <button id="idiom-tab-easy" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('easy')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 童生試 (初級)
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 童生試 (初級·積木)
           </button>
           <button id="idiom-tab-medium" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('medium')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
-            <span class="w-2 h-2 rounded-full bg-amber-500"></span> 進士試 (進階)
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span> 進士試 (進階·積木)
           </button>
           <button id="idiom-tab-hard" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('hard')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
-            <span class="w-2 h-2 rounded-full bg-rose-500"></span> 狀元試 (大師)
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> 狀元試 (大師·手寫)
           </button>
         </div>
+      </div>
+
+      <!-- 試別作答型態動態指示條 (狀元大師試手寫；童生/進士試積木選字) -->
+      <div id="idiom-mode-indicator-bar" class="flex items-center justify-between gap-2 mb-2.5 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 transition-all">
+        <div class="flex items-center gap-2 truncate">
+          <span id="idiom-mode-icon" class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs shrink-0 font-black">
+            <i class="fa-solid fa-cubes"></i>
+          </span>
+          <span id="idiom-mode-desc" class="truncate">作答方式：<strong>漢字積木選填</strong>（童生／進士試）</span>
+        </div>
+        <span id="idiom-mode-note" class="text-[11px] font-normal text-slate-500 shrink-0 hidden sm:inline">切換「狀元試 (大師)」開啟手寫直接審題</span>
       </div>
 
       <!-- 玩法引導提示與限制提示按鈕 -->
       <div class="flex items-center justify-between px-3 py-1.5 bg-indigo-50/90 rounded-lg mb-2 text-xs font-bold border border-indigo-100 gap-2">
         <div class="flex items-center gap-2 text-indigo-900 truncate">
           <i class="fa-solid fa-lightbulb text-amber-500 text-sm shrink-0"></i>
-          <span id="idiom-rule-hint" class="truncate">觀察成語縱橫上下文，點選下方漢字積木填入正確孔洞！</span>
+          <span id="idiom-rule-hint" class="truncate">觀察成語縱橫上下文，點選棋盤空格即可提筆揮毫審定！</span>
         </div>
         <button id="idiom-hint-btn" onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="shrink-0 text-indigo-700 hover:text-indigo-900 bg-white/90 hover:bg-white px-2.5 py-1 rounded-lg border border-indigo-200 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all">
           <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
@@ -794,8 +805,25 @@
         </div>
       </div>
 
-      <!-- 下方：備選漢字積木區 (8~12 塊智慧混淆/形近/同音積木按鈕) -->
-      <div class="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-3 sm:p-4 border-2 border-indigo-300/80 shadow-md text-center">
+      <!-- 下方：手寫提示卡片 (手寫模式時顯示) -->
+      <div id="idiom-write-mode-card" class="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/60 rounded-2xl p-3 sm:p-4 border-2 border-amber-300 shadow-md text-center">
+        <div class="flex items-center justify-between text-xs font-bold text-amber-900 mb-2.5 px-1">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-pen-nib text-amber-700"></i> 狀元考場 · 提筆揮毫：</span>
+          <span class="text-amber-700 font-normal">點擊棋盤上的任意待填空格，或直接點右側按鈕提筆作答</span>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
+          <div class="text-xs text-amber-800 font-semibold bg-white/90 py-2 px-3.5 rounded-xl border border-amber-200/90 flex items-center gap-2">
+            <i class="fa-solid fa-square-pen text-amber-600 text-base"></i>
+            <span>當前鎖定：<strong id="idiom-active-slot-hint" class="text-amber-900 font-black">點擊空格開始</strong></span>
+          </div>
+          <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.openHandwriteModal()" class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-feather-pointed"></i> 開啟米字格手寫板作答
+          </button>
+        </div>
+      </div>
+
+      <!-- 下方：備選漢字積木區 (8~12 塊智慧混淆/形近/同音積木按鈕) (選字模式時顯示) -->
+      <div id="idiom-pool-mode-card" class="hidden bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-3 sm:p-4 border-2 border-indigo-300/80 shadow-md text-center">
         <div class="flex items-center justify-between text-xs font-bold text-indigo-800 mb-2.5 px-1">
           <span class="flex items-center gap-1.5"><i class="fa-solid fa-cubes text-indigo-600"></i> 請選擇漢字積木填入：</span>
           <span id="idiom-target-hint" class="text-indigo-600 font-normal">點擊置入空格，中途離開自動存檔</span>
@@ -808,6 +836,70 @@
 
     </div>
   </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 洞築機先 - 米字格手寫板 (支援觸控筆/手指/滑鼠，繁體筆畫軌跡即時審定) -->
+  <!-- ========================================================================= -->
+  <div id="idiom-handwrite-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-gradient-to-b from-[#fffefc] to-[#fefcf8] rounded-2xl p-4 sm:p-6 max-w-sm w-full text-center shadow-2xl border-2 border-amber-400 card-flip-enter relative">
+      <!-- 頂部標題與關閉 -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center text-sm shadow-xs font-black">
+            <i class="fa-solid fa-pen-nib"></i>
+          </span>
+          <div class="text-left">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">提筆揮毫 · 審字作答</h3>
+            <span class="text-[10px] font-bold text-amber-700">寫完即刻審題 · 判定正誤</span>
+          </div>
+        </div>
+        <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.closeHandwriteModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition-all cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 成語上下文字謎線索提示 -->
+      <div id="idiom-handwrite-clue" class="bg-amber-100/70 border border-amber-200 rounded-xl px-3 py-2 mb-3 text-xs font-bold text-amber-900 flex items-center justify-center gap-2 shadow-inner">
+        <i class="fa-solid fa-book-bookmark text-amber-600"></i>
+        <span id="idiom-handwrite-clue-text">橫向成語：口 若 [ 待填 ] 河</span>
+      </div>
+
+      <!-- 米字格手寫畫布容器 -->
+      <div class="relative w-[280px] h-[280px] sm:w-[300px] sm:h-[300px] mx-auto rounded-xl border-4 border-amber-600/80 shadow-md bg-[#fffdf8] overflow-hidden select-none touch-none">
+        <!-- 米字格背景輔助線 (精美古典紅色九宮米字線) -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-30" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <line x1="0" y1="0" x2="100" y2="100" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <line x1="100" y1="0" x2="0" y2="100" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <line x1="50" y1="0" x2="50" y2="100" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <rect x="0" y="0" width="100" height="100" fill="none" stroke="#dc2626" stroke-width="1.6"/>
+        </svg>
+
+        <canvas id="idiom-handwrite-canvas" width="300" height="300" class="relative z-10 w-full h-full cursor-crosshair touch-none"></canvas>
+
+        <!-- 判定回饋覆蓋層 (成功/失敗瞬間動畫) -->
+        <div id="idiom-handwrite-feedback" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 backdrop-blur-xs transition-all">
+          <div id="idiom-feedback-icon" class="text-4xl mb-1.5 animate-bounce"></div>
+          <div id="idiom-feedback-msg" class="text-sm font-black text-center px-3 py-1.5 rounded-lg shadow-sm"></div>
+        </div>
+      </div>
+
+      <!-- 操作按鈕列 -->
+      <div class="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-amber-200">
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.clearCanvas()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-rotate-left"></i> 重寫
+          </button>
+          <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.undoCanvas()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-arrow-rotate-left"></i> 撤銷筆畫
+          </button>
+        </div>
+        <button id="idiom-handwrite-submit-btn" type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.submitHandwriting()" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+          <i class="fa-solid fa-check"></i> 揮毫審定
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================================================= -->
   <!-- 彈窗: 洞築機先 - 通關慶祝卡片 (釋義、注音、例句全解析，需逐一確認閱讀)   -->

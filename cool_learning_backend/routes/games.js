@@ -49,5 +49,45 @@ module.exports = function createGamesRouter({ pool, requireAuth, requireOwnSeat 
     }
   });
 
+  // [API] 繁體中文手寫筆跡辨識反向代理（備援方案）
+  router.post('/games/handwriting', async (req, res) => {
+    try {
+      const ink = req.body?.ink;
+      if (!ink || !Array.isArray(ink)) {
+        return res.status(400).json({ success: false, error: '缺少筆跡資訊' });
+      }
+      const width = Number(req.body?.width) || 300;
+      const height = Number(req.body?.height) || 300;
+      const payload = {
+        app_version: 0.4,
+        api_level: '537.36',
+        device: '537.36',
+        input_type: '0',
+        options: 'enable_pre_space',
+        requests: [{
+          writing_guide: { writing_area_width: width, writing_area_height: height },
+          pre_context: '',
+          max_num_results: 10,
+          max_completions: 0,
+          language: 'zh_TW',
+          ink: ink
+        }]
+      };
+      const googleRes = await fetch('https://inputtools.google.com/request?ime=handwriting&app=cool_learning&cs=1&oe=UTF-8', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await googleRes.json();
+      if (Array.isArray(data) && data[0] === 'SUCCESS' && data[1] && data[1][0]) {
+        const candidates = data[1][0][1] || [];
+        return res.json({ success: true, candidates });
+      }
+      res.json({ success: true, candidates: [] });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   return router;
 };

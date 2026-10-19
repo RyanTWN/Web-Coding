@@ -1858,14 +1858,14 @@
       poolSize: 12,
       maxHints: 1,
       hintCost: 'life',
-      ruleHint: '【狀元試】限時 30 秒！高階四成語交錯，挖空 3~5 格殘局，高濃度形近字（提示扣 1❤）'
+      ruleHint: '【狀元試·大師考場】限時 30 秒！唯有提筆揮毫手寫直接判題，四成語交錯殘局（提示扣 1❤）'
     }
   };
 
   class IdiomStackerGame {
     constructor() {
       this.isRunning = false;
-      this.difficulty = 'medium'; // 預設進士試
+      this.difficulty = 'medium'; // 預設進士試 (積木選字)
       this.level = 1;
       this.score = 0;
       this.lives = 3;
@@ -1882,6 +1882,14 @@
       this.laddersList = [];
       this.tripleLaddersList = [];
       this.stairChainsList = [];
+      this.inputMode = 'pool'; // 僅狀元大師試時啟用 handwriting 手寫模式
+      this.hwStrokes = [];
+      this.currentStroke = null;
+      this.hwCanvas = null;
+      this.hwCtx = null;
+      this.isDrawing = false;
+      this.hwEventsAttached = false;
+      this.isSubmittingHw = false;
     }
 
     // 初始化與關聯 200 核心成語題庫
@@ -2005,6 +2013,7 @@
 
       this.stopTimer();
       this.difficulty = diffKey;
+      this.inputMode = diffKey === 'hard' ? 'handwriting' : 'pool';
       this.level = 1;
       this.score = 0;
       this.lives = 3;
@@ -2012,10 +2021,15 @@
       this.clearSavedState();
       this.updateLivesUI();
       this.updateDifficultyTabsUI();
+      this.updateInputModeUI();
       this.loadLevel(this.level);
 
       const cfg = IDIOM_DIFFICULTIES[diffKey];
-      showGameToast(`已切換為【${cfg.name}】(${cfg.subTitle})！`, 'fa-graduation-cap');
+      if (diffKey === 'hard') {
+        showGameToast('已進入【狀元試·大師考場】！進入提筆揮毫手寫直接判題模式！', 'fa-pen-nib');
+      } else {
+        showGameToast(`已切換為【${cfg.name}】(${cfg.subTitle})！採用漢字積木選填`, 'fa-graduation-cap');
+      }
     }
 
     updateDifficultyTabsUI() {
@@ -2086,6 +2100,7 @@
       const saved = this.loadSavedState();
       if (saved && saved.lives > 0 && !saved.solved) {
         this.difficulty = saved.difficulty || 'medium';
+        this.inputMode = this.difficulty === 'hard' ? 'handwriting' : 'pool';
         this.level = saved.level || 1;
         this.score = saved.score || 0;
         this.lives = saved.lives || 3;
@@ -2106,15 +2121,19 @@
 
         this.renderBoard();
         this.renderBlockPool();
+        this.updateInputModeUI();
         this.startTimer(saved.timerRemaining);
         showGameToast('已為您恢復上次的遊戲進度！', 'fa-rotate-left');
       } else {
+        this.difficulty = 'medium';
+        this.inputMode = 'pool';
         this.level = 1;
         this.score = 0;
         this.lives = 3;
         this.hintsUsed = 0;
         this.updateLivesUI();
         this.updateDifficultyTabsUI();
+        this.updateInputModeUI();
         this.loadLevel(this.level);
       }
     }
@@ -2670,6 +2689,7 @@
       if (scoreBadge) scoreBadge.textContent = this.score;
 
       this.updateDifficultyTabsUI();
+      this.updateInputModeUI();
 
       // 儲存狀態以支援中途退出記憶
       this.saveState();
@@ -2858,12 +2878,18 @@
         this.selectedSlotKey = key;
         this.saveState();
         this.renderBoard();
+        this.updateInputModeUI();
         return;
       }
       this.selectedSlotKey = key;
       sounds.playBlockSnap();
       this.saveState();
       this.renderBoard();
+      this.updateInputModeUI();
+
+      if (this.difficulty === 'hard') {
+        this.openHandwriteModal(key);
+      }
     }
 
     handlePickBlock(char, btnEl) {
@@ -2947,6 +2973,454 @@
           this.clearSavedState();
           this.handleGameOver();
         }
+      }
+    }
+
+    // ==========================================
+    // 提筆揮毫手寫模式 (大師狀元試專屬米字格手寫直接審題)
+    // ==========================================
+
+    updateInputModeUI() {
+      const modeBar = document.getElementById('idiom-mode-indicator-bar');
+      const modeIcon = document.getElementById('idiom-mode-icon');
+      const modeDesc = document.getElementById('idiom-mode-desc');
+      const modeNote = document.getElementById('idiom-mode-note');
+      const writeCard = document.getElementById('idiom-write-mode-card');
+      const poolCard = document.getElementById('idiom-pool-mode-card');
+      const ruleHint = document.getElementById('idiom-rule-hint');
+      const slotHint = document.getElementById('idiom-active-slot-hint');
+
+      // 嚴格規則：只有選擇大師模式（狀元試 hard）時，才會採用手寫輸入方式
+      const isMaster = this.difficulty === 'hard';
+      this.inputMode = isMaster ? 'handwriting' : 'pool';
+
+      if (isMaster) {
+        if (modeBar) modeBar.className = 'flex items-center justify-between gap-2 mb-2.5 px-3 py-1.5 bg-amber-50/95 rounded-xl border border-amber-300 text-xs font-bold text-amber-900 transition-all shadow-xs';
+        if (modeIcon) {
+          modeIcon.className = 'w-6 h-6 rounded-md bg-rose-500 text-white flex items-center justify-center text-xs shrink-0 font-black';
+          modeIcon.innerHTML = '<i class="fa-solid fa-pen-nib"></i>';
+        }
+        if (modeDesc) modeDesc.innerHTML = '作答方式：<strong>狀元大師專屬考場 · 提筆揮毫直接判題</strong>';
+        if (modeNote) modeNote.textContent = '點選棋盤空格開啟手寫板';
+
+        if (writeCard) writeCard.classList.remove('hidden');
+        if (poolCard) poolCard.classList.add('hidden');
+        if (ruleHint) ruleHint.textContent = '【狀元試·大師考場】：限時 30 秒！點選棋盤空格，直接在米字格手寫漢字審定正誤！';
+      } else {
+        if (modeBar) modeBar.className = 'flex items-center justify-between gap-2 mb-2.5 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 transition-all';
+        if (modeIcon) {
+          modeIcon.className = 'w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs shrink-0 font-black';
+          modeIcon.innerHTML = '<i class="fa-solid fa-cubes"></i>';
+        }
+        const diffName = this.difficulty === 'easy' ? '童生試' : '進士試';
+        if (modeDesc) modeDesc.innerHTML = `作答方式：<strong>漢字積木選填</strong>（${diffName}）`;
+        if (modeNote) modeNote.textContent = '切換「狀元試 (大師)」開啟手寫直接審題';
+
+        if (writeCard) writeCard.classList.add('hidden');
+        if (poolCard) poolCard.classList.remove('hidden');
+        const cfg = IDIOM_DIFFICULTIES[this.difficulty] || IDIOM_DIFFICULTIES.medium;
+        if (ruleHint) ruleHint.textContent = cfg.ruleHint;
+      }
+
+      if (slotHint) {
+        if (this.selectedSlotKey && this.currentPuzzle && this.currentPuzzle.cells[this.selectedSlotKey]) {
+          const idx = this.currentPuzzle.blankKeys.indexOf(this.selectedSlotKey) + 1;
+          const isCross = this.currentPuzzle.cells[this.selectedSlotKey].isCross;
+          slotHint.textContent = `第 ${idx} 空格${isCross ? ' (縱橫關鍵交錯點)' : ''}`;
+        } else {
+          slotHint.textContent = '點擊空格開始';
+        }
+      }
+    }
+
+    getSlotClueText(key) {
+      if (!this.currentPuzzle || !this.currentPuzzle.cells[key]) return '成語填空';
+      const cellData = this.currentPuzzle.cells[key];
+      const targetChar = cellData.char;
+      const clues = [];
+
+      cellData.idioms.forEach(name => {
+        const parts = [];
+        for (let i = 0; i < name.length; i++) {
+          if (name[i] === targetChar) {
+            parts.push('【 ? 】');
+          } else {
+            parts.push(name[i]);
+          }
+        }
+        clues.push(parts.join(' '));
+      });
+
+      if (clues.length > 1) {
+        return `交錯成語：${clues.join(' ✦ ')}`;
+      } else if (clues.length === 1) {
+        return `提示成語：${clues[0]}`;
+      }
+      return '成語填空';
+    }
+
+    openHandwriteModal(targetKey) {
+      if (this.solved) return;
+      if (!targetKey) {
+        targetKey = this.selectedSlotKey || (this.currentPuzzle ? this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]) : null);
+      }
+      if (!targetKey || !this.currentPuzzle || !this.currentPuzzle.cells[targetKey]) return;
+
+      this.selectedSlotKey = targetKey;
+      this.updateInputModeUI();
+      this.renderBoard();
+
+      const clueEl = document.getElementById('idiom-handwrite-clue-text');
+      if (clueEl) {
+        clueEl.textContent = this.getSlotClueText(targetKey);
+      }
+
+      const modal = document.getElementById('idiom-handwrite-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      setTimeout(() => {
+        this.initHandwritingCanvas();
+        this.clearCanvas();
+      }, 50);
+    }
+
+    closeHandwriteModal() {
+      const modal = document.getElementById('idiom-handwrite-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      this.hideFeedback();
+    }
+
+    initHandwritingCanvas() {
+      const canvas = document.getElementById('idiom-handwrite-canvas');
+      if (!canvas) return;
+
+      this.hwCanvas = canvas;
+      this.hwCtx = canvas.getContext('2d');
+
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 300;
+      const h = rect.height || 300;
+
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      this.hwCtx.scale(dpr, dpr);
+      this.hwWidth = w;
+      this.hwHeight = h;
+
+      if (!this.hwEventsAttached) {
+        this.hwEventsAttached = true;
+
+        const getPos = (e) => {
+          const r = canvas.getBoundingClientRect();
+          return {
+            x: e.clientX - r.left,
+            y: e.clientY - r.top,
+            t: Date.now()
+          };
+        };
+
+        const onPointerDown = (e) => {
+          e.preventDefault();
+          if (this.isSubmittingHw) return;
+          this.isDrawing = true;
+          try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+          const pos = getPos(e);
+          this.currentStroke = [pos];
+          this.hwStrokes.push(this.currentStroke);
+
+          this.hwCtx.lineWidth = 6;
+          this.hwCtx.lineCap = 'round';
+          this.hwCtx.lineJoin = 'round';
+          this.hwCtx.strokeStyle = '#18181b';
+          this.hwCtx.beginPath();
+          this.hwCtx.moveTo(pos.x, pos.y);
+          this.hwCtx.lineTo(pos.x + 0.1, pos.y + 0.1);
+          this.hwCtx.stroke();
+        };
+
+        const onPointerMove = (e) => {
+          e.preventDefault();
+          if (!this.isDrawing || !this.currentStroke) return;
+          const pos = getPos(e);
+          const prev = this.currentStroke[this.currentStroke.length - 1];
+          this.currentStroke.push(pos);
+
+          this.hwCtx.lineWidth = 6;
+          this.hwCtx.lineCap = 'round';
+          this.hwCtx.lineJoin = 'round';
+          this.hwCtx.strokeStyle = '#18181b';
+          this.hwCtx.beginPath();
+          this.hwCtx.moveTo(prev.x, prev.y);
+          this.hwCtx.lineTo(pos.x, pos.y);
+          this.hwCtx.stroke();
+        };
+
+        const onPointerUp = (e) => {
+          e.preventDefault();
+          if (this.isDrawing) {
+            this.isDrawing = false;
+            try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+          }
+        };
+
+        canvas.addEventListener('pointerdown', onPointerDown);
+        canvas.addEventListener('pointermove', onPointerMove);
+        canvas.addEventListener('pointerup', onPointerUp);
+        canvas.addEventListener('pointercancel', onPointerUp);
+      }
+
+      this.redrawCanvas();
+    }
+
+    redrawCanvas() {
+      if (!this.hwCtx || !this.hwCanvas) return;
+      this.hwCtx.clearRect(0, 0, this.hwWidth || 300, this.hwHeight || 300);
+
+      this.hwCtx.lineWidth = 6;
+      this.hwCtx.lineCap = 'round';
+      this.hwCtx.lineJoin = 'round';
+      this.hwCtx.strokeStyle = '#18181b';
+
+      for (const stroke of this.hwStrokes) {
+        if (!stroke || stroke.length === 0) continue;
+        this.hwCtx.beginPath();
+        this.hwCtx.moveTo(stroke[0].x, stroke[0].y);
+        for (let i = 1; i < stroke.length; i++) {
+          this.hwCtx.lineTo(stroke[i].x, stroke[i].y);
+        }
+        if (stroke.length === 1) {
+          this.hwCtx.lineTo(stroke[0].x + 0.1, stroke[0].y + 0.1);
+        }
+        this.hwCtx.stroke();
+      }
+    }
+
+    clearCanvas() {
+      this.hwStrokes = [];
+      this.currentStroke = null;
+      this.hideFeedback();
+      this.redrawCanvas();
+    }
+
+    undoCanvas() {
+      if (this.isSubmittingHw) return;
+      if (this.hwStrokes.length > 0) {
+        this.hwStrokes.pop();
+        this.hideFeedback();
+        this.redrawCanvas();
+      }
+    }
+
+    async submitHandwriting() {
+      if (this.isSubmittingHw) return;
+      if (!this.selectedSlotKey || !this.currentPuzzle || !this.currentPuzzle.cells[this.selectedSlotKey]) {
+        this.closeHandwriteModal();
+        return;
+      }
+
+      if (!this.hwStrokes || this.hwStrokes.length === 0) {
+        this.showFeedback(false, '請先在米字格寫下漢字！', 'fa-solid fa-triangle-exclamation text-amber-500');
+        setTimeout(() => this.hideFeedback(), 1500);
+        return;
+      }
+
+      const submitBtn = document.getElementById('idiom-handwrite-submit-btn');
+      this.isSubmittingHw = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 審定中...';
+      }
+
+      try {
+        const startTime = this.hwStrokes[0][0].t || Date.now();
+        const ink = this.hwStrokes.map(stroke => {
+          const xs = stroke.map(p => Math.round(p.x));
+          const ys = stroke.map(p => Math.round(p.y));
+          const ts = stroke.map(p => Math.max(0, Math.round(p.t - startTime)));
+          return [xs, ys, ts];
+        });
+
+        const width = this.hwWidth || 300;
+        const height = this.hwHeight || 300;
+
+        let candidates = [];
+
+        // 途徑 1: 直接請求 Google Input Tools 手寫辨識 API
+        try {
+          const payload = {
+            app_version: 0.4,
+            api_level: '537.36',
+            device: '537.36',
+            input_type: '0',
+            options: 'enable_pre_space',
+            requests: [{
+              writing_guide: { writing_area_width: width, writing_area_height: height },
+              pre_context: '',
+              max_num_results: 10,
+              max_completions: 0,
+              language: 'zh_TW',
+              ink: ink
+            }]
+          };
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+          const resp = await fetch('https://inputtools.google.com/request?ime=handwriting&app=cool_learning&cs=1&oe=UTF-8', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (resp.ok) {
+            const json = await resp.json();
+            if (Array.isArray(json) && json[0] === 'SUCCESS' && json[1] && json[1][0]) {
+              candidates = json[1][0][1] || [];
+            }
+          }
+        } catch (eDirect) {
+          console.warn('[Handwriting] Direct API request failed, trying backend proxy fallback...', eDirect);
+        }
+
+        // 途徑 2: 若直接請求受阻，自動退回後端反向代理
+        if (!candidates || candidates.length === 0) {
+          try {
+            const resp = await fetch('/api/games/handwriting', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ink, width, height })
+            });
+            if (resp.ok) {
+              const resData = await resp.json();
+              if (resData.success && Array.isArray(resData.candidates)) {
+                candidates = resData.candidates;
+              }
+            }
+          } catch (eProxy) {
+            console.error('[Handwriting] Proxy API request also failed:', eProxy);
+          }
+        }
+
+        const targetKey = this.selectedSlotKey;
+        const expectedChar = this.currentPuzzle.cells[targetKey].char;
+        const recognizedChar = (candidates && candidates.length > 0) ? candidates[0] : '？';
+
+        // 判定準則：直接比對！若第一候選或前兩名高相符字元包含正確字則認定答對
+        const isCorrect = candidates.length > 0 && (candidates[0] === expectedChar || candidates.slice(0, 2).includes(expectedChar));
+
+        if (isCorrect) {
+          // 正確！
+          sounds.playFanfare();
+          this.showFeedback(true, `審題正確！「${expectedChar}」筆鋒遒勁！`, 'fa-solid fa-circle-check text-emerald-500');
+
+          this.userFilled[targetKey] = expectedChar;
+          this.saveState();
+          this.renderBoard();
+
+          setTimeout(() => {
+            this.closeHandwriteModal();
+            this.isSubmittingHw = false;
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 揮毫審定';
+            }
+
+            // 檢查是否所有孔洞皆已填完
+            const allFilled = this.currentPuzzle.blankKeys.every(k => this.userFilled[k]);
+            if (allFilled) {
+              this.validateAnswers();
+            } else {
+              // 聚焦下一個空格
+              const nextEmpty = this.currentPuzzle.blankKeys.find(k => !this.userFilled[k]);
+              if (nextEmpty) {
+                this.selectedSlotKey = nextEmpty;
+                this.renderBoard();
+                this.updateInputModeUI();
+              }
+            }
+          }, 600);
+        } else {
+          // 錯誤！
+          sounds.playHurt();
+          this.lives -= 1;
+          this.updateLivesUI();
+
+          const shakeEl = document.querySelector('#idiom-handwrite-modal > div');
+          if (shakeEl) {
+            shakeEl.classList.add('animate-shake');
+            setTimeout(() => shakeEl.classList.remove('animate-shake'), 500);
+          }
+
+          this.showFeedback(false, `判定為「${recognizedChar}」，與此格成語不符！扣除 1 點生命值`, 'fa-solid fa-circle-xmark text-rose-500');
+
+          if (this.lives <= 0) {
+            setTimeout(() => {
+              this.closeHandwriteModal();
+              this.isSubmittingHw = false;
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 揮毫審定';
+              }
+              this.clearSavedState();
+              this.handleGameOver();
+            }, 900);
+          } else {
+            setTimeout(() => {
+              this.hideFeedback();
+              this.clearCanvas();
+              this.isSubmittingHw = false;
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 揮毫審定';
+              }
+            }, 1400);
+          }
+        }
+      } catch (err) {
+        console.error('[Handwriting] Evaluation error:', err);
+        showGameToast('辨識服務連線異常，請稍後重試', 'fa-triangle-exclamation');
+        this.isSubmittingHw = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 揮毫審定';
+        }
+      }
+    }
+
+    showFeedback(isSuccess, message, iconClass) {
+      const fb = document.getElementById('idiom-handwrite-feedback');
+      const icon = document.getElementById('idiom-feedback-icon');
+      const msg = document.getElementById('idiom-feedback-msg');
+      if (!fb || !icon || !msg) return;
+
+      fb.classList.remove('hidden');
+      fb.classList.add('flex');
+      icon.innerHTML = `<i class="${iconClass}"></i>`;
+      msg.textContent = message;
+
+      if (isSuccess) {
+        fb.className = 'absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-emerald-50/95 text-emerald-900 border-2 border-emerald-400 rounded-lg animate-fade-in';
+        msg.className = 'text-sm font-black text-center text-emerald-900 bg-white/90 px-3 py-1.5 rounded-lg border border-emerald-300 shadow-sm';
+      } else {
+        fb.className = 'absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-rose-50/95 text-rose-900 border-2 border-rose-400 rounded-lg animate-fade-in';
+        msg.className = 'text-xs sm:text-sm font-black text-center text-rose-900 bg-white/90 px-3 py-1.5 rounded-lg border border-rose-300 shadow-sm';
+      }
+    }
+
+    hideFeedback() {
+      const fb = document.getElementById('idiom-handwrite-feedback');
+      if (fb) {
+        fb.classList.add('hidden');
+        fb.classList.remove('flex');
       }
     }
 
