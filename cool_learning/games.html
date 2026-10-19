@@ -344,6 +344,18 @@
             <p class="text-xs text-slate-600 mt-1 leading-relaxed">
               公視《一字千金》招牌單元！縱橫十字交錯成語填空，觀察上下文推敲關鍵交會字，考驗你的成語底蘊與字形洞察力！
             </p>
+            <!-- 難度分級徽章標籤 -->
+            <div class="flex items-center gap-1.5 mt-2.5 flex-wrap">
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200">
+                <i class="fa-solid fa-circle text-[6px] text-emerald-500 mr-0.5"></i> 童生試 (入門)
+              </span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">
+                <i class="fa-solid fa-circle text-[6px] text-amber-500 mr-0.5"></i> 進士試 (進階)
+              </span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-200">
+                <i class="fa-solid fa-circle text-[6px] text-rose-500 mr-0.5"></i> 狀元試 (極限大師)
+              </span>
+            </div>
           </div>
 
           <div class="mt-4 pt-3 border-t border-indigo-200/80 flex items-center justify-between text-indigo-700 font-black text-sm">
@@ -695,71 +707,101 @@
   <section id="view-game-idiom" class="w-full max-w-4xl mx-auto hidden pb-8">
     <div class="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-indigo-300 p-4 sm:p-6 shadow-xl relative overflow-hidden">
 
-      <!-- 頂部資訊列 (關卡、智慧星數、生命/機會、返回、音效) -->
-      <div class="flex items-center justify-between pb-3 mb-4 border-b border-indigo-200/80">
-        <div class="flex items-center gap-3">
-          <button onclick="backToGamesLobbyFromIdiom()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs">
+      <!-- 頂部資訊列 (關卡、智慧星數、倒數計時、生命/機會、返回、音效) -->
+      <div class="flex items-center justify-between pb-3 mb-3 border-b border-indigo-200/80 gap-2 flex-wrap">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button onclick="backToGamesLobbyFromIdiom()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer">
             <i class="fa-solid fa-arrow-left"></i>
-            <span>回遊戲大廳</span>
+            <span>大廳</span>
           </button>
           <div>
-            <h2 class="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2 leading-tight">
-              洞築機先 <span class="text-xs px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 font-bold">一字千金</span>
+            <h2 class="text-base sm:text-lg font-black text-slate-800 flex items-center gap-1.5 leading-tight">
+              洞築機先 <span id="idiom-diff-badge" class="text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 font-bold">進士試</span>
             </h2>
-            <div class="flex items-center gap-2 mt-0.5">
+            <div class="flex items-center gap-1.5 mt-0.5">
               <span id="idiom-level-badge" class="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">第 1 關</span>
               <span id="idiom-mode-badge" class="text-xs font-bold text-slate-500">十字交錯</span>
             </div>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto">
+          <!-- 倒數計時器 (依難度動態運作) -->
+          <div id="idiom-timer-container" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 font-black text-xs shadow-xs transition-all">
+            <i class="fa-solid fa-stopwatch text-indigo-600" id="idiom-timer-icon"></i>
+            <span>計時: <span id="idiom-timer-seconds" class="text-sm font-black">45</span>s</span>
+          </div>
+
           <!-- 得分 / 積木塔星數 -->
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs shadow-xs">
+          <div class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs shadow-xs">
             <i class="fa-solid fa-crown text-amber-500"></i>
             <span>通關: <span id="idiom-score-count" class="text-sm">0</span></span>
           </div>
 
           <!-- 機會愛心 (3 顆血) -->
-          <div id="idiom-lives-container" class="flex items-center gap-1 bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-200 text-rose-500 text-sm shadow-xs">
+          <div id="idiom-lives-container" class="flex items-center gap-1 bg-rose-50 px-2 sm:px-2.5 py-1.5 rounded-xl border border-rose-200 text-rose-500 text-sm shadow-xs">
             <i class="fa-solid fa-heart" id="idiom-life-1"></i>
             <i class="fa-solid fa-heart" id="idiom-life-2"></i>
             <i class="fa-solid fa-heart" id="idiom-life-3"></i>
           </div>
 
           <!-- 音效開關 -->
-          <button onclick="toggleGameSound()" title="音效開關" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-sm shadow-sm transition-all">
+          <button onclick="toggleGameSound()" title="音效開關" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-xs sm:text-sm shadow-sm transition-all cursor-pointer">
             <i class="fa-solid fa-music"></i>
           </button>
         </div>
       </div>
 
-      <!-- 玩法引導提示 -->
-      <div class="flex items-center justify-between px-3 py-1.5 bg-indigo-50/90 rounded-lg mb-4 text-xs font-bold border border-indigo-100">
-        <div class="flex items-center gap-2 text-indigo-900">
-          <i class="fa-solid fa-lightbulb text-amber-500 text-sm"></i>
-          <span>觀察成語縱橫上下文，點選下方漢字積木填入正確孔洞！</span>
+      <!-- 難度試別切換列 (童生試 / 進士試 / 狀元試) -->
+      <div class="flex items-center justify-between gap-1.5 sm:gap-2 mb-3.5 p-1.5 bg-slate-100/90 rounded-xl border border-slate-200/90">
+        <div class="text-[11px] sm:text-xs font-black text-slate-500 pl-1.5 hidden sm:flex items-center gap-1">
+          <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 挑戰試別：
         </div>
-        <button onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="text-indigo-700 hover:text-indigo-900 underline text-xs font-black flex items-center gap-1 cursor-pointer">
-          <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 提示
+        <div class="flex items-center gap-1.5 flex-1 max-w-lg ml-auto">
+          <button id="idiom-tab-easy" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('easy')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 童生試 (初級)
+          </button>
+          <button id="idiom-tab-medium" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('medium')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span> 進士試 (進階)
+          </button>
+          <button id="idiom-tab-hard" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('hard')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span> 狀元試 (大師)
+          </button>
+        </div>
+      </div>
+
+      <!-- 玩法引導提示與限制提示按鈕 -->
+      <div class="flex items-center justify-between px-3 py-1.5 bg-indigo-50/90 rounded-lg mb-2 text-xs font-bold border border-indigo-100 gap-2">
+        <div class="flex items-center gap-2 text-indigo-900 truncate">
+          <i class="fa-solid fa-lightbulb text-amber-500 text-sm shrink-0"></i>
+          <span id="idiom-rule-hint" class="truncate">觀察成語縱橫上下文，點選下方漢字積木填入正確孔洞！</span>
+        </div>
+        <button id="idiom-hint-btn" onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="shrink-0 text-indigo-700 hover:text-indigo-900 bg-white/90 hover:bg-white px-2.5 py-1 rounded-lg border border-indigo-200 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+          <span id="idiom-hint-text">提示 (剩2次)</span>
         </button>
       </div>
 
+      <!-- 倒數時間進度條 (平滑動畫) -->
+      <div id="idiom-timer-bar-wrap" class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mb-3">
+        <div id="idiom-timer-bar" class="h-full bg-indigo-500 transition-all duration-1000 ease-linear rounded-full" style="width: 100%;"></div>
+      </div>
+
       <!-- 成語縱橫棋盤容器 (立體交錯盤) -->
-      <div class="w-full bg-gradient-to-b from-indigo-50/60 via-purple-50/30 to-pink-50/60 rounded-2xl border-2 border-indigo-200/90 p-4 sm:p-6 mb-5 shadow-inner flex flex-col items-center justify-center min-h-[300px]">
-        <div id="idiom-grid-board" class="inline-grid gap-2 sm:gap-2.5 justify-center items-center my-auto">
+      <div class="w-full bg-gradient-to-b from-indigo-50/60 via-purple-50/30 to-pink-50/60 rounded-2xl border-2 border-indigo-200/90 p-3 sm:p-6 mb-4 shadow-inner flex flex-col items-center justify-center min-h-[300px] overflow-x-auto">
+        <div id="idiom-grid-board" class="inline-grid gap-1.5 sm:gap-2.5 justify-center items-center my-auto transition-all">
           <!-- JS 動態生成成語交錯矩陣與孔洞 -->
         </div>
       </div>
 
-      <!-- 下方：備選漢字積木區 (6~8 塊木質/翡翠質感積木按鈕) -->
-      <div class="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-indigo-300/80 shadow-md text-center">
+      <!-- 下方：備選漢字積木區 (8~12 塊智慧混淆/形近/同音積木按鈕) -->
+      <div class="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-3 sm:p-4 border-2 border-indigo-300/80 shadow-md text-center">
         <div class="flex items-center justify-between text-xs font-bold text-indigo-800 mb-2.5 px-1">
           <span class="flex items-center gap-1.5"><i class="fa-solid fa-cubes text-indigo-600"></i> 請選擇漢字積木填入：</span>
           <span id="idiom-target-hint" class="text-indigo-600 font-normal">點擊置入空格，中途離開自動存檔</span>
         </div>
 
-        <div id="idiom-pool-container" class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5 max-w-xl mx-auto py-1">
+        <div id="idiom-pool-container" class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-2xl mx-auto py-1">
           <!-- JS 動態生成候選積木 -->
         </div>
       </div>
@@ -772,8 +814,12 @@
   <!-- ========================================================================= -->
   <div id="idiom-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-indigo-400 card-flip-enter max-h-[90vh] overflow-y-auto">
-      <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-2 border-indigo-300 shadow-sm animate-bounce">
+      <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-indigo-300 shadow-sm animate-bounce">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </div>
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <span id="idiom-success-diff-badge" class="px-2.5 py-0.5 rounded-md text-xs font-black bg-amber-100 text-amber-800 border border-amber-200">進士試</span>
+        <span id="idiom-success-level-badge" class="px-2.5 py-0.5 rounded-md text-xs font-black bg-indigo-100 text-indigo-700 border border-indigo-200">第 1 關</span>
       </div>
       <h3 class="text-2xl font-black text-slate-800 mb-0.5">太厲害了！完全答對！</h3>
       <p class="text-xs text-indigo-600 font-bold mb-3">請點選下方每一則成語卡片確認讀懂，即可晉級下一關！</p>
@@ -828,6 +874,7 @@
 
       <!-- 成績統計 -->
       <div class="bg-indigo-50 rounded-xl p-2.5 border border-indigo-200 mb-4 text-xs font-bold text-indigo-800 flex items-center justify-around">
+        <span id="idiom-gameover-diff-badge" class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 font-black">進士試</span>
         <span>本次共成功通關：<strong id="idiom-gameover-score" class="text-base text-indigo-600 font-black">0</strong> 關</span>
       </div>
 
@@ -1394,6 +1441,9 @@
     function backToGamesLobbyFromIdiom() {
       if (window.coolGameIdiom) {
         window.coolGameIdiom.isRunning = false;
+        if (window.coolGameIdiom.stopTimer) {
+          window.coolGameIdiom.stopTimer();
+        }
       }
       document.getElementById('view-game-idiom').classList.add('hidden');
       document.getElementById('view-games-lobby').classList.remove('hidden');
