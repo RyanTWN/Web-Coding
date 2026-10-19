@@ -1,4 +1,4 @@
-const VERSION = 'cool-learning-shell-v6';
+const VERSION = 'cool-learning-shell-v7';
 
 self.addEventListener('install', () => self.skipWaiting());
 

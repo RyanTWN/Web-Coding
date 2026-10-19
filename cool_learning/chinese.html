@@ -288,11 +288,18 @@
               <!-- 字卡正面 (Front) -->
               <div class="idiom-card-face relative bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl">
                 <!-- 頂部資訊列 -->
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
+                <div class="flex items-center justify-between pr-14 sm:pr-16">
+                  <div class="flex items-center gap-2 flex-wrap">
                     <span id="idiom-seq-badge" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-black text-xs tracking-wider">#001 / 200</span>
                     <span id="idiom-group-badge" class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold text-[11px]">第 1-10 則</span>
                   </div>
+                </div>
+
+                <!-- 右上角重點星號按鈕 -->
+                <div class="absolute right-4 sm:right-6 top-4 sm:top-6 z-30" onclick="event.stopPropagation();">
+                  <button type="button" id="btn-star-idiom" title="加入重點學習區" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-star"></i>
+                  </button>
                 </div>
 
                 <!-- 中間核心書法成語大字與注音 -->
@@ -308,13 +315,8 @@
                   </span>
                 </div>
 
-                <!-- 右下角單手操作快捷區：上方重點星號、下方成語發音按鈕 -->
-                <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
-                  <!-- 加入重點學習區星號 (在發音按鈕上方) -->
-                  <button type="button" id="btn-star-idiom" title="加入重點學習區" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
-                    <i class="fa-solid fa-star"></i>
-                  </button>
-                  <!-- 成語發音按鈕 (在卡片右下角) -->
+                <!-- 右下角成語發音按鈕 -->
+                <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 z-30" onclick="event.stopPropagation();">
                   <button type="button" id="btn-speak-idiom" aria-label="播放成語發音" title="聽發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-volume-high"></i>
                   </button>
@@ -325,12 +327,12 @@
               <div class="idiom-card-face idiom-card-back relative bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto">
                 <div class="space-y-4 pb-14 sm:pb-8">
                   <!-- 背面頂部標題與序號 -->
-                  <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-100 pr-14 sm:pr-16">
                     <div class="flex items-center gap-2">
                       <h3 id="idiom-back-name" class="text-xl font-black text-slate-800 font-['Noto_Serif_TC']">口若懸河</h3>
                       <span id="idiom-back-bpmf" class="text-xs font-bold text-emerald-600 font-mono">ㄎㄡˇ ㄖㄨㄛˋ ㄒㄩㄢˊ ㄏㄜˊ</span>
                     </div>
-                    <button type="button" id="btn-flip-back" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation();">
+                    <button type="button" id="btn-flip-back" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation();" title="翻回正面">
                       <i class="fa-solid fa-rotate-left"></i>
                     </button>
                   </div>
@@ -371,13 +373,15 @@
                   <i class="fa-solid fa-arrow-left mr-1"></i> 點擊任意處翻回正面
                 </div>
 
-                <!-- 右下角單手操作快捷區：上方重點星號、下方成語發音按鈕 -->
-                <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
-                  <!-- 加入重點學習區星號 (在發音按鈕上方) -->
+                <!-- 右上角重點星號按鈕 -->
+                <div class="absolute right-4 sm:right-6 top-4 sm:top-6 z-30" onclick="event.stopPropagation();">
                   <button type="button" id="btn-star-idiom-back" title="加入重點學習區" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-star"></i>
                   </button>
-                  <!-- 成語發音按鈕 (在卡片右下角) -->
+                </div>
+
+                <!-- 右下角成語發音按鈕 -->
+                <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 z-30" onclick="event.stopPropagation();">
                   <button type="button" id="btn-speak-idiom-back" aria-label="播放成語發音" title="聽發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-volume-high"></i>
                   </button>
@@ -509,6 +513,6 @@
   <script src="assets/js/components.js"></script>
   <script src="assets/js/ai-tutor.js"></script>
   <script src="assets/js/data/idioms200.js"></script>
-  <script src="assets/js/chinese.js"></script>
+  <script src="assets/js/chinese.js?v=20261019-star-btn-relocate"></script>
 </body>
 </html>

@@ -189,12 +189,19 @@
             <!-- 【正面】字卡正面 -->
             <div class="word-card-face relative bg-gradient-to-br from-white via-rose-50/40 to-pink-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl select-none">
               <!-- 頂部資訊列：章節與詞性標籤 -->
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
+              <div class="flex items-center justify-between pr-14 sm:pr-16">
+                <div class="flex items-center gap-2 flex-wrap">
                   <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-black text-xs tracking-wider">English 6</span>
                   <span id="card-part-of-speech" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px] italic">word</span>
                   <span id="card-mode-badge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px] hidden"><i class="fa-solid fa-star text-amber-500 mr-1"></i>難字卡片</span>
                 </div>
+              </div>
+
+              <!-- 右上角難字星號按鈕 -->
+              <div class="absolute right-4 sm:right-6 top-4 sm:top-6 z-30" onclick="event.stopPropagation();">
+                <button type="button" id="star-btn" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-star"></i>
+                </button>
               </div>
 
               <!-- 隱藏圖片節點相容舊程式碼 -->
@@ -220,13 +227,8 @@
                 </span>
               </div>
 
-              <!-- 右下角單手操作快捷區：上方難字星號、下方單字發音按鈕 -->
-              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
-                <!-- 加入難字星號 (在發音按鈕上方) -->
-                <button type="button" id="star-btn" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
-                  <i class="fa-solid fa-star"></i>
-                </button>
-                <!-- 單字發音按鈕 (在卡片右下角) -->
+              <!-- 右下角單字發音按鈕 -->
+              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 z-30" onclick="event.stopPropagation();">
                 <button type="button" id="btn-speak-word" aria-label="播放單字發音" title="聽單字發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
                   <i class="fa-solid fa-volume-high"></i>
                 </button>
@@ -237,12 +239,12 @@
             <div class="word-card-face word-card-back relative bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto custom-scrollbar">
               <div class="space-y-4">
                 <!-- 背面頂部標題列 -->
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 pr-14 sm:pr-16">
                   <div class="flex items-center gap-2">
                     <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-lightbulb"></i></span>
                     <h3 class="text-lg font-black text-slate-800">Example 例句學習</h3>
                   </div>
-                  <button type="button" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation(); document.getElementById('flashcard').classList.remove('is-flipped');">
+                  <button type="button" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation(); document.getElementById('flashcard').classList.remove('is-flipped');" title="翻回正面">
                     <i class="fa-solid fa-rotate-left"></i>
                   </button>
                 </div>
@@ -263,13 +265,15 @@
                 <i class="fa-solid fa-arrow-left mr-1"></i> 點擊任意處翻回正面
               </div>
 
-              <!-- 右下角單手操作快捷區：上方難字星號、下方例句朗讀按鈕 -->
-              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 flex flex-col items-center gap-3 z-30" onclick="event.stopPropagation();">
-                <!-- 加入難字星號 (在發音按鈕上方) -->
+              <!-- 右上角難字星號按鈕 -->
+              <div class="absolute right-4 sm:right-6 top-4 sm:top-6 z-30" onclick="event.stopPropagation();">
                 <button type="button" id="star-btn-back" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
                   <i class="fa-solid fa-star"></i>
                 </button>
-                <!-- 例句朗讀發音按鈕 (在卡片右下角) -->
+              </div>
+
+              <!-- 右下角例句朗讀發音按鈕 -->
+              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 z-30" onclick="event.stopPropagation();">
                 <button type="button" id="btn-speak-sentence" aria-label="朗讀例句發音" title="聽例句朗讀 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
                   <i class="fa-solid fa-volume-high"></i>
                 </button>
@@ -452,7 +456,7 @@
   <script src="assets/js/config.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/ai-tutor.js"></script>
-  <script src="assets/js/app.js?v=20260929-starred-badge-fix"></script>
+  <script src="assets/js/app.js?v=20261019-star-btn-relocate"></script>
   <script src="assets/js/quiz.js?v=20260924-layout-sync"></script> 
   
   <!-- 網頁載入完成後的初始化邏輯 -->
