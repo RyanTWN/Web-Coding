@@ -159,6 +159,23 @@ idiomQuiz10.forEach((q, idx) => {
 const idiomQuiz20 = buildIdiomQuizQuestions(20);
 assert.strictEqual(idiomQuiz20.length, 20, '成語測驗應正確產出 20 題');
 
+// 驗證自訂範圍 (Custom Pool) 隨堂測驗產生器
+const customSubPool = idiomsData.slice(0, 15); // 第 1 ~ 15 則
+const customPoolNames = new Set(customSubPool.map(i => i.name));
+const customQuiz = buildIdiomQuizQuestions(10, customSubPool);
+assert.strictEqual(customQuiz.length, 10, '自訂範圍抽取 10 題應產出 10 題');
+customQuiz.forEach((q, idx) => {
+  assert.strictEqual(q.options.length, 4, `自訂範圍第 ${idx + 1} 題應有 4 個選項`);
+  assert.ok(q.options.includes(q.correct), `自訂範圍第 ${idx + 1} 題選項必須包含正確答案`);
+  if (q.type === 'meaning_to_idiom' || q.type === 'cloze_sentence') {
+    assert.ok(customPoolNames.has(q.correct), `自訂範圍題目正確答案必須來自指定範圍`);
+  }
+});
+
+// 當自訂範圍題數少於請求題數時自動上限為自訂池大小
+const cappedQuiz = buildIdiomQuizQuestions(50, customSubPool);
+assert.strictEqual(cappedQuiz.length, 15, '自訂範圍請求超過題數時應上限為池大小 15 題');
+
 // 驗證學習日曆彙總計算
 const totals = getCalendarTotals([
   { completedAttempts: 1, totalQuestions: 20, totalScore: 85 },

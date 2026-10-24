@@ -427,12 +427,17 @@ function buildDailyQuestions(publisher, chapter, attemptNo = 1) {
   return questions;
 }
 
-// 動態從成語 200 抽取產生隨堂測驗題目 (10 或 20 題)
-function buildIdiomQuizQuestions(count = 10) {
-  if (!idiomList || idiomList.length < count) return [];
-  const shuffled = [...idiomList].sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, count);
+// 動態從成語 200 抽取產生隨堂測驗題目 (10 或 20 題，支援指定範圍 pool)
+function buildIdiomQuizQuestions(count = 10, sourcePool = null) {
+  const pool = (Array.isArray(sourcePool) && sourcePool.length > 0) ? sourcePool : (idiomList || []);
+  if (!pool || pool.length === 0) return [];
+  const actualCount = Math.min(count, pool.length);
+  const shuffled = [...pool].sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, actualCount);
   const quiz = [];
+
+  // 干擾項來源池：若 pool 至少有 4 則成語則優先在選定範圍內抽取干擾項，否則由全體成語補足干擾項
+  const distractorBase = (pool.length >= 4) ? pool : (idiomList && idiomList.length >= 4 ? idiomList : pool);
 
   selected.forEach((target, idx) => {
     // 隨機題型：
@@ -440,7 +445,7 @@ function buildIdiomQuizQuestions(count = 10) {
     // Type 2: 成語選釋義
     // Type 3: 克漏字填空
     const qType = idx % 3;
-    const distractors = idiomList.filter(item => item.id !== target.id)
+    const distractors = distractorBase.filter(item => item.id !== target.id)
       .sort(() => 0.5 - Math.random())
       .slice(0, 3);
 
@@ -981,15 +986,127 @@ async function toggleStarCurrentIdiom() {
   }
 }
 
-// 成語隨堂測驗評量 (Idiom Quiz)
-function startIdiomQuiz(count = 10) {
-  const questions = buildIdiomQuizQuestions(count);
+// 成語隨堂測驗評量 (Idiom Quiz) 狀態與自訂範圍設定
+let idiomQuizScopeConfig = {
+  mode: 'all', // 'all' | 'custom'
+  customStart: 1,
+  customEnd: 50,
+  questionCountType: '10' // '10' | '20' | 'all'
+};
+
+function getIdiomQuizPool(config = idiomQuizScopeConfig) {
+  if (!idiomList || idiomList.length === 0) return [];
+  if (config.mode === 'all') {
+    return [...idiomList];
+  }
+  const s = parseInt(config.customStart, 10);
+  const e = parseInt(config.customEnd, 10);
+  const start = isNaN(s) ? 1 : Math.max(1, Math.min(200, s));
+  const end = isNaN(e) ? 200 : Math.max(1, Math.min(200, e));
+  const minIdx = Math.min(start, end);
+  const maxIdx = Math.max(start, end);
+
+  return idiomList.filter(item => item.id >= minIdx && item.id <= maxIdx);
+}
+
+function openIdiomScopeModal() {
+  const modal = document.getElementById('modal-idiom-quiz-scope');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  updateIdiomScopeModalUI();
+}
+
+function closeIdiomScopeModal() {
+  const modal = document.getElementById('modal-idiom-quiz-scope');
+  if (modal) modal.classList.add('hidden');
+}
+
+function updateIdiomScopeModalUI() {
+  const isAll = idiomQuizScopeConfig.mode === 'all';
+  const optAll = document.getElementById('scope-opt-all');
+  const optCustom = document.getElementById('scope-opt-custom');
+  const customContainer = document.getElementById('scope-custom-container');
+
+  if (optAll && optCustom) {
+    const checkAll = optAll.querySelector('.scope-check-icon');
+    const checkCustom = optCustom.querySelector('.scope-check-icon');
+    if (isAll) {
+      optAll.className = 'p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 text-left transition flex flex-col justify-between cursor-pointer';
+      if (checkAll) checkAll.className = 'fa-solid fa-circle-check text-emerald-600 scope-check-icon';
+      optCustom.className = 'p-3.5 rounded-xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition flex flex-col justify-between cursor-pointer';
+      if (checkCustom) checkCustom.className = 'fa-regular fa-circle text-slate-300 scope-check-icon';
+      customContainer?.classList.add('hidden');
+    } else {
+      optCustom.className = 'p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 text-left transition flex flex-col justify-between cursor-pointer';
+      if (checkCustom) checkCustom.className = 'fa-solid fa-circle-check text-emerald-600 scope-check-icon';
+      optAll.className = 'p-3.5 rounded-xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition flex flex-col justify-between cursor-pointer';
+      if (checkAll) checkAll.className = 'fa-regular fa-circle text-slate-300 scope-check-icon';
+      customContainer?.classList.remove('hidden');
+    }
+  }
+
+  const inputStart = document.getElementById('input-scope-start');
+  const inputEnd = document.getElementById('input-scope-end');
+  if (inputStart && document.activeElement !== inputStart) inputStart.value = idiomQuizScopeConfig.customStart;
+  if (inputEnd && document.activeElement !== inputEnd) inputEnd.value = idiomQuizScopeConfig.customEnd;
+
+  const pool = getIdiomQuizPool(idiomQuizScopeConfig);
+  const countBadge = document.getElementById('scope-custom-count-badge');
+  const errorMsg = document.getElementById('scope-error-msg');
+  if (countBadge) {
+    countBadge.textContent = `共 ${pool.length} 則成語`;
+  }
+
+  if (errorMsg) {
+    if (!isAll && pool.length < 4) {
+      errorMsg.textContent = `自訂範圍至少需涵蓋 4 則成語（目前僅 ${pool.length} 則）`;
+      errorMsg.classList.remove('hidden');
+    } else {
+      errorMsg.classList.add('hidden');
+    }
+  }
+
+  // 題數按鈕樣式切換
+  document.querySelectorAll('.btn-scope-count').forEach(btn => {
+    const countVal = btn.getAttribute('data-count');
+    const isSelected = countVal === idiomQuizScopeConfig.questionCountType;
+    if (isSelected) {
+      btn.className = 'btn-scope-count py-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 font-black text-xs transition';
+    } else {
+      btn.className = 'btn-scope-count py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-black text-xs hover:border-slate-300 transition';
+    }
+  });
+}
+
+function startIdiomQuiz(configParam = null) {
+  const config = configParam || idiomQuizScopeConfig;
+  const pool = getIdiomQuizPool(config);
+  if (!pool || pool.length === 0) {
+    showToast('所選範圍內無成語資料，請重新設定', 'amber');
+    return;
+  }
+  if (pool.length < 4) {
+    showToast('自訂範圍成語數量過少（至少需 4 則成語以利生成選項）', 'amber');
+    return;
+  }
+
+  let count = 10;
+  if (config.questionCountType === 'all') {
+    count = pool.length;
+  } else {
+    count = Math.min(parseInt(config.questionCountType, 10) || 10, pool.length);
+  }
+
+  const questions = buildIdiomQuizQuestions(count, pool);
   if (!questions || questions.length === 0) {
     showToast('成語題庫載入中，請稍候');
     return;
   }
+
   idiomQuizState = {
     active: true,
+    config: { ...config },
+    poolSize: pool.length,
     questions,
     currentIndex: 0,
     score: 0,
@@ -997,9 +1114,26 @@ function startIdiomQuiz(count = 10) {
     userAnswers: []
   };
 
-  document.getElementById('idiom-card-container').classList.add('hidden');
-  document.getElementById('view-idiom-quiz-result').classList.add('hidden');
-  document.getElementById('view-idiom-quiz').classList.remove('hidden');
+  // 關閉範圍設定視窗
+  closeIdiomScopeModal();
+
+  // 徹底隱藏成語探索館工具列與主版面（字卡與日曆），避免版面錯位跑版
+  document.getElementById('idioms-toolbar')?.classList.add('hidden');
+  document.getElementById('idiom-explore-view')?.classList.add('hidden');
+  document.getElementById('view-idiom-quiz-result')?.classList.add('hidden');
+  document.getElementById('view-idiom-quiz')?.classList.remove('hidden');
+
+  // 設定測驗範圍標籤
+  const minIdx = Math.min(config.customStart, config.customEnd);
+  const maxIdx = Math.max(config.customStart, config.customEnd);
+  const scopeLabel = config.mode === 'all'
+    ? '全部 (200則)'
+    : `第 ${minIdx} ~ ${maxIdx} 則 (${pool.length}則)`;
+  const scopeBadge = document.getElementById('idiom-quiz-scope-badge');
+  if (scopeBadge) {
+    scopeBadge.textContent = `範圍：${scopeLabel}`;
+  }
+
   renderIdiomQuizQuestion();
 }
 
@@ -1043,7 +1177,7 @@ function answerIdiomQuiz(selectedOption, selectedBtn) {
   idiomQuizState.userAnswers.push({ questionId: q.id, selected: selectedOption, isCorrect });
 
   const fb = document.getElementById('idiom-quiz-feedback');
-  fb.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed ${isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
+  fb.className = `mt-5 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line ${isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
   fb.innerHTML = `<strong>${isCorrect ? '答對了！' : `正確答案：${q.correct}`}</strong><br>${q.explanation}`;
   fb.classList.remove('hidden');
 
@@ -1061,13 +1195,23 @@ function advanceIdiomQuiz() {
 }
 
 function finishIdiomQuiz() {
-  const { questions, correctCount } = idiomQuizState;
+  const { questions, correctCount, config, poolSize } = idiomQuizState;
   const finalScore = Math.round((correctCount / questions.length) * 100);
   document.getElementById('view-idiom-quiz').classList.add('hidden');
   document.getElementById('view-idiom-quiz-result').classList.remove('hidden');
 
   document.getElementById('idiom-quiz-result-correct').textContent = `${correctCount} / ${questions.length}`;
   document.getElementById('idiom-quiz-result-score').textContent = `${finalScore} 分`;
+
+  const minIdx = config ? Math.min(config.customStart, config.customEnd) : 1;
+  const maxIdx = config ? Math.max(config.customStart, config.customEnd) : 200;
+  const scopeLabel = !config || config.mode === 'all'
+    ? '全部 (200則)'
+    : `第 ${minIdx} ~ ${maxIdx} 則 (${poolSize || questions.length}則)`;
+  const resultBadge = document.getElementById('idiom-quiz-result-scope-badge');
+  if (resultBadge) {
+    resultBadge.textContent = `測驗範圍：${scopeLabel}（出題 ${questions.length} 題）`;
+  }
 
   // 記錄成語測驗歷程至後端與本機快取
   try {
@@ -1098,10 +1242,19 @@ function finishIdiomQuiz() {
   }
 }
 
-function exitIdiomQuiz() {
-  document.getElementById('view-idiom-quiz').classList.add('hidden');
-  document.getElementById('view-idiom-quiz-result').classList.add('hidden');
-  document.getElementById('idiom-card-container').classList.remove('hidden');
+function exitIdiomQuiz(confirmExit = false) {
+  if (confirmExit && idiomQuizState && idiomQuizState.active && idiomQuizState.currentIndex < idiomQuizState.questions.length) {
+    if (!window.confirm('測驗尚未完成，確定要退出成語隨堂測驗嗎？')) {
+      return;
+    }
+  }
+
+  if (idiomQuizState) idiomQuizState.active = false;
+  document.getElementById('view-idiom-quiz')?.classList.add('hidden');
+  document.getElementById('view-idiom-quiz-result')?.classList.add('hidden');
+  document.getElementById('idioms-toolbar')?.classList.remove('hidden');
+  document.getElementById('idiom-explore-view')?.classList.remove('hidden');
+  document.getElementById('idiom-card-container')?.classList.remove('hidden');
   renderIdiomCard();
 }
 
@@ -1630,14 +1783,78 @@ if (typeof document !== 'undefined') {
     renderIdiomCalendar();
   });
 
-  // 成語測驗控制
-  document.getElementById('btn-open-idiom-quiz')?.addEventListener('click', () => startIdiomQuiz(10));
-  document.getElementById('btn-idiom-quiz-next')?.addEventListener('click', advanceIdiomQuiz);
-  document.getElementById('btn-idiom-quiz-restart')?.addEventListener('click', () => startIdiomQuiz(10));
-  document.getElementById('btn-idiom-quiz-back-cards')?.addEventListener('click', exitIdiomQuiz);
+  // 成語測驗控制與範圍設定 Modal
+  document.getElementById('btn-open-idiom-quiz')?.addEventListener('click', openIdiomScopeModal);
+  document.getElementById('btn-close-idiom-scope-modal')?.addEventListener('click', closeIdiomScopeModal);
+  document.getElementById('btn-cancel-idiom-scope')?.addEventListener('click', closeIdiomScopeModal);
+  document.getElementById('modal-idiom-quiz-scope')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-idiom-quiz-scope') closeIdiomScopeModal();
+  });
 
-  // 鍵盤左右鍵切換字卡
+  // 測驗範圍選項切換 (全部 vs 自訂)
+  document.getElementById('scope-opt-all')?.addEventListener('click', () => {
+    idiomQuizScopeConfig.mode = 'all';
+    updateIdiomScopeModalUI();
+  });
+  document.getElementById('scope-opt-custom')?.addEventListener('click', () => {
+    idiomQuizScopeConfig.mode = 'custom';
+    updateIdiomScopeModalUI();
+  });
+
+  // 自訂題號輸入
+  const inputStart = document.getElementById('input-scope-start');
+  const inputEnd = document.getElementById('input-scope-end');
+  const handleScopeInputChange = () => {
+    const s = parseInt(inputStart?.value, 10);
+    const e = parseInt(inputEnd?.value, 10);
+    if (!isNaN(s)) idiomQuizScopeConfig.customStart = s;
+    if (!isNaN(e)) idiomQuizScopeConfig.customEnd = e;
+    updateIdiomScopeModalUI();
+  };
+  inputStart?.addEventListener('input', handleScopeInputChange);
+  inputEnd?.addEventListener('input', handleScopeInputChange);
+
+  // 快捷區間按鈕
+  document.querySelectorAll('.btn-scope-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const start = parseInt(btn.getAttribute('data-start'), 10) || 1;
+      const end = parseInt(btn.getAttribute('data-end'), 10) || 200;
+      idiomQuizScopeConfig.customStart = start;
+      idiomQuizScopeConfig.customEnd = end;
+      if (inputStart) inputStart.value = start;
+      if (inputEnd) inputEnd.value = end;
+      updateIdiomScopeModalUI();
+    });
+  });
+
+  // 題數按鈕
+  document.querySelectorAll('.btn-scope-count').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const count = btn.getAttribute('data-count') || '10';
+      idiomQuizScopeConfig.questionCountType = count;
+      updateIdiomScopeModalUI();
+    });
+  });
+
+  // 確認開始測驗
+  document.getElementById('btn-confirm-start-idiom-quiz')?.addEventListener('click', () => {
+    startIdiomQuiz();
+  });
+
+  // 測驗進行控制
+  document.getElementById('btn-idiom-quiz-exit')?.addEventListener('click', () => exitIdiomQuiz(true));
+  document.getElementById('btn-idiom-quiz-next')?.addEventListener('click', advanceIdiomQuiz);
+  document.getElementById('btn-idiom-quiz-restart')?.addEventListener('click', () => startIdiomQuiz());
+  document.getElementById('btn-idiom-quiz-change-scope')?.addEventListener('click', openIdiomScopeModal);
+  document.getElementById('btn-idiom-quiz-back-cards')?.addEventListener('click', () => exitIdiomQuiz(false));
+
+  // 鍵盤快捷鍵切換字卡
   window.addEventListener('keydown', (e) => {
+    const isModalOpen = !document.getElementById('modal-idiom-quiz-scope')?.classList.contains('hidden');
+    if (isModalOpen) {
+      if (e.key === 'Escape') closeIdiomScopeModal();
+      return;
+    }
     const isIdiomsTab = !document.getElementById('section-idioms')?.classList.contains('hidden');
     const isQuizActive = !document.getElementById('view-idiom-quiz')?.classList.contains('hidden');
     if (isIdiomsTab && !isQuizActive && !document.activeElement?.matches('input, textarea')) {

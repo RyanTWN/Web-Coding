@@ -245,7 +245,7 @@
     <!-- ============================================== -->
     <div id="section-idioms" class="hidden space-y-6">
       <!-- 探索館頂部工具列 -->
-      <div class="bg-white/95 backdrop-blur rounded-lg p-4 sm:p-5 shadow-lg border border-white space-y-3">
+      <div id="idioms-toolbar" class="bg-white/95 backdrop-blur rounded-lg p-4 sm:p-5 shadow-lg border border-white space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2 flex-1 min-w-[240px]">
             <div class="relative w-full max-w-md">
@@ -464,15 +464,27 @@
       <section id="view-idiom-quiz" class="hidden max-w-3xl mx-auto">
         <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
           <div class="flex items-center justify-between gap-3 mb-3">
-            <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black"><i class="fa-solid fa-scroll mr-1"></i>成語200隨堂測驗</span>
-            <span id="idiom-quiz-progress" class="text-sm font-black text-slate-500">第 1 / 10 題</span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
+                <i class="fa-solid fa-scroll mr-1"></i>成語隨堂測驗
+              </span>
+              <span id="idiom-quiz-scope-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                範圍：全部 (200則)
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="idiom-quiz-progress" class="text-sm font-black text-slate-500">第 1 / 10 題</span>
+              <button id="btn-idiom-quiz-exit" title="中途退出測驗" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
           <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mb-7">
             <div id="idiom-quiz-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-300"></div>
           </div>
-          <h2 id="idiom-quiz-prompt" class="text-xl sm:text-2xl font-black leading-relaxed min-h-[5rem] text-slate-800"></h2>
+          <h2 id="idiom-quiz-prompt" class="text-xl sm:text-2xl font-black leading-relaxed min-h-[5rem] text-slate-800 whitespace-pre-line"></h2>
           <div id="idiom-quiz-options" class="grid gap-3 mt-6"></div>
-          <div id="idiom-quiz-feedback" class="hidden mt-5 rounded-lg p-4 text-sm leading-relaxed"></div>
+          <div id="idiom-quiz-feedback" class="hidden mt-5 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line"></div>
           <button id="btn-idiom-quiz-next" class="hidden w-full mt-5 py-3.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-black transition">
             下一題 <i class="fa-solid fa-arrow-right ml-1"></i>
           </button>
@@ -486,6 +498,11 @@
             <i class="fa-solid fa-medal"></i>
           </div>
           <h2 class="text-2xl font-black mt-5 text-slate-800">成語隨堂測驗完成！</h2>
+          <div class="mt-2">
+            <span id="idiom-quiz-result-scope-badge" class="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+              測驗範圍：全部 (200則)
+            </span>
+          </div>
           <div class="grid grid-cols-2 gap-3 mt-5">
             <div class="rounded-lg bg-emerald-50 p-4 border border-emerald-100">
               <small class="block text-emerald-700 font-bold">答對題數</small>
@@ -496,16 +513,117 @@
               <strong id="idiom-quiz-result-score" class="text-2xl text-teal-600"></strong>
             </div>
           </div>
-          <div class="mt-6 grid grid-cols-2 gap-3">
-            <button id="btn-idiom-quiz-restart" class="py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black transition shadow-md">
-              再測一次
+          <div class="mt-6 flex flex-col sm:flex-row gap-3">
+            <button id="btn-idiom-quiz-restart" class="flex-1 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black transition shadow-md flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-rotate-right"></i> 再測一次
             </button>
-            <button id="btn-idiom-quiz-back-cards" class="py-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black transition">
-              返回翻卡學習
+            <button id="btn-idiom-quiz-change-scope" class="flex-1 py-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black transition border border-indigo-200 flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-sliders"></i> 更換範圍
+            </button>
+            <button id="btn-idiom-quiz-back-cards" class="flex-1 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-arrow-left"></i> 返回字卡
             </button>
           </div>
         </div>
       </section>
+    </div>
+
+    <!-- 成語隨堂測驗範圍選擇 Modal -->
+    <div id="modal-idiom-quiz-scope" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-white space-y-5 animate-in fade-in zoom-in-95 duration-150">
+        <!-- 標題與關閉按鈕 -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-800">成語隨堂測驗範圍設定</h3>
+              <p class="text-xs text-slate-400 font-medium">請選擇測驗成語題號範圍與出題題數</p>
+            </div>
+          </div>
+          <button id="btn-close-idiom-scope-modal" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition" title="關閉">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- 範圍選擇：全部 vs 自訂 -->
+        <div class="space-y-2">
+          <label class="block text-xs font-black text-slate-600 tracking-wide">
+            <i class="fa-solid fa-layer-group text-emerald-600 mr-1"></i>測驗成語範圍
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="scope-opt-all" class="p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 text-left transition flex flex-col justify-between cursor-pointer">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-black text-sm text-emerald-900">全部</span>
+                <i class="fa-solid fa-circle-check text-emerald-600 scope-check-icon"></i>
+              </div>
+              <span class="text-xs font-bold text-emerald-700/80">全套 200 則成語</span>
+            </button>
+            <button type="button" id="scope-opt-custom" class="p-3.5 rounded-xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition flex flex-col justify-between cursor-pointer">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-black text-sm text-slate-800">自訂</span>
+                <i class="fa-regular fa-circle text-slate-300 scope-check-icon"></i>
+              </div>
+              <span class="text-xs font-bold text-slate-500">指定題號區間</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 自訂題號區間輸入區 (僅在選擇自訂時顯示) -->
+        <div id="scope-custom-container" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">自訂成語題號區間 (1 ~ 200)</span>
+            <span id="scope-custom-count-badge" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black">
+              共 50 則成語
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 relative">
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">起始題號</label>
+              <input type="number" id="input-scope-start" min="1" max="200" value="1" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm font-black text-slate-800 focus:outline-none focus:border-emerald-500 text-center">
+            </div>
+            <span class="text-slate-400 font-black pt-5">至</span>
+            <div class="flex-1 relative">
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">結束題號</label>
+              <input type="number" id="input-scope-end" min="1" max="200" value="50" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm font-black text-slate-800 focus:outline-none focus:border-emerald-500 text-center">
+            </div>
+          </div>
+          <!-- 快捷區間按鈕 -->
+          <div class="pt-1">
+            <span class="block text-[10px] font-bold text-slate-400 mb-1.5">常用快捷區間：</span>
+            <div class="grid grid-cols-4 gap-1.5 text-xs font-bold">
+              <button type="button" class="btn-scope-preset py-1.5 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-700 text-slate-600 transition" data-start="1" data-end="50">1-50</button>
+              <button type="button" class="btn-scope-preset py-1.5 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-700 text-slate-600 transition" data-start="51" data-end="100">51-100</button>
+              <button type="button" class="btn-scope-preset py-1.5 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-700 text-slate-600 transition" data-start="101" data-end="150">101-150</button>
+              <button type="button" class="btn-scope-preset py-1.5 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-700 text-slate-600 transition" data-start="151" data-end="200">151-200</button>
+            </div>
+          </div>
+          <p id="scope-error-msg" class="hidden text-xs text-rose-500 font-bold"></p>
+        </div>
+
+        <!-- 出題題數選擇 -->
+        <div class="space-y-2">
+          <label class="block text-xs font-black text-slate-600 tracking-wide">
+            <i class="fa-solid fa-list-check text-emerald-600 mr-1"></i>出題題數
+          </label>
+          <div class="grid grid-cols-3 gap-2" id="scope-count-selector">
+            <button type="button" data-count="10" class="btn-scope-count py-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 font-black text-xs transition">10 題</button>
+            <button type="button" data-count="20" class="btn-scope-count py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-black text-xs hover:border-slate-300 transition">20 題</button>
+            <button type="button" data-count="all" class="btn-scope-count py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-black text-xs hover:border-slate-300 transition">範圍全測</button>
+          </div>
+        </div>
+
+        <!-- 底部按鈕 -->
+        <div class="flex items-center gap-3 pt-3 border-t border-slate-100">
+          <button type="button" id="btn-cancel-idiom-scope" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition">
+            取消
+          </button>
+          <button type="button" id="btn-confirm-start-idiom-quiz" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-md transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-play"></i> 開始測驗
+          </button>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -513,6 +631,6 @@
   <script src="assets/js/components.js"></script>
   <script src="assets/js/ai-tutor.js"></script>
   <script src="assets/js/data/idioms200.js"></script>
-  <script src="assets/js/chinese.js?v=20261019-star-btn-relocate"></script>
+  <script src="assets/js/chinese.js?v=20261024-quiz-scope-modal"></script>
 </body>
 </html>
