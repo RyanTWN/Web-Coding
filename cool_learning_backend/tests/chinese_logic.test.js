@@ -176,6 +176,38 @@ customQuiz.forEach((q, idx) => {
 const cappedQuiz = buildIdiomQuizQuestions(50, customSubPool);
 assert.strictEqual(cappedQuiz.length, 15, '自訂範圍請求超過題數時應上限為池大小 15 題');
 
+// 嚴格驗證：成語測驗選項內容絕不可針對題目字面做字詞解釋，更不能出現題目成語名稱或相關字元
+const fullCoverageQuiz = buildIdiomQuizQuestions(200);
+fullCoverageQuiz.forEach((q, idx) => {
+  if (q.type === 'idiom_to_meaning') {
+    const match = q.prompt.match(/成語「(.*?)」/);
+    assert.ok(match, `成語題幹應明確標註成語名稱：${q.prompt}`);
+    const idiomName = match[1];
+    const nameChars = idiomName.split('');
+
+    // 1. 選項內容絕不可出現題目成語名稱
+    q.options.forEach((opt, optIdx) => {
+      assert.ok(!opt.includes(idiomName), `第 ${idx + 1} 題選項 ${optIdx + 1} 絕不可直接出現成語名稱【${idiomName}】`);
+      assert.ok(!opt.includes('「') && !opt.includes('」'), `第 ${idx + 1} 題選項不應包含引號引用的成語名稱`);
+    });
+
+    // 2. 正確答案選項內容絕不能出現與題目成語相同的字元（零字元洩漏）
+    const correctOpt = q.correct;
+    const overlapChars = nameChars.filter(c => correctOpt.includes(c));
+    assert.strictEqual(overlapChars.length, 0, `第 ${idx + 1} 題成語【${idiomName}】答案選項不應洩漏題目字元：${overlapChars.join(',')}`);
+
+    // 3. 選項絕不可針對題目字面做拆解解釋（如「某，某也」或「指在某某門前」）
+    assert.ok(!correctOpt.includes('指在'), `第 ${idx + 1} 題選項不可做字面直譯拆解解釋`);
+    assert.ok(!/[，：].*[；;]/.test(correctOpt), `第 ${idx + 1} 題選項不可出現字面拆解格式`);
+  } else if (q.type === 'meaning_to_idiom') {
+    // 釋義選成語：題幹中絕不可直接出現正解成語名稱
+    assert.ok(!q.prompt.includes(q.correct), `釋義選成語題幹絕不可提前洩漏正解成語【${q.correct}】`);
+  } else if (q.type === 'cloze_sentence') {
+    // 克漏字題型：題幹中正解成語必須已被挖空為（　　）
+    assert.ok(!q.prompt.includes(q.correct), `克漏字題幹中正解成語【${q.correct}】應被替換為括號`);
+  }
+});
+
 // 驗證學習日曆彙總計算
 const totals = getCalendarTotals([
   { completedAttempts: 1, totalQuestions: 20, totalScore: 85 },

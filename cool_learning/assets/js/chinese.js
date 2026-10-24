@@ -427,6 +427,43 @@ function buildDailyQuestions(publisher, chapter, attemptNo = 1) {
   return questions;
 }
 
+// 清理成語測驗選項與題幹釋義（去除字詞拆解、成語名稱引用與題目字元洩漏）
+function sanitizeQuizMeaning(rawMeaning, idiomName = '') {
+  if (!rawMeaning) return '';
+  let cleaned = String(rawMeaning).trim();
+
+  // 1. 去除成語名稱及其衍生引號句（如「守株待兔」指...、後亦用「...」等）
+  if (idiomName) {
+    cleaned = cleaned.replaceAll(idiomName, '');
+    cleaned = cleaned.replace(new RegExp(`[「『]${idiomName}[」』]`, 'g'), '');
+  }
+  cleaned = cleaned.replace(/後(?:亦)?用[「『].*?[」』](?:比喻|形容|指)?/g, '');
+  cleaned = cleaned.replace(/[「『].*?[」』](?:義近|義反|同義|意思相當|相似)/g, '');
+  cleaned = cleaned.replace(/與[「『].*?[」』].*?(?:義近|義反|意思相當|相似)[。，、]?/g, '');
+
+  // 2. 去除括號內的字詞補充說明（如（秋毫：...）或注釋）
+  cleaned = cleaned.replace(/（[^）]*）/g, '');
+  cleaned = cleaned.replace(/\([^)]*\)/g, '');
+
+  // 3. 去除字詞拆解前綴（如「微，隱微。杜，堵塞...」或「班，魯班...；弄，耍弄。」）
+  if (cleaned.includes('；') || cleaned.includes('。')) {
+    const segments = cleaned.split(/[；。]/).map(s => s.trim()).filter(Boolean);
+    const pureSegments = segments.filter(seg => !/^[\u4e00-\u9fa5]{1,2}[，：、]/.test(seg));
+    if (pureSegments.length > 0) {
+      cleaned = pureSegments.join('，');
+    }
+  }
+
+  // 4. 清理開頭多餘贅字或標點
+  cleaned = cleaned.replace(/^[，、；：。]+/g, '').trim();
+  cleaned = cleaned.replace(/[，、；：]+$/g, '').trim();
+  if (!cleaned.endsWith('。') && cleaned.length > 0) {
+    cleaned += '。';
+  }
+
+  return cleaned;
+}
+
 // 動態從成語 200 抽取產生隨堂測驗題目 (10 或 20 題，支援指定範圍 pool)
 function buildIdiomQuizQuestions(count = 10, sourcePool = null) {
   const pool = (Array.isArray(sourcePool) && sourcePool.length > 0) ? sourcePool : (idiomList || []);
@@ -441,9 +478,9 @@ function buildIdiomQuizQuestions(count = 10, sourcePool = null) {
 
   selected.forEach((target, idx) => {
     // 隨機題型：
-    // Type 1: 釋義選成語
-    // Type 2: 成語選釋義
-    // Type 3: 克漏字填空
+    // Type 0: 釋義選成語
+    // Type 1: 成語選釋義（嚴格規範：選項內容不對題目做字面解釋，絕不洩漏題目字元）
+    // Type 2: 克漏字填空
     const qType = idx % 3;
     const distractors = distractorBase.filter(item => item.id !== target.id)
       .sort(() => 0.5 - Math.random())
@@ -451,30 +488,33 @@ function buildIdiomQuizQuestions(count = 10, sourcePool = null) {
 
     if (qType === 0) {
       // 釋義選成語
+      const cleanPromptMeaning = sanitizeQuizMeaning(target.meaning, target.name);
       const options = [target.name, ...distractors.map(d => d.name)].sort(() => 0.5 - Math.random());
       quiz.push({
         id: `idiom_q_${idx + 1}`,
         type: 'meaning_to_idiom',
-        prompt: `下列成語釋義：「${target.meaning}」最貼切的成語是哪一個？`,
+        prompt: `下列成語何者最符合「${cleanPromptMeaning}」的含義？`,
         correct: target.name,
         options,
         explanation: `【${target.name}】（${target.bopomofo}）：${target.meaning}`
       });
     } else if (qType === 1) {
       // 成語選釋義
-      const options = [target.meaning, ...distractors.map(d => d.meaning)].sort(() => 0.5 - Math.random());
+      const targetClean = sanitizeQuizMeaning(target.meaning, target.name);
+      const distractorCleans = distractors.map(d => sanitizeQuizMeaning(d.meaning, d.name));
+      const options = [targetClean, ...distractorCleans].sort(() => 0.5 - Math.random());
       quiz.push({
         id: `idiom_q_${idx + 1}`,
         type: 'idiom_to_meaning',
-        prompt: `成語「${target.name}」（${target.bopomofo}）的意思是：`,
-        correct: target.meaning,
+        prompt: `成語「${target.name}」（${target.bopomofo}）所表達的核心意思最接近下列何者？`,
+        correct: targetClean,
         options,
         explanation: `【${target.name}】：${target.meaning}`
       });
     } else {
       // 克漏字情境填空
       let sentence = target.example || `我們在生活中要深刻體會「${target.name}」的意涵。`;
-      sentence = sentence.replace(target.name, '（　　）');
+      sentence = sentence.replaceAll(target.name, '（　　）');
       const options = [target.name, ...distractors.map(d => d.name)].sort(() => 0.5 - Math.random());
       quiz.push({
         id: `idiom_q_${idx + 1}`,
