@@ -3,3 +3,7 @@ generate_image.py
 .env
 node_modules/
 cool_learning/assets/css/tailwind.css
+cool_learning/preview_linear*
+cool_learning/preview_p1*
+cool_learning/preview_*.jpg
+*.png

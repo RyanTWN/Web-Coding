@@ -404,6 +404,11 @@ function showView(viewId) {
         const seatEl = document.getElementById('header-user-seat');
         if(nameEl) nameEl.textContent = currentUser.name;
         if(seatEl) seatEl.textContent = currentUser.isAdmin ? '系統管理員' : `座號: ${currentUser.seatNo}`;
+        const subName = document.getElementById('subject-user-name');
+        if (subName) subName.textContent = currentUser.name;
+        const classicSubName = document.getElementById('subject-user-name-classic');
+        if (classicSubName) classicSubName.textContent = currentUser.name;
+        document.querySelectorAll('.user-name-display').forEach(el => el.textContent = currentUser.name);
       } else {
         badge.classList.add('hidden');
         badge.classList.remove('flex');
@@ -853,13 +858,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 本機開發快速進入（免驗證直接進大廳）
-  const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const devQuickBox = document.getElementById('dev-quick-box');
   if (devQuickBox) {
-    devQuickBox.style.display = isLocalEnv ? 'block' : 'none';
+    devQuickBox.style.display = 'block';
+  }
+  const devQuickBanner = document.getElementById('dev-quick-banner');
+  if (devQuickBanner) {
+    devQuickBanner.style.display = 'flex';
   }
   document.getElementById('btn-dev-quick-login')?.addEventListener('click', () => {
-    currentUser = { name: '本機測試生', seatNo: '60101', token: 'mock-dev-token', isDev: true };
+    sessionStorage.removeItem('manual_logout');
+    currentUser = { name: '陳小明', seatNo: '60101', token: 'mock-dev-token', isDev: true };
     sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
     const hName = document.getElementById('header-user-name');
     const hSeat = document.getElementById('header-user-seat');
@@ -867,13 +876,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hSeat) hSeat.textContent = `座號: ${currentUser.seatNo}`;
     const subName = document.getElementById('subject-user-name');
     if (subName) subName.textContent = currentUser.name;
+    const classicSubName = document.getElementById('subject-user-name-classic');
+    if (classicSubName) classicSubName.textContent = currentUser.name;
+    document.querySelectorAll('.user-name-display').forEach(el => el.textContent = currentUser.name);
     document.getElementById('user-profile-badge')?.classList.remove('hidden');
     showView('view-subjects');
-    showToast('已以本機測試學生身分進入大廳', 'fa-flask');
+    showToast('✨ 已以「陳小明」身分免密碼進入商業化學習大廳！', 'fa-wand-magic-sparkles');
   });
 
   // 登出與首頁
   document.getElementById('btn-logout')?.addEventListener('click', () => {
+    sessionStorage.setItem('manual_logout', '1');
     currentUser = null;
     sessionStorage.removeItem('g6_portal_user');
     localStorage.removeItem('g6_portal_user');
@@ -1167,6 +1180,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // 初始化畫面狀態：先判斷是否在首頁 (是否有登入區塊)
   const loginView = document.getElementById('view-login');
   if (loginView) {
+    // 本機 file:// 預覽或 ?autologin=1 / ?preview=1 時，若尚未登入自動以「陳小明」快速進入展示大廳
+    const urlParams = new URLSearchParams(window.location.search);
+    const isLocalFilePreview = (window.location.protocol === 'file:' || urlParams.get('autologin') === '1' || urlParams.get('preview') === '1');
+    if (isLocalFilePreview && !currentUser && !sessionStorage.getItem('manual_logout')) {
+      currentUser = { name: '陳小明', seatNo: '60101', token: 'mock-dev-token', isDev: true };
+      sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+    }
+
     if (currentUser) {
       if (currentUser.isAdmin) {
         window.location.href = 'admin.html';

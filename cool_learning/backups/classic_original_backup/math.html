@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/logo-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo-192.png">
+  <meta name="theme-color" content="#0284c7">
+  <title>數學天地｜酷學習</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/tailwind.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    body { background: radial-gradient(circle at top left, #f0f9ff, #f8fafc 45%, #eff6ff); }
+    .answer-option[disabled] { cursor: default; }
+    .answer-option.is-correct { border-color: #0284c7; background: #f0f9ff; color: #0369a1; }
+    .answer-option.is-wrong { border-color: #f43f5e; background: #fff1f2; color: #be123c; }
+    .calendar-cell { aspect-ratio: 1; }
+    .shake { animation: shakeError 0.4s ease-in-out; }
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen p-3 sm:p-6 flex flex-col justify-between">
+  <!-- 頂端浮動通知 Toast -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 -translate-y-16 opacity-0 pointer-events-none z-50 transition-all duration-300">
+    <div id="toast-bg" class="bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 font-bold text-sm">
+      <i id="toast-icon" class="fa-solid fa-circle-info"></i><span id="toast-text"></span>
+    </div>
+  </div>
+
+  <!-- 全域頂端導覽列 -->
+  <header id="global-header" class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-4 sm:px-5 py-3 rounded-lg border border-white/70 shadow-sm mb-5">
+    <!-- 1. 左上角：科目與 Logo (點擊回到首頁大廳) -->
+    <div id="btn-home" onclick="goToIndex()" class="flex items-center gap-3 cursor-pointer group select-none">
+      <div class="w-10 h-10 rounded-md bg-gradient-to-tr from-sky-400 to-blue-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md group-hover:scale-105 transition-transform">
+        <i class="fa-solid fa-calculator"></i>
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight group-hover:text-sky-700 transition-colors">數學天地</h1>
+        <p class="text-[11px] text-slate-500 font-medium">國小六年級・每日動態演練</p>
+      </div>
+    </div>
+
+    <!-- 2. 右上角：由右至左分別為 登出、姓名座號、科目大廳 -->
+    <div id="user-profile-badge" class="flex items-center gap-2 sm:gap-3">
+      <!-- 科目大廳按鈕 (手機版隱藏以節省版面) -->
+      <button type="button" id="btn-subject-lobby" onclick="goToIndex()" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-house text-slate-500"></i>
+        <span>科目大廳</span>
+      </button>
+
+      <!-- 姓名座號 (姓名在上、座號在下，可點擊進入孩子自我設定頁) -->
+      <a href="profile.html" id="btn-child-profile" title="點擊進入孩子自我設定頁" class="text-right cursor-pointer group px-2 py-1 rounded-lg hover:bg-slate-100/70 transition-all select-none block">
+        <span id="header-name" class="block font-bold text-xs sm:text-sm text-slate-800 leading-tight group-hover:text-sky-700 transition-colors">學生</span>
+        <span id="header-seat" class="block text-[10px] sm:text-[11px] text-sky-700 font-semibold">座號: -</span>
+      </a>
+
+      <!-- 登出按鈕 (箭頭向右符號) -->
+      <button type="button" id="btn-logout" onclick="logoutStudent()" title="登出系統" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center text-xs sm:text-sm transition-all active:scale-95 shadow-sm cursor-pointer">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="w-full max-w-5xl mx-auto flex-1">
+    <!-- 視圖 1: 設定與首頁大廳 (含月曆與錯題入口) -->
+    <section id="view-setup" class="grid lg:grid-cols-[1.35fr_.65fr] gap-5">
+      <div class="bg-white/95 rounded-lg p-5 sm:p-7 shadow-xl border border-white">
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <button type="button" onclick="goToIndex()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-xs shadow-sm active:scale-95 transition-all mb-2 cursor-pointer">
+              <i class="fa-solid fa-house"></i>
+              <span>科目大廳</span>
+            </button>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1 text-slate-800">選擇今天的練習單元</h1>
+            <p class="text-sm text-slate-500 mt-2">每天 10 題；支援步驟詳解、兩次機會防挫折與單日多回合精進。</p>
+          </div>
+          <span class="hidden sm:flex w-16 h-16 rounded-md bg-sky-100 text-sky-600 items-center justify-center text-3xl shadow-inner"><i class="fa-solid fa-shapes"></i></span>
+        </div>
+
+        <h2 class="font-black text-sm mb-3 text-slate-700"><i class="fa-solid fa-building text-sky-500 mr-1.5"></i>1. 選出版社</h2>
+        <div id="publisher-list" class="grid grid-cols-3 gap-3 mb-6">
+          <button class="pub-btn py-3.5 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black transition-all" data-pub="康軒">康軒</button>
+          <button class="pub-btn py-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all" data-pub="翰林">翰林</button>
+          <button class="pub-btn py-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all" data-pub="南一">南一</button>
+        </div>
+
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-list-ol text-sky-500 mr-1.5"></i>2. 選練習單元</h2>
+          <span class="text-[11px] text-slate-400 font-medium">六上、六下完整單元</span>
+        </div>
+        <select id="unit-select" class="w-full p-4 rounded-lg border-2 border-slate-200 bg-slate-50 font-bold text-slate-700 focus:outline-none focus:border-sky-500 appearance-none shadow-sm transition-colors"></select>
+        
+        <div class="mt-5">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="font-black text-sm text-slate-700"><i class="fa-solid fa-sliders text-sky-500 mr-1.5"></i>3. 選練習模式</h2>
+            <span class="text-[11px] text-slate-400 font-medium">每日綜合或獨立專項</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" data-mode="mixed" class="mode-btn py-3 px-2 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-layer-group text-sm"></i>
+              <span>每日綜合</span>
+              <small class="text-[10px] font-normal opacity-80">5基 + 3挑 + 2素</small>
+            </button>
+            <button type="button" data-mode="easy" class="mode-btn py-3 px-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1">
+              <i class="fa-solid fa-leaf text-sm text-emerald-600"></i>
+              <span>基礎打底</span>
+              <small class="text-[10px] font-normal opacity-80">10 題簡單基礎</small>
+            </button>
+            <button type="button" data-mode="challenge" class="mode-btn py-3 px-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1">
+              <i class="fa-solid fa-fire text-sm text-amber-500"></i>
+              <span>進階挑戰</span>
+              <small class="text-[10px] font-normal opacity-80">10 題挑戰進階</small>
+            </button>
+            <button type="button" data-mode="competency" class="mode-btn py-3 px-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1">
+              <i class="fa-solid fa-compass text-sm text-purple-600"></i>
+              <span>素養特訓</span>
+              <small class="text-[10px] font-normal opacity-80">10 題情境素養</small>
+            </button>
+          </div>
+        </div>
+
+        <div id="unit-summary" class="mt-4 bg-sky-50/80 border border-sky-100 rounded-lg p-4 text-xs leading-relaxed text-sky-900 font-medium space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5 text-sky-800">
+            <i class="fa-solid fa-layer-group"></i> <span id="mode-summary-title">10 題分層演練機制（由淺入深）：</span>
+          </div>
+          <div id="mode-summary-pills" class="flex flex-wrap items-center gap-2 pt-0.5">
+            <span class="px-2.5 py-1 rounded-lg bg-sky-100/90 text-sky-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
+            <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 3 題</span>
+            <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 2 題</span>
+          </div>
+          <p id="mode-summary-desc" class="text-slate-500 pt-1 text-[11px]">算錯第 1 次提供解題提示，第 2 次展開步驟推導詳解，助你徹底掌握！</p>
+        </div>
+
+        <button id="btn-start" class="w-full mt-6 py-4 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-lg shadow-lg hover:shadow-sky-500/20 active:scale-[.99] transition-all flex items-center justify-center gap-2">
+          <span id="btn-start-text">開始今日 10 題</span> <i class="fa-solid fa-rocket"></i>
+        </button>
+      </div>
+
+      <!-- 側欄：學習打卡日曆與錯題本 -->
+      <aside class="space-y-5">
+        <!-- 學習日曆 -->
+        <div class="bg-white/95 rounded-lg p-5 shadow-lg border border-white">
+          <div class="flex justify-between items-center">
+            <h2 class="font-black text-slate-800"><i class="fa-solid fa-calendar-check text-sky-500 mr-2"></i>學習日曆</h2>
+            <span id="calendar-completion-count" class="text-xs font-bold text-sky-600">0 次・0 分</span>
+          </div>
+          <div class="flex justify-between items-center my-4">
+            <button id="cal-prev" class="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"><i class="fa-solid fa-chevron-left"></i></button>
+            <strong id="cal-title" class="text-sm font-bold text-slate-700"></strong>
+            <button id="cal-next" class="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          <p id="calendar-detail" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選藍色日期查看戰績</p>
+          <p id="today-status" class="mt-3 py-2.5 rounded-lg bg-sky-50 text-sky-800 text-center text-xs font-bold">完成今日 10 題即可點亮</p>
+        </div>
+
+        <!-- 錯題複習專區入口 -->
+        <button id="btn-review-entry" class="w-full bg-white/95 hover:bg-rose-50/50 rounded-lg p-5 shadow-lg border border-white flex items-center justify-between text-left transition-all group">
+          <span>
+            <strong class="block text-slate-800 group-hover:text-rose-600 transition-colors"><i class="fa-solid fa-rotate-left text-rose-500 mr-2"></i>錯題複習專區</strong>
+            <small class="text-slate-500 font-medium">答對後自動移出待複習清單</small>
+          </span>
+          <span id="wrong-count-badge" class="min-w-9 h-9 px-2 rounded-md bg-rose-100 text-rose-600 flex items-center justify-center font-black text-sm">0</span>
+        </button>
+      </aside>
+    </section>
+
+    <!-- 視圖 2: 測驗進行區 (兩次機會防挫折 + 詳解展開) -->
+    <section id="view-quiz" class="hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 backdrop-blur-md rounded-lg p-5 sm:p-8 shadow-xl border border-white">
+        <!-- 頂端單元與進度條 -->
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-2">
+            <span id="quiz-unit-badge" class="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black truncate">單元名稱</span>
+            <span id="quiz-mode-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">每日綜合</span>
+            <span id="quiz-attempt-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">第 1 回合</span>
+          </div>
+          <span id="quiz-progress-text" class="text-sm font-black text-slate-500">第 1 / 10 題</span>
+        </div>
+        
+        <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mb-6">
+          <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-blue-500 rounded-full transition-all duration-300" style="width: 10%;"></div>
+        </div>
+
+        <!-- 題目等級標籤、類型標籤與題幹 -->
+        <div class="flex items-center justify-between gap-2 mb-2.5">
+          <div class="flex items-center gap-2">
+            <span id="question-level-tag" class="text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-1">
+              <i class="fa-solid fa-leaf"></i> 簡單基礎
+            </span>
+            <span id="question-type-tag" class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">數值填空題</span>
+          </div>
+          <span id="question-attempt-hint" class="text-[11px] font-bold text-slate-400">（有 2 次作答機會）</span>
+        </div>
+        <div id="question-container" class="min-h-[110px] flex items-center justify-center bg-slate-50/80 rounded-lg border-2 border-slate-100 p-6 mb-6 transition-all duration-300">
+          <h2 id="question-text" class="text-xl sm:text-2xl font-black text-slate-800 text-center leading-relaxed">題目載入中...</h2>
+        </div>
+
+        <!-- 作答區：動態切換填空或選擇題 -->
+        <div id="quiz-interaction-area" class="space-y-4">
+          <!-- 填空題區域 -->
+          <div id="input-answer-container" class="space-y-3">
+            <input type="text" id="answer-input" inputmode="text" placeholder="請輸入答案..." autocomplete="off" class="w-full py-4 px-6 rounded-lg border-2 border-slate-200 bg-white focus:border-sky-500 focus:outline-none font-black text-2xl text-center shadow-inner text-slate-800 transition-all">
+            
+            <!-- 快速輔助按鈕工具列 -->
+            <div class="flex items-center justify-center gap-2 text-xs">
+              <button type="button" onclick="insertInputChar('/')" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">分數線 /</button>
+              <button type="button" onclick="insertInputChar('.')" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">小數點 .</button>
+              <button type="button" onclick="insertInputChar('-')" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">負號 -</button>
+              <button type="button" onclick="clearInput()" class="px-3 py-1.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold">清除 ⌫</button>
+            </div>
+            <p class="text-center text-[11px] text-slate-400">💡 提示：答案若為分數請寫最簡分數（如 1/2），小數與相等分數均可自動辨識。</p>
+            
+            <button id="btn-submit-answer" class="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-lg shadow-lg transition-all active:scale-[.99] text-lg">
+              送出答案
+            </button>
+          </div>
+
+          <!-- 四選一選擇題區域 -->
+          <div id="choice-answer-container" class="hidden grid gap-3">
+            <!-- 4 個選項按鈕將由 JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 提示卡片（第 1 次答錯時滑出） -->
+        <div id="hint-card" class="hidden mt-5 bg-amber-50 border-2 border-amber-200 rounded-lg p-5 text-amber-900 animate-fadeIn">
+          <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-md bg-amber-200 text-amber-700 flex items-center justify-center shrink-0 font-bold text-lg"><i class="fa-solid fa-lightbulb"></i></div>
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <strong class="block text-sm font-black text-amber-900">再想想看喔！還有 1 次機會</strong>
+                <button type="button" id="btn-call-ai-tutor" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                  <span>🦉 召喚 AI 貓頭鷹小助教</span>
+                </button>
+              </div>
+              <p id="hint-card-text" class="text-xs sm:text-sm mt-1 leading-relaxed font-medium"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步驟詳解卡片（第 2 次答錯時滑出，附前進下一題按鈕） -->
+        <div id="explanation-card" class="hidden mt-5 bg-rose-50 border-2 border-rose-200 rounded-lg p-5 text-rose-900 animate-fadeIn">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-9 h-9 rounded-md bg-rose-200 text-rose-700 flex items-center justify-center shrink-0 font-bold text-lg"><i class="fa-solid fa-book-open"></i></div>
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <strong class="block text-sm font-black text-rose-900">正確解答與步驟解析</strong>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] bg-rose-200/80 text-rose-800 px-2 py-0.5 rounded-md font-bold">已記錄至錯題本</span>
+                  <button type="button" id="btn-call-ai-tutor-exp" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all cursor-pointer">
+                    🦉 詢問小助教
+                  </button>
+                </div>
+              </div>
+              <div class="mt-2 bg-white/80 p-3 rounded-lg border border-rose-100">
+                <p class="text-xs font-bold text-slate-500 mb-1">標準答案：<strong id="exp-correct-answer" class="text-rose-600 text-sm font-black"></strong></p>
+                <div id="exp-card-text" class="text-xs sm:text-sm leading-relaxed text-slate-700 font-medium whitespace-pre-line"></div>
+              </div>
+            </div>
+          </div>
+          <button id="btn-next-question" class="w-full mt-3 py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-lg shadow-md transition-all active:scale-[.99] flex items-center justify-center gap-2">
+            進入下一題 <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 視圖 3: 結算畫面 (顯示真實成績、題數分佈與回合) -->
+    <section id="view-result" class="hidden max-w-lg mx-auto">
+      <div class="bg-white/95 rounded-lg p-7 sm:p-9 shadow-xl border border-white text-center">
+        <div class="w-24 h-24 mx-auto rounded-full bg-sky-100 text-sky-500 flex items-center justify-center text-5xl shadow-inner">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <h2 class="text-2xl font-black mt-5 text-slate-800">本次數學練習完成！</h2>
+        <p id="result-attempt-text" class="text-sky-600 text-sm font-black mt-1">今日第 1 回合</p>
+        
+        <!-- 得分與答題統計 -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-5">
+          <div class="rounded-lg bg-sky-50 p-3 sm:p-4 border border-sky-100">
+            <small class="block text-sky-700 text-xs font-bold">本次得分</small>
+            <strong id="result-score" class="text-2xl sm:text-3xl text-sky-600 font-black">80</strong>
+          </div>
+          <div class="rounded-lg bg-blue-50 p-3 sm:p-4 border border-blue-100">
+            <small class="block text-blue-700 text-xs font-bold">首次答對</small>
+            <strong id="result-first-correct" class="text-2xl sm:text-3xl text-blue-600 font-black">7 題</strong>
+          </div>
+          <div class="rounded-lg bg-rose-50 p-3 sm:p-4 border border-rose-100">
+            <small class="block text-rose-700 text-xs font-bold">列入錯題</small>
+            <strong id="result-wrong-count" class="text-2xl sm:text-3xl text-rose-600 font-black">1 題</strong>
+          </div>
+        </div>
+
+        <!-- 三等級向度掌握度 -->
+        <div class="mt-4 p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 text-left">
+          <small class="block text-[11px] font-black text-slate-500 mb-2 flex items-center justify-between">
+            <span><i class="fa-solid fa-chart-pie mr-1 text-sky-500"></i>能力向度分層掌握度</span>
+            <span id="result-tier-summary" class="text-sky-700 font-bold"></span>
+          </small>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs font-black">
+            <div class="p-2 rounded-lg bg-emerald-100/70 text-emerald-800 border border-emerald-200">
+              <span class="block text-[10px] font-bold text-emerald-700">簡單基礎</span>
+              <strong id="result-easy-ratio" class="text-base font-black">0/5</strong>
+            </div>
+            <div class="p-2 rounded-lg bg-amber-100/70 text-amber-800 border border-amber-200">
+              <span class="block text-[10px] font-bold text-amber-700">挑戰進階</span>
+              <strong id="result-chal-ratio" class="text-base font-black">0/3</strong>
+            </div>
+            <div class="p-2 rounded-lg bg-purple-100/70 text-purple-800 border border-purple-200">
+              <span class="block text-[10px] font-bold text-purple-700">情境素養</span>
+              <strong id="result-comp-ratio" class="text-base font-black">0/2</strong>
+            </div>
+          </div>
+        </div>
+
+        <p id="result-summary-text" class="my-4 rounded-lg bg-slate-50 py-3 text-xs font-bold text-slate-600">歷程已同步至雲端伺服器</p>
+        
+        <div class="space-y-3">
+          <button id="btn-result-review" class="hidden w-full py-3.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-black transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-rotate-left"></i> 複習本次的錯題
+          </button>
+          <div class="grid grid-cols-2 gap-3">
+            <button id="btn-result-retry" class="py-3.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-black shadow-md transition-all">
+              再測 10 題
+            </button>
+            <button onclick="goToIndex()" class="py-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all">
+              回科目大廳
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 視圖 4: 錯題複習專區 (Review Mode) -->
+    <section id="view-review" class="hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
+        <div class="flex justify-between items-start gap-4 mb-6">
+          <div>
+            <p class="text-xs font-black text-rose-500 tracking-wider">REVIEW CENTER</p>
+            <h2 class="text-2xl font-black text-slate-800">數學錯題複習</h2>
+            <p id="review-meta" class="text-xs text-slate-500 mt-1">答對後將自動標記為熟練掌握並移出清單。</p>
+          </div>
+          <button id="btn-review-back" class="px-3.5 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-600 transition-colors">
+            <i class="fa-solid fa-xmark mr-1"></i> 返回
+          </button>
+        </div>
+
+        <div id="review-empty" class="hidden text-center py-14">
+          <i class="fa-solid fa-circle-check text-5xl text-sky-500"></i>
+          <p class="font-black text-slate-700 text-lg mt-4">太棒了！目前沒有待複習的數學錯題</p>
+          <button onclick="showView('view-setup')" class="mt-5 px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-lg text-sm">回練習範圍</button>
+        </div>
+
+        <div id="review-content" class="space-y-5">
+          <div class="flex justify-between items-center">
+            <span id="review-badge" class="text-xs font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-lg">單元名稱</span>
+            <span id="review-progress-text" class="text-xs font-bold text-slate-400">剩餘 0 題</span>
+          </div>
+          <div class="min-h-[90px] flex items-center justify-center bg-slate-50 p-5 rounded-lg border-2 border-slate-100">
+            <h3 id="review-question" class="text-lg sm:text-xl font-black text-slate-800 text-center leading-relaxed"></h3>
+          </div>
+
+          <!-- 複習作答區 -->
+          <div id="review-answer-area">
+            <div id="review-input-container" class="space-y-3">
+              <input type="text" id="review-input" placeholder="請輸入答案重新挑戰..." class="w-full py-3.5 px-5 rounded-lg border-2 border-slate-200 font-black text-xl text-center focus:border-rose-500 focus:outline-none">
+              <button id="btn-submit-review" class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-lg shadow-md transition-all">
+                驗證答案
+              </button>
+            </div>
+            <div id="review-choice-container" class="hidden grid gap-3"></div>
+          </div>
+
+          <div id="review-feedback" class="hidden rounded-lg p-4 text-sm font-medium"></div>
+          <button id="btn-next-review" class="hidden w-full py-3.5 bg-slate-800 text-white font-black rounded-lg">
+            下一題 <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="w-full max-w-5xl mx-auto text-center py-4 text-xs text-slate-400 font-medium mt-6">
+    酷學習 (Cool Learning) &copy; 2026 ・ 國小六年級數學精進模組
+  </footer>
+
+  <!-- 依序載入全站設定檔與數學模組 -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/math.js"></script>
+  <script src="assets/js/ai-tutor.js"></script>
+  <script>
+    // ==========================================
+    // 數學天地 前端狀態機與 DOM 互動邏輯
+    // ==========================================
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentUser = JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null');
+    if (!currentUser && (urlParams.get('demo') === 'true' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      currentUser = { seatNo: 'DEMO01', name: '體驗同學', token: 'mock-token' };
+      sessionStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+      localStorage.setItem('g6_portal_user', JSON.stringify(currentUser));
+    }
+    let selectedPub = "康軒";
+    let dailyQuestions = [];
+    let currentIndex = 0;
+    let attemptNo = 1;
+    let attemptTrials = {}; // 記錄各題當前嘗試次數 { [qIndex]: 1 | 2 }
+    let questionScores = []; // 記錄各題得分 [10, 6, 0, ...]
+    let wrongQuestions = []; // 答錯題目的完整物件
+    let activeWrongList = []; // 來自 API 的待複習錯題庫
+    let currentReviewIndex = 0;
+    let mathHistory = [];
+    let calendarDate = new Date();
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+
+    // 模式選擇：'mixed' (每日綜合 5:3:2) | 'easy' (基礎打底 10 題) | 'challenge' (進階挑戰 10 題) | 'competency' (素養特訓 10 題)
+    let selectedMode = 'mixed';
+
+    const MODE_CONFIG = {
+      mixed: {
+        name: '每日綜合',
+        badgeClass: 'bg-sky-100 text-sky-800',
+        summaryTitle: '10 題分層演練機制（由淺入深）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-sky-100/90 text-sky-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 5 題</span>
+          <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 3 題</span>
+          <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 2 題</span>
+        `,
+        desc: '每日精選 10 題：螺旋循序漸進，全方位驗收觀念理解與實際應用能力！',
+        btnText: (att) => `開始今日 10 題 (第 ${att} 回合)`
+      },
+      easy: {
+        name: '基礎打底',
+        badgeClass: 'bg-emerald-100 text-emerald-800',
+        summaryTitle: '基礎打底特訓（核心運算固化）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-100/90 text-emerald-800 font-black text-[11px]"><i class="fa-solid fa-leaf mr-1"></i>簡單基礎 10 題</span>
+        `,
+        desc: '專注核心觀念與運算基本功，排除繁複情境干擾，穩固單元第一道防線！',
+        btnText: (att) => `開始基礎打底 10 題 (第 ${att} 回合)`
+      },
+      challenge: {
+        name: '進階挑戰',
+        badgeClass: 'bg-amber-100 text-amber-800',
+        summaryTitle: '進階挑戰特訓（深層幾何與逆向思維）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-amber-100/90 text-amber-800 font-black text-[11px]"><i class="fa-solid fa-fire mr-1"></i>挑戰進階 10 題</span>
+        `,
+        desc: '加強多步驟逆向思考、複合幾何與高階運算，鍛鍊靈活變通，突破思維盲點！',
+        btnText: (att) => `開始進階挑戰 10 題 (第 ${att} 回合)`
+      },
+      competency: {
+        name: '素養特訓',
+        badgeClass: 'bg-purple-100 text-purple-800',
+        summaryTitle: '情境素養特訓（長文情境與跨域實戰）：',
+        pills: `
+          <span class="px-2.5 py-1 rounded-lg bg-purple-100/90 text-purple-800 font-black text-[11px]"><i class="fa-solid fa-compass mr-1"></i>情境素養 10 題</span>
+        `,
+        desc: '結合生活應用與情境題幹，鍛鍊長篇文字閱讀理解、提煉關鍵條件與數學模型建立！',
+        btnText: (att) => `開始素養特訓 10 題 (第 ${att} 回合)`
+      }
+    };
+
+    function updateModeSelection(mode) {
+      selectedMode = mode;
+      const cfg = MODE_CONFIG[mode] || MODE_CONFIG.mixed;
+
+      // 更新按鈕樣式
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        const m = btn.getAttribute('data-mode');
+        if (m === mode) {
+          btn.className = "mode-btn py-3 px-2 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black text-xs transition-all flex flex-col items-center gap-1 shadow-sm ring-2 ring-sky-400/30";
+        } else {
+          btn.className = "mode-btn py-3 px-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-all flex flex-col items-center gap-1";
+        }
+      });
+
+      // 更新說明方塊
+      const titleEl = document.getElementById('mode-summary-title');
+      const pillsEl = document.getElementById('mode-summary-pills');
+      const descEl = document.getElementById('mode-summary-desc');
+      const startBtnText = document.getElementById('btn-start-text');
+
+      if (titleEl) titleEl.textContent = cfg.summaryTitle;
+      if (pillsEl) pillsEl.innerHTML = cfg.pills;
+      if (descEl) descEl.textContent = cfg.desc;
+      if (startBtnText) startBtnText.textContent = cfg.btnText(attemptNo);
+    }
+
+    function goToIndex() {
+      window.location.href = 'index.html';
+    }
+
+    function logoutStudent() {
+      sessionStorage.removeItem('g6_portal_user');
+      localStorage.removeItem('g6_portal_user');
+      window.location.href = 'index.html';
+    }
+
+    function mathApiFetch(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (currentUser?.token) headers.set('Authorization', `Bearer ${currentUser.token}`);
+      return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+    }
+
+    function showToast(text, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastBg = document.getElementById('toast-bg');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastText.textContent = text;
+      if (type === 'success') {
+        toastBg.className = 'bg-emerald-600 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 font-bold text-sm';
+        toastIcon.className = 'fa-solid fa-circle-check';
+      } else if (type === 'error') {
+        toastBg.className = 'bg-rose-600 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 font-bold text-sm';
+        toastIcon.className = 'fa-solid fa-circle-xmark';
+      } else {
+        toastBg.className = 'bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 font-bold text-sm';
+        toastIcon.className = 'fa-solid fa-circle-info';
+      }
+
+      toast.classList.remove('-translate-y-16', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('-translate-y-16', 'opacity-0', 'pointer-events-none');
+      }, 2200);
+    }
+
+    function insertInputChar(char) {
+      const input = document.getElementById('answer-input');
+      input.value += char;
+      input.focus();
+    }
+
+    function clearInput() {
+      const input = document.getElementById('answer-input');
+      input.value = '';
+      input.focus();
+    }
+
+    // 視圖切換器
+    function showView(viewId) {
+      ['view-setup', 'view-quiz', 'view-result', 'view-review'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    // 更新單元下拉選單
+    function updateUnitDropdown() {
+      const select = document.getElementById('unit-select');
+      select.innerHTML = '';
+      const units = MATH_CURRICULUM[selectedPub] || [];
+      units.forEach(unit => {
+        const opt = document.createElement('option');
+        opt.value = unit;
+        opt.textContent = unit;
+        select.appendChild(opt);
+      });
+    }
+
+    // 載入當日進度與雲端狀態
+    async function checkDailyState() {
+      try {
+        const response = await mathApiFetch(`/math-progress?seatNo=${encodeURIComponent(currentUser.seatNo)}&date=${todayStr}`);
+        const result = await response.json();
+        if (response.ok && result.success) {
+          if (Array.isArray(result.history)) {
+            mathHistory = result.history;
+            renderMathCalendar();
+          }
+          if (Array.isArray(result.wrongQuestions)) {
+            activeWrongList = result.wrongQuestions;
+            document.getElementById('wrong-count-badge').textContent = activeWrongList.length;
+          }
+          if (result.summary) {
+            attemptNo = result.summary.nextAttemptNo || 1;
+            const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+            document.getElementById('btn-start-text').textContent = cfg.btnText(attemptNo);
+            document.getElementById('quiz-attempt-badge').textContent = `第 ${attemptNo} 回合`;
+          }
+
+          // 如果今日有未完成題組
+          if (result.data && !result.data.completed && Array.isArray(result.data.questions) && result.data.questions.length > 0) {
+            selectedPub = result.data.publisher || selectedPub;
+            if (result.data.mode) {
+              updateModeSelection(result.data.mode);
+            }
+            dailyQuestions = result.data.questions;
+            currentIndex = result.data.currentIndex || 0;
+            attemptNo = result.data.attemptNo || attemptNo;
+            wrongQuestions = result.data.wrongQuestions || [];
+            
+            const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+            const modeBadge = document.getElementById('quiz-mode-badge');
+            if (modeBadge) {
+              modeBadge.textContent = cfg.name;
+              modeBadge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold ${cfg.badgeClass}`;
+            }
+
+            document.getElementById('quiz-unit-badge').textContent = result.data.unit;
+            document.getElementById('quiz-attempt-badge').textContent = `第 ${attemptNo} 回合`;
+            showView('view-quiz');
+            renderQuestion();
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('載入數學進度失敗:', err);
+      }
+      showView('view-setup');
+    }
+
+    // 記錄今日已出過的數學題目題幹，避免跨回合重複
+    let todaySeenMathQuestionTexts = [];
+
+    // 開始測驗
+    function startMathQuiz() {
+      const unit = document.getElementById('unit-select').value;
+      dailyQuestions = buildDailyMathQuestions(unit, 10, todaySeenMathQuestionTexts, selectedMode);
+      dailyQuestions.forEach(q => {
+        if (q && q.q) todaySeenMathQuestionTexts.push(q.q);
+      });
+      currentIndex = 0;
+      attemptTrials = {};
+      questionScores = [];
+      wrongQuestions = [];
+
+      const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+      const modeBadge = document.getElementById('quiz-mode-badge');
+      if (modeBadge) {
+        modeBadge.textContent = cfg.name;
+        modeBadge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold ${cfg.badgeClass}`;
+      }
+
+      document.getElementById('quiz-unit-badge').textContent = unit;
+      document.getElementById('quiz-attempt-badge').textContent = `第 ${attemptNo} 回合`;
+      showView('view-quiz');
+      renderQuestion();
+      saveProgress(false);
+    }
+
+    // 渲染當前題目
+    function renderQuestion() {
+      const q = dailyQuestions[currentIndex];
+      if (!q) return;
+
+      const level = q.level || 'easy';
+      const levelName = q.kind || (level === 'easy' ? '簡單基礎' : (level === 'challenge' ? '挑戰進階' : '情境素養'));
+
+      document.getElementById('quiz-progress-text').textContent = `第 ${currentIndex + 1} / 10 題 (${levelName})`;
+      document.getElementById('quiz-progress-bar').style.width = `${((currentIndex + 1) / 10) * 100}%`;
+      document.getElementById('question-text').textContent = q.q;
+
+      // 設置等級徽章與情境背景
+      const levelTag = document.getElementById('question-level-tag');
+      const qContainer = document.getElementById('question-container');
+
+      if (level === 'easy') {
+        levelTag.className = 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-1';
+        levelTag.innerHTML = '<i class="fa-solid fa-leaf"></i> 簡單基礎';
+        qContainer.className = 'min-h-[110px] flex items-center justify-center bg-slate-50/80 rounded-lg border-2 border-slate-100 p-6 mb-6 transition-all duration-300';
+      } else if (level === 'challenge') {
+        levelTag.className = 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-amber-50 text-amber-700 border-amber-300 flex items-center gap-1';
+        levelTag.innerHTML = '<i class="fa-solid fa-fire"></i> 挑戰進階';
+        qContainer.className = 'min-h-[110px] flex items-center justify-center bg-amber-50/30 rounded-lg border-2 border-amber-200/80 p-6 mb-6 transition-all duration-300';
+      } else if (level === 'competency') {
+        levelTag.className = 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-lg border bg-purple-50 text-purple-700 border-purple-300 flex items-center gap-1 shadow-sm';
+        levelTag.innerHTML = '<i class="fa-solid fa-compass"></i> 情境素養';
+        qContainer.className = 'min-h-[110px] flex items-center justify-center bg-purple-50/40 rounded-lg border-2 border-purple-200/80 p-6 mb-6 transition-all duration-300';
+      }
+
+      // 隱藏提示與詳解
+      document.getElementById('hint-card').classList.add('hidden');
+      document.getElementById('explanation-card').classList.add('hidden');
+
+      const inputContainer = document.getElementById('input-answer-container');
+      const choiceContainer = document.getElementById('choice-answer-container');
+
+      if (q.type === 'choice' && Array.isArray(q.options)) {
+        document.getElementById('question-type-tag').textContent = '觀念選擇題';
+        inputContainer.classList.add('hidden');
+        choiceContainer.classList.remove('hidden');
+        choiceContainer.innerHTML = '';
+
+        q.options.forEach((optText, optIdx) => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-option py-4 px-5 rounded-lg border-2 border-slate-200 bg-white hover:bg-slate-50 font-bold text-slate-800 text-left transition-all flex items-center justify-between group';
+          btn.innerHTML = `<span><strong class="text-sky-600 mr-2">${String.fromCharCode(65 + optIdx)}.</strong> ${optText}</span><i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-sky-500 transition-colors"></i>`;
+          btn.onclick = () => submitUserAnswer(optText);
+          choiceContainer.appendChild(btn);
+        });
+      } else {
+        document.getElementById('question-type-tag').textContent = '數值填空題';
+        choiceContainer.classList.add('hidden');
+        inputContainer.classList.remove('hidden');
+        const input = document.getElementById('answer-input');
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+        document.getElementById('btn-submit-answer').disabled = false;
+      }
+    }
+
+    let lastStudentAnswer = '';
+
+    // 送出作答判定（核心兩次機會制）
+    function submitUserAnswer(givenAnswer) {
+      const q = dailyQuestions[currentIndex];
+      if (!q) return;
+
+      const input = document.getElementById('answer-input');
+      const answer = (givenAnswer != null ? givenAnswer : input.value).trim();
+      if (!answer) {
+        showToast('請先輸入答案喔！', 'info');
+        input.focus();
+        return;
+      }
+      lastStudentAnswer = answer;
+
+      const trialCount = (attemptTrials[currentIndex] || 0) + 1;
+      attemptTrials[currentIndex] = trialCount;
+
+      const isCorrect = isAnswerCorrect(answer, q.a);
+
+      if (isCorrect) {
+        // 答對邏輯
+        const gainedScore = trialCount === 1 ? 10 : 6;
+        questionScores[currentIndex] = gainedScore;
+
+        if (trialCount === 1) {
+          showToast('✅ 答對了！太厲害了', 'success');
+        } else {
+          showToast('✅ 訂正成功！獲得 6 分', 'success');
+        }
+
+        setTimeout(() => advanceNextQuestion(), 700);
+      } else {
+        // 答錯邏輯
+        if (trialCount === 1) {
+          // 第 1 次答錯：提供 Hint
+          const inputEl = document.getElementById('answer-input');
+          inputEl.classList.add('shake', 'border-amber-400');
+          setTimeout(() => inputEl.classList.remove('shake', 'border-amber-400'), 400);
+
+          document.getElementById('hint-card-text').textContent = q.hint || '請再仔細算算看！';
+          document.getElementById('hint-card').classList.remove('hidden');
+          showToast('❌ 答案不太對，請看小提示再算一次！', 'error');
+          inputEl.focus();
+        } else {
+          // 第 2 次答錯：展示 Explanation 並納入錯題
+          questionScores[currentIndex] = 0;
+          wrongQuestions.push(q);
+
+          document.getElementById('hint-card').classList.add('hidden');
+          document.getElementById('exp-correct-answer').textContent = q.a;
+          document.getElementById('exp-card-text').textContent = q.explanation || '請參考解題觀念。';
+          document.getElementById('explanation-card').classList.remove('hidden');
+
+          // 鎖定輸入框避免重複提交
+          input.disabled = true;
+          document.getElementById('btn-submit-answer').disabled = true;
+          showToast('❌ 本題已納入錯題本，請詳讀步驟推導。', 'error');
+        }
+      }
+    }
+
+    // 前進到下一題或結算
+    function advanceNextQuestion() {
+      currentIndex++;
+      if (currentIndex >= dailyQuestions.length) {
+        finishQuiz();
+      } else {
+        renderQuestion();
+        saveProgress(false);
+      }
+    }
+
+    // 結算與存檔
+    function finishQuiz() {
+      const finalScore = questionScores.reduce((sum, s) => sum + s, 0);
+      const firstCorrectCount = questionScores.filter(s => s === 10).length;
+      const correctedCount = questionScores.filter(s => s === 6).length;
+      const wrongCount = wrongQuestions.length;
+
+      const cfg = MODE_CONFIG[selectedMode] || MODE_CONFIG.mixed;
+      document.getElementById('result-attempt-text').textContent = `今日第 ${attemptNo} 回合完成・${cfg.name}`;
+      document.getElementById('result-score').textContent = finalScore;
+      document.getElementById('result-first-correct').textContent = `${firstCorrectCount} 題`;
+      document.getElementById('result-wrong-count').textContent = `${wrongCount} 題`;
+
+      // 三等級能力向度成果計算
+      const easyIndices = dailyQuestions.map((q, idx) => q.level === 'easy' ? idx : -1).filter(i => i !== -1);
+      const chalIndices = dailyQuestions.map((q, idx) => q.level === 'challenge' ? idx : -1).filter(i => i !== -1);
+      const compIndices = dailyQuestions.map((q, idx) => q.level === 'competency' ? idx : -1).filter(i => i !== -1);
+
+      const easyCorrect = easyIndices.filter(i => (questionScores[i] || 0) > 0).length;
+      const chalCorrect = chalIndices.filter(i => (questionScores[i] || 0) > 0).length;
+      const compCorrect = compIndices.filter(i => (questionScores[i] || 0) > 0).length;
+
+      document.getElementById('result-easy-ratio').textContent = `${easyCorrect} / ${easyIndices.length}`;
+      document.getElementById('result-chal-ratio').textContent = `${chalCorrect} / ${chalIndices.length}`;
+      document.getElementById('result-comp-ratio').textContent = `${compCorrect} / ${compIndices.length}`;
+
+      const tierSummaryEl = document.getElementById('result-tier-summary');
+      if (selectedMode === 'competency') {
+        if (compCorrect === 10) {
+          tierSummaryEl.textContent = '🏆 滿分！情境閱讀與解題能力登峰造極！';
+        } else if (compCorrect >= 7) {
+          tierSummaryEl.textContent = '🌟 素養表現亮眼，情境邏輯敏銳！';
+        } else {
+          tierSummaryEl.textContent = '💪 繼續加油！多讀詳解熟悉情境關鍵字';
+        }
+      } else if (selectedMode === 'challenge') {
+        if (chalCorrect === 10) {
+          tierSummaryEl.textContent = '🏆 滿分！高階逆向思維完全通透！';
+        } else if (chalCorrect >= 7) {
+          tierSummaryEl.textContent = '🔥 挑戰進階實力堅強！';
+        } else {
+          tierSummaryEl.textContent = '💡 透過提示逐步推敲，觀念越練越穩！';
+        }
+      } else if (selectedMode === 'easy') {
+        if (easyCorrect === 10) {
+          tierSummaryEl.textContent = '🎉 滿分！核心基礎運算堅若磐石！';
+        } else {
+          tierSummaryEl.textContent = '🌱 基礎逐步扎根，再接再厲！';
+        }
+      } else {
+        // mixed
+        if (compCorrect === compIndices.length && compIndices.length > 0 && finalScore >= 90) {
+          tierSummaryEl.textContent = '🌟 全方位素養與計算俱佳！';
+        } else if (finalScore >= 80) {
+          tierSummaryEl.textContent = '精熟達標，表現優異！';
+        } else {
+          tierSummaryEl.textContent = '複習錯題讓觀念更扎實！';
+        }
+      }
+
+      const btnReview = document.getElementById('btn-result-review');
+      if (wrongCount > 0) {
+        btnReview.classList.remove('hidden');
+        btnReview.onclick = () => startReviewMode(wrongQuestions);
+      } else {
+        btnReview.classList.add('hidden');
+      }
+
+      showView('view-result');
+      saveProgress(true, finalScore);
+    }
+
+    // 同步到後端 API
+    async function saveProgress(completed, score = 0) {
+      const unit = document.getElementById('quiz-unit-badge').textContent;
+      try {
+        await mathApiFetch('/math-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            seatNo: currentUser.seatNo,
+            date: todayStr,
+            attemptNo,
+            publisher: selectedPub,
+            mode: selectedMode,
+            unit,
+            questions: dailyQuestions,
+            wrongQuestions,
+            currentIndex,
+            completed,
+            score
+          }),
+          keepalive: Boolean(completed)
+        });
+
+        if (completed) {
+          // 重新整理日曆與回合次數
+          attemptNo++;
+          checkDailyState();
+        }
+      } catch (err) {
+        console.error('儲存數學進度失敗:', err);
+      }
+    }
+
+    // ==========================================
+    // 錯題複習專區 (Review Mode)
+    // ==========================================
+    function startReviewMode(list = []) {
+      const questionsToReview = list.length > 0 ? list : activeWrongList;
+      if (!questionsToReview || questionsToReview.length === 0) {
+        document.getElementById('review-empty').classList.remove('hidden');
+        document.getElementById('review-content').classList.add('hidden');
+        showView('view-review');
+        return;
+      }
+
+      currentReviewIndex = 0;
+      document.getElementById('review-empty').classList.add('hidden');
+      document.getElementById('review-content').classList.remove('hidden');
+      showView('view-review');
+      renderReviewQuestion(questionsToReview);
+    }
+
+    function renderReviewQuestion(list) {
+      const q = list[currentReviewIndex];
+      if (!q) return;
+
+      document.getElementById('review-progress-text').textContent = `剩餘 ${list.length - currentReviewIndex} 題`;
+      document.getElementById('review-badge').textContent = q.unit || '待加強題目';
+      document.getElementById('review-question').textContent = q.q;
+
+      const feedback = document.getElementById('review-feedback');
+      const nextBtn = document.getElementById('btn-next-review');
+      feedback.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+
+      const inputContainer = document.getElementById('review-input-container');
+      const choiceContainer = document.getElementById('review-choice-container');
+
+      if (q.type === 'choice' && Array.isArray(q.options)) {
+        inputContainer.classList.add('hidden');
+        choiceContainer.classList.remove('hidden');
+        choiceContainer.innerHTML = '';
+        q.options.forEach((optText, optIdx) => {
+          const btn = document.createElement('button');
+          btn.className = 'py-3.5 px-5 rounded-lg border-2 border-slate-200 bg-white hover:bg-rose-50 font-bold text-slate-800 text-left';
+          btn.innerHTML = `<strong class="text-rose-600 mr-2">${String.fromCharCode(65 + optIdx)}.</strong> ${optText}`;
+          btn.onclick = () => submitReviewAnswer(optText, list);
+          choiceContainer.appendChild(btn);
+        });
+      } else {
+        choiceContainer.classList.add('hidden');
+        inputContainer.classList.remove('hidden');
+        const input = document.getElementById('review-input');
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+        document.getElementById('btn-submit-review').onclick = () => submitReviewAnswer(input.value, list);
+      }
+    }
+
+    async function submitReviewAnswer(userAnswer, list) {
+      const q = list[currentReviewIndex];
+      const isCorrect = isAnswerCorrect(userAnswer, q.a);
+      const feedback = document.getElementById('review-feedback');
+      const nextBtn = document.getElementById('btn-next-review');
+
+      feedback.classList.remove('hidden');
+      if (isCorrect) {
+        feedback.className = 'rounded-lg p-4 text-sm font-bold bg-sky-100 text-sky-800';
+        feedback.innerHTML = '🎉 答對了！已標記為熟練掌握，並移出錯題本。';
+        nextBtn.classList.remove('hidden');
+
+        // 呼叫 API 標記精熟
+        try {
+          await mathApiFetch('/math-master-question', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seatNo: currentUser.seatNo, questionId: q.id })
+          });
+        } catch (_) {}
+
+        nextBtn.onclick = () => {
+          currentReviewIndex++;
+          if (currentReviewIndex >= list.length) {
+            checkDailyState();
+            startReviewMode([]);
+          } else {
+            renderReviewQuestion(list);
+          }
+        };
+      } else {
+        feedback.className = 'rounded-lg p-4 text-sm font-bold bg-rose-100 text-rose-800';
+        feedback.innerHTML = `❌ 還是不太對喔！正確答案是：<strong>${q.a}</strong><br><small class="font-normal mt-1 block">${q.explanation || ''}</small>
+          <div class="mt-2.5">
+            <button type="button" id="btn-review-call-ai-tutor" class="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">
+              🦉 召喚 AI 貓頭鷹小助教引導
+            </button>
+          </div>`;
+        document.getElementById('btn-review-call-ai-tutor')?.addEventListener('click', () => {
+          if (typeof window.openAiTutorModal === 'function' && q) {
+            window.openAiTutorModal({
+              subject: 'math',
+              question: q.q,
+              options: q.options || [],
+              studentAnswer: String(userAnswer || '').trim(),
+              correctAnswer: q.a || '',
+              hint: q.hint || '',
+              explanation: q.explanation || '',
+              unit: q.unit || '數學錯題複習',
+              attemptCount: 1
+            });
+          }
+        });
+        nextBtn.classList.remove('hidden');
+        nextBtn.onclick = () => {
+          currentReviewIndex++;
+          if (currentReviewIndex >= list.length) {
+            checkDailyState();
+            startReviewMode([]);
+          } else {
+            renderReviewQuestion(list);
+          }
+        };
+      }
+    }
+
+    // ==========================================
+    // 學習打卡月曆元件
+    // ==========================================
+    function renderMathCalendar() {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      document.getElementById('cal-title').textContent = `${year} 年 ${month + 1} 月`;
+
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-cell';
+        grid.appendChild(empty);
+      }
+
+      // 建立日期查詢 Map
+      const historyMap = {};
+      mathHistory.forEach(item => {
+        if (!historyMap[item.date]) historyMap[item.date] = [];
+        historyMap[item.date].push(item);
+      });
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const records = historyMap[dateStr];
+        const cell = document.createElement('button');
+        cell.className = 'calendar-cell rounded-lg text-xs font-bold flex flex-col items-center justify-center transition-all';
+
+        if (records && records.length > 0) {
+          cell.classList.add('bg-sky-500', 'text-white', 'shadow-sm', 'hover:bg-sky-600');
+          cell.innerHTML = `<span>${day}</span><small class="text-[9px] opacity-90">${records[0].score}分</small>`;
+          cell.onclick = () => {
+            document.getElementById('calendar-detail').textContent = `${dateStr}：完成 ${records.length} 回合，最佳得分 ${Math.max(...records.map(r => r.score))} 分`;
+          };
+        } else if (dateStr === todayStr) {
+          cell.classList.add('bg-amber-100', 'text-amber-800', 'border-2', 'border-amber-300');
+          cell.textContent = day;
+          cell.onclick = () => {
+            document.getElementById('calendar-detail').textContent = `今日尚未完成 10 題數學練習`;
+          };
+        } else {
+          cell.classList.add('bg-slate-50', 'text-slate-400', 'hover:bg-slate-100');
+          cell.textContent = day;
+        }
+        grid.appendChild(cell);
+      }
+
+      const totals = getMathCalendarTotals(mathHistory, year, month);
+      document.getElementById('calendar-completion-count').textContent = `${totals.completedAttempts} 次・${totals.totalScore} 分`;
+      if (historyMap[todayStr]) {
+        document.getElementById('today-status').className = 'mt-3 py-2.5 rounded-lg bg-sky-100 text-sky-800 text-center text-xs font-bold';
+        document.getElementById('today-status').innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> 今日學習已點亮！';
+      }
+    }
+
+    // 初始化事件綁定
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!currentUser || !currentUser.token) {
+        sessionStorage.removeItem('g6_portal_user');
+        localStorage.removeItem('g6_portal_user');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      document.getElementById('header-name').textContent = currentUser.name || '同學';
+      document.getElementById('header-seat').textContent = `座號: ${currentUser.seatNo}`;
+
+      updateUnitDropdown();
+      checkDailyState();
+
+      // 出版社選擇按鈕
+      document.querySelectorAll('.pub-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.pub-btn').forEach(b => {
+            b.className = "pub-btn py-3.5 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all";
+          });
+          e.target.className = "pub-btn py-3.5 rounded-lg border-2 border-sky-500 bg-sky-50 text-sky-700 font-black transition-all";
+          selectedPub = e.target.getAttribute('data-pub');
+          updateUnitDropdown();
+        });
+      });
+
+      // 模式選擇按鈕 (每日綜合 | 基礎打底 | 進階挑戰 | 素養特訓)
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const targetBtn = e.currentTarget || e.target.closest('.mode-btn');
+          if (!targetBtn) return;
+          const mode = targetBtn.getAttribute('data-mode');
+          if (mode) updateModeSelection(mode);
+        });
+      });
+
+      document.getElementById('btn-start').onclick = startMathQuiz;
+      document.getElementById('btn-submit-answer').onclick = () => submitUserAnswer();
+      document.getElementById('btn-next-question').onclick = advanceNextQuestion;
+      document.getElementById('answer-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') submitUserAnswer();
+      });
+
+      document.getElementById('btn-result-retry').onclick = startMathQuiz;
+      document.getElementById('btn-review-entry').onclick = () => startReviewMode();
+      document.getElementById('btn-review-back').onclick = () => showView('view-setup');
+
+      // 月曆上/下個月切換
+      document.getElementById('cal-prev').onclick = () => {
+        calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
+        renderMathCalendar();
+      };
+      document.getElementById('cal-next').onclick = () => {
+        calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
+        renderMathCalendar();
+      };
+
+      // AI 貓頭鷹小助教啟動監聽
+      const triggerAiTutor = (attempt) => {
+        const q = dailyQuestions[currentIndex];
+        const studentAns = lastStudentAnswer || document.getElementById('answer-input')?.value || '';
+        if (typeof window.openAiTutorModal === 'function' && q) {
+          window.openAiTutorModal({
+            subject: 'math',
+            question: q.q,
+            options: q.options || [],
+            studentAnswer: studentAns,
+            correctAnswer: q.a || '',
+            hint: q.hint || '',
+            explanation: q.explanation || '',
+            unit: q.unit || document.getElementById('quiz-unit-badge')?.textContent || '',
+            attemptCount: attempt
+          });
+        }
+      };
+
+      document.getElementById('btn-call-ai-tutor')?.addEventListener('click', () => triggerAiTutor(1));
+      document.getElementById('btn-call-ai-tutor-exp')?.addEventListener('click', () => triggerAiTutor(2));
+    });
+  </script>
+</body>
+</html>

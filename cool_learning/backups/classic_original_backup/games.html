@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/logo-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo-192.png">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="酷學習">
+  <title>邊玩邊學｜酷學習 Cool Learning</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="assets/css/tailwind.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    body {
+      background: radial-gradient(circle at top left, #fffbeb, #fef3c7 40%, #f0fdf4 85%);
+      touch-action: manipulation;
+    }
+
+    /* 遊戲畫布專屬觸控設定：避免滑動小人時觸發瀏覽器捲動 */
+    #rescue-canvas {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: crosshair;
+    }
+
+    /* 活潑生動插畫卡片效果 */
+    .game-card {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .game-card:hover {
+      transform: translateY(-6px) scale(1.015);
+    }
+
+    /* 成語疊疊樂專用樣式 */
+    .idiom-grid-cell {
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .idiom-block-btn {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 0 #047857, 0 8px 12px rgba(0,0,0,0.15);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .idiom-block-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 0 #047857, 0 10px 16px rgba(0,0,0,0.2);
+    }
+    .idiom-block-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #047857, 0 4px 6px rgba(0,0,0,0.15);
+    }
+    .idiom-slot-active {
+      box-shadow: 0 0 0 4px #10b981, 0 0 16px rgba(16, 185, 129, 0.5) !important;
+      animation: slotPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes slotPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    @keyframes blockPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      70% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-block-pop {
+      animation: blockPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between p-3 sm:p-6">
+
+  <!-- Toast 訊息通知 (畫面正中央，現代半透明毛玻璃感) -->
+  <div id="toast-container" class="fixed left-1/2 top-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; transform: translate(-50%, -50%) scale(0.9);">
+    <div id="toast-inner" style="background: rgba(15, 23, 42, 0.82) !important; -webkit-backdrop-filter: blur(16px) saturate(180%) !important; backdrop-filter: blur(16px) saturate(180%) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) !important; border-radius: 20px !important; padding: 14px 26px !important; display: flex; align-items: center; gap: 14px;">
+      <i id="toast-icon" class="fa-solid fa-circle-info text-amber-300" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;"></i>
+      <span id="toast-text" style="color: #ffffff !important; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; line-height: 1.5; max-width: min(75vw, 360px); text-align: left;">訊息通知</span>
+    </div>
+  </div>
+
+  <!-- 全域頂部導覽列 -->
+  <header id="global-header" class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/85 backdrop-blur-md px-4 sm:px-5 py-3 rounded-lg border border-white/70 shadow-sm mb-4">
+    <div id="btn-go-home" class="flex items-center gap-3 cursor-pointer" onclick="window.location.assign('index.html')">
+      <div class="w-10 h-10 rounded-md bg-gradient-to-tr from-amber-400 via-rose-500 to-indigo-500 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+        <i class="fa-solid fa-gamepad"></i>
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight">邊玩邊學</h1>
+        <p class="text-[11px] text-slate-500 font-medium">酷學習・寓教於樂遊戲館</p>
+      </div>
+    </div>
+
+    <div id="user-profile-badge" class="flex items-center gap-2 sm:gap-3">
+      <!-- 科目大廳按鈕 (手機版隱藏以節省版面) -->
+      <button type="button" id="btn-subject-lobby" onclick="window.location.assign('index.html')" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-house text-slate-500"></i>
+        <span>科目大廳</span>
+      </button>
+
+      <!-- 姓名座號 (姓名在上、座號在下，可點擊進入孩子自我設定頁) -->
+      <a href="profile.html" id="btn-child-profile" title="點擊進入孩子自我設定頁" class="text-right cursor-pointer group px-2 py-1 rounded-lg hover:bg-slate-100/70 transition-all select-none block">
+        <span id="header-user-name" class="block font-bold text-xs sm:text-sm text-slate-800 leading-tight group-hover:text-amber-600 transition-colors">學生</span>
+        <span id="header-user-seat" class="block text-[10px] sm:text-[11px] text-amber-600 font-semibold">座號: -</span>
+      </a>
+
+      <!-- 登出按鈕 (箭頭向右符號) -->
+      <button type="button" id="btn-logout" onclick="logoutCurrentStudent()" title="登出系統" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center text-xs sm:text-sm transition-all active:scale-95 shadow-sm cursor-pointer">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 視圖 1: 邊玩邊學遊戲大廳 (四個活潑生動的插畫按鈕)                              -->
+  <!-- ========================================================================= -->
+  <section id="view-games-lobby" class="w-full max-w-4xl mx-auto my-auto card-flip-enter">
+    <div class="bg-white/90 backdrop-blur-md rounded-lg p-5 sm:p-8 shadow-xl border border-white/80">
+      
+      <!-- 歡迎看板 -->
+      <div class="bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 rounded-lg p-6 sm:p-7 text-white mb-6 shadow-md flex items-center justify-between relative overflow-hidden">
+        <div class="relative z-10">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-amber-100 text-xs font-bold mb-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 挑戰知識・解鎖樂趣
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black">邊玩邊學 趣味學堂！ 🎮</h2>
+          <p class="text-xs sm:text-sm text-amber-100 mt-1 max-w-md font-medium">
+            在刺激好玩的闖關遊戲中，不知不覺把英文單字、成語與反應力變強大！
+          </p>
+        </div>
+        <div class="hidden sm:block text-6xl opacity-30 transform -rotate-12 select-none pointer-events-none">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+      </div>
+
+      <!-- 四個遊戲功能插畫按鈕 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <!-- 遊戲 1: 搶救字母大作戰 (即刻開戰) -->
+        <div onclick="openRescueGame()" class="game-card bg-gradient-to-br from-rose-50 via-red-50 to-amber-50/80 border-2 border-rose-300/80 hover:border-rose-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+          <!-- 背景裝飾微光 -->
+          <div class="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-rose-200/50 blur-xl pointer-events-none"></div>
+
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500 text-white font-black text-xs shadow-xs animate-bounce">
+                <i class="fa-solid fa-fire"></i> 即刻開戰
+              </span>
+              <span class="text-xs font-bold text-rose-600 bg-rose-100 px-2.5 py-0.5 rounded-full">
+                英語單字 × 敏捷接球
+              </span>
+            </div>
+
+            <!-- 生動插畫 SVG: 頂菜籃小人 + 掉落字母 -->
+            <div class="w-full h-36 bg-gradient-to-b from-rose-100/60 to-white/80 rounded-lg border border-rose-200/60 flex items-center justify-center p-3 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+              <svg viewBox="0 0 320 140" class="w-full h-full max-w-[280px]">
+                <!-- 藍天白雲背景 -->
+                <circle cx="40" cy="30" r="16" fill="#fed7aa" opacity="0.6"/>
+                <circle cx="60" cy="25" r="20" fill="#fed7aa" opacity="0.6"/>
+                <circle cx="80" cy="30" r="16" fill="#fed7aa" opacity="0.6"/>
+                
+                <!-- 掉落的字母泡泡 A, P, P, L, E -->
+                <g class="animate-pulse">
+                  <circle cx="70" cy="45" r="18" fill="#38bdf8" stroke="#0284c7" stroke-width="2.5"/>
+                  <text x="70" y="52" fill="#fff" font-size="16" font-weight="900" text-anchor="middle" font-family="Fredoka">A</text>
+                </g>
+                <g>
+                  <circle cx="160" cy="30" r="19" fill="#f43f5e" stroke="#be123c" stroke-width="2.5"/>
+                  <text x="160" y="37" fill="#fff" font-size="17" font-weight="900" text-anchor="middle" font-family="Fredoka">P</text>
+                </g>
+                <g>
+                  <circle cx="240" cy="50" r="18" fill="#10b981" stroke="#047857" stroke-width="2.5"/>
+                  <text x="240" y="57" fill="#fff" font-size="16" font-weight="900" text-anchor="middle" font-family="Fredoka">E</text>
+                </g>
+
+                <!-- 地面綠草 -->
+                <ellipse cx="160" cy="145" rx="140" ry="20" fill="#86efac"/>
+
+                <!-- 頂菜籃小人 -->
+                <!-- 菜籃 -->
+                <path d="M 125 78 L 195 78 L 185 96 L 135 96 Z" fill="#b45309" stroke="#78350f" stroke-width="2.5"/>
+                <path d="M 128 78 Q 160 72 192 78 L 187 84 Q 160 88 133 84 Z" fill="#fef3c7"/>
+                <!-- 小人頭部 -->
+                <circle cx="160" cy="106" r="15" fill="#fed7aa" stroke="#c2410c" stroke-width="2"/>
+                <circle cx="155" cy="104" r="2.5" fill="#1e293b"/>
+                <circle cx="165" cy="104" r="2.5" fill="#1e293b"/>
+                <path d="M 157 111 Q 160 115 163 111" stroke="#e11d48" stroke-width="2" fill="none"/>
+                <!-- 雙手舉起 -->
+                <path d="M 148 116 L 138 100 L 134 88" stroke="#fbcfe8" stroke-width="4" stroke-linecap="round"/>
+                <path d="M 172 116 L 182 100 L 186 88" stroke="#fbcfe8" stroke-width="4" stroke-linecap="round"/>
+                <!-- 身體 -->
+                <rect x="150" y="121" width="20" height="18" rx="5" fill="#ea580c"/>
+              </svg>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+              搶救字母大作戰 <i class="fa-solid fa-basket-shopping text-rose-500"></i>
+            </h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              單字字母從天而降！頂著菜籃左右移動，精準接住目標字母拼出單字。每局三滴血，考驗你的敏捷與單字力！
+            </p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-rose-200/80 flex items-center justify-between text-rose-600 font-black text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始搶救！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+
+        <!-- 遊戲 2: 洞築機先 (即刻開戰) -->
+        <div onclick="openIdiomGame()" class="game-card bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50/80 border-2 border-indigo-300/80 hover:border-indigo-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+          <!-- 背景裝飾微光 -->
+          <div class="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-indigo-200/50 blur-xl pointer-events-none"></div>
+
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 text-white font-black text-xs shadow-xs animate-bounce">
+                <i class="fa-solid fa-fire"></i> 即刻開戰
+              </span>
+              <span class="text-xs font-bold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
+                公視一字千金 × 經典題型
+              </span>
+            </div>
+
+            <!-- 生動插畫 SVG: 與《一字千金》「洞築機先」相同之郵票十字交錯盤與橘紅考古題吊牌 -->
+            <div class="w-full h-36 bg-gradient-to-br from-indigo-600 to-purple-800 rounded-lg border border-indigo-400/40 flex items-center justify-center p-2 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+              <svg viewBox="0 0 320 140" class="w-full h-full max-w-[290px]">
+                <!-- 背景九宮格淡淡底線 -->
+                <defs>
+                  <pattern id="bg-grid-dong" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#818cf8" stroke-width="0.75" opacity="0.3"/>
+                  </pattern>
+                </defs>
+                <rect width="320" height="140" fill="url(#bg-grid-dong)" />
+                <text x="35" y="32" fill="#c7d2fe" font-size="28" font-weight="900" opacity="0.25">?</text>
+                <text x="280" y="125" fill="#c7d2fe" font-size="26" font-weight="900" opacity="0.25">?</text>
+
+                <!-- 左側：粉紅郵票造型底盤 (齒孔效果) -->
+                <g transform="translate(42, 10)">
+                  <!-- 郵票主體陰影與本體 -->
+                  <rect x="0" y="0" width="130" height="120" rx="8" fill="#fce7f3" stroke="#f472b6" stroke-width="2"/>
+                  <!-- 郵票齒孔裝飾點 -->
+                  <circle cx="10" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="30" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="50" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="70" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="90" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="110" cy="0" r="3.5" fill="#4338ca"/>
+                  <circle cx="10" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="30" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="50" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="70" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="90" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="110" cy="120" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="20" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="40" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="60" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="80" r="3.5" fill="#4338ca"/>
+                  <circle cx="0" cy="100" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="20" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="40" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="60" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="80" r="3.5" fill="#4338ca"/>
+                  <circle cx="130" cy="100" r="3.5" fill="#4338ca"/>
+
+                  <!-- 郵票內部的交錯題目格 (重現截圖中的老、言、辶、大、人、雨、雨) -->
+                  <!-- 縱橫格線群 -->
+                  <g transform="translate(15, 12)">
+                    <!-- 格子 1: 老 -->
+                    <rect x="36" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="45" y="30" font-size="12" font-weight="900" text-anchor="middle" fill="#1e1b4b">老</text>
+                    <!-- 格子 2: 空格 -->
+                    <rect x="54" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <!-- 格子 3: 言 -->
+                    <rect x="72" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="81" y="30" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">言</text>
+                    <!-- 格子 4: 辶 -->
+                    <rect x="90" y="16" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="99" y="30" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">辶</text>
+
+                    <!-- 下方交錯: 大、人、空白孔洞 -->
+                    <rect x="0" y="44" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="9" y="58" font-size="12" font-weight="900" text-anchor="middle" fill="#1e1b4b">大</text>
+                    <rect x="18" y="56" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="27" y="70" font-size="12" font-weight="900" text-anchor="middle" fill="#1e1b4b">人</text>
+                    <!-- 交會核心孔洞 (亮黃閃耀) -->
+                    <rect x="36" y="56" width="18" height="18" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+                    <text x="45" y="69" font-size="12" font-weight="900" text-anchor="middle" fill="#b45309">氵</text>
+                    <rect x="54" y="56" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="63" y="70" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">目</text>
+
+                    <rect x="90" y="34" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="99" y="48" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">末</text>
+                    <rect x="90" y="52" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="99" y="66" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">足</text>
+
+                    <rect x="0" y="62" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="9" y="76" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">雨</text>
+                    <rect x="0" y="80" width="18" height="18" fill="#fff" stroke="#1e1b4b" stroke-width="1.5"/>
+                    <text x="9" y="94" font-size="11" font-weight="900" text-anchor="middle" fill="#1e1b4b">雨</text>
+                  </g>
+                </g>
+
+                <!-- 右側：橘紅色吊牌「考古題」 -->
+                <g transform="translate(195, 24) rotate(4)">
+                  <!-- 吊繩 -->
+                  <path d="M -8 18 Q -16 10 -24 22" fill="none" stroke="#fed7aa" stroke-width="2"/>
+                  <!-- 吊牌本體 -->
+                  <polygon points="0,18 16,0 108,0 108,38 16,38 0,18" fill="#ea580c" stroke="#c2410c" stroke-width="2"/>
+                  <circle cx="14" cy="19" r="4" fill="#4338ca"/>
+                  <text x="60" y="27" font-size="16" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">考古題</text>
+                </g>
+
+                <!-- 右側上方先練手感標語與右下可愛生動小表情 -->
+                <text x="245" y="18" font-size="10" font-weight="900" fill="#fed7aa" text-anchor="middle">\ 先練手感！/</text>
+                <!-- 認真解題臉譜小貼圖 -->
+                <circle cx="260" cy="98" r="22" fill="#f97316" stroke="#ea580c" stroke-width="2"/>
+                <circle cx="252" cy="92" r="3" fill="#1e1b4b"/>
+                <circle cx="268" cy="92" r="3" fill="#1e1b4b"/>
+                <!-- 認真眉毛 -->
+                <path d="M 248 85 L 256 89" stroke="#1e1b4b" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M 272 85 L 264 89" stroke="#1e1b4b" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- 嘴巴 -->
+                <path d="M 254 106 L 266 106" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+              洞築機先 <i class="fa-solid fa-puzzle-piece text-indigo-600"></i>
+            </h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              公視《一字千金》招牌單元！縱橫十字交錯成語填空，觀察上下文推敲關鍵交會字，考驗你的成語底蘊與字形洞察力！
+            </p>
+            <!-- 難度分級徽章標籤 -->
+            <div class="flex items-center gap-1.5 mt-2.5 flex-wrap">
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200">
+                <i class="fa-solid fa-circle text-[6px] text-emerald-500 mr-0.5"></i> 童生試 (入門)
+              </span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">
+                <i class="fa-solid fa-circle text-[6px] text-amber-500 mr-0.5"></i> 進士試 (進階)
+              </span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-200">
+                <i class="fa-solid fa-circle text-[6px] text-rose-500 mr-0.5"></i> 狀元試 (極限大師)
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-indigo-200/80 flex items-center justify-between text-indigo-700 font-black text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始挑戰！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+
+        <!-- 遊戲 3: 光速小鼠 (即刻開跑) -->
+        <div onclick="openSpeedyMouseGame()" class="game-card bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50/80 border-2 border-sky-300/80 hover:border-sky-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500 text-white font-black text-xs shadow-xs animate-pulse">
+                <i class="fa-solid fa-fire"></i> 即刻開跑
+              </span>
+              <span class="text-xs font-bold text-sky-700 bg-sky-100 px-2.5 py-0.5 rounded-full">
+                數學速算 × 六動物賽跑
+              </span>
+            </div>
+
+            <!-- 生動插畫 SVG: 戴護目鏡的極速老鼠 + 閃電加速跑道 -->
+            <div class="w-full h-36 bg-gradient-to-b from-sky-100/60 to-white/80 rounded-lg border border-sky-200/60 flex items-center justify-center p-3 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+              <svg viewBox="0 0 320 140" class="w-full h-full max-w-[280px]">
+                <!-- 極速光影線條 -->
+                <line x1="20" y1="40" x2="120" y2="40" stroke="#38bdf8" stroke-width="3" stroke-dasharray="10 5" opacity="0.7"/>
+                <line x1="10" y1="70" x2="90" y2="70" stroke="#0284c7" stroke-width="4" stroke-dasharray="15 8" opacity="0.8"/>
+                <line x1="30" y1="100" x2="140" y2="100" stroke="#38bdf8" stroke-width="3" stroke-dasharray="8 6" opacity="0.6"/>
+
+                <!-- 閃電能量 -->
+                <polygon points="260,20 235,65 255,65 240,110 285,55 265,55" fill="#facc15" stroke="#eab308" stroke-width="2"/>
+
+                <!-- 光速小老鼠 -->
+                <g transform="translate(130, 45)">
+                  <!-- 身體 (灰藍色流線水滴) -->
+                  <ellipse cx="40" cy="30" rx="35" ry="24" fill="#94a3b8" stroke="#475569" stroke-width="2.5"/>
+                  <!-- 大耳朵 -->
+                  <circle cx="20" cy="10" r="15" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                  <circle cx="20" cy="10" r="9" fill="#f472b6"/>
+                  <!-- 護目鏡 -->
+                  <rect x="42" y="16" width="28" height="16" rx="6" fill="#38bdf8" stroke="#0369a1" stroke-width="2"/>
+                  <!-- 翹鬍鬚 -->
+                  <line x1="68" y1="28" x2="88" y2="24" stroke="#334155" stroke-width="2"/>
+                  <line x1="68" y1="32" x2="88" y2="34" stroke="#334155" stroke-width="2"/>
+                  <!-- 粉紅鼻頭 -->
+                  <circle cx="74" cy="30" r="4.5" fill="#f43f5e"/>
+                  <!-- 滾輪/輪子溜冰鞋 -->
+                  <circle cx="22" cy="54" r="8" fill="#f97316" stroke="#c2410c" stroke-width="2"/>
+                  <circle cx="56" cy="54" r="8" fill="#f97316" stroke="#c2410c" stroke-width="2"/>
+                </g>
+              </svg>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+              光速小鼠 <i class="fa-solid fa-bolt text-sky-500"></i>
+            </h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              小倉鼠與小貓、小狗、烏龜、兔子、水豚進行 60 秒競速賽跑！答對數學心算越快衝刺越久，看誰跑最遠！
+            </p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-sky-200/80 flex items-center justify-between text-sky-700 font-bold text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 進入賽道！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+
+        <!-- 遊戲 4: 傑克與魔豆 (即刻攀登) -->
+        <div onclick="openBeanstalkGame()" class="game-card bg-gradient-to-br from-emerald-50 via-teal-50 to-purple-50/80 border-2 border-emerald-300/80 hover:border-emerald-400 rounded-lg p-5 sm:p-6 shadow-md cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-xs shadow-xs animate-bounce">
+                <i class="fa-solid fa-fire"></i> 即刻攀登
+              </span>
+              <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                自然×社會 × 雲端冒險
+              </span>
+            </div>
+
+            <!-- 生動插畫 SVG: 通天魔豆樹、雲朵與金幣寶箱 -->
+            <div class="w-full h-36 bg-gradient-to-b from-emerald-100/60 via-sky-100/40 to-white/80 rounded-lg border border-emerald-200/60 flex items-center justify-center p-3 mb-4 shadow-inner relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+              <svg viewBox="0 0 320 140" class="w-full h-full max-w-[280px]">
+                <!-- 雲端仙境背景 -->
+                <circle cx="160" cy="30" r="26" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="130" cy="35" r="20" fill="#f8fafc" opacity="0.9"/>
+                <circle cx="190" cy="35" r="20" fill="#f8fafc" opacity="0.9"/>
+
+                <!-- 金幣光芒與寶箱 -->
+                <circle cx="160" cy="22" r="10" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+                <text x="160" y="27" fill="#713f12" font-size="12" font-weight="900" text-anchor="middle">$</text>
+
+                <!-- 旋轉通天青翠魔豆藤 -->
+                <path d="M 160 140 Q 130 95 160 65 Q 185 45 160 28" fill="none" stroke="#22c55e" stroke-width="9" stroke-linecap="round"/>
+                <path d="M 160 140 Q 130 95 160 65 Q 185 45 160 28" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round"/>
+
+                <!-- 巨大的嫩綠葉片 -->
+                <path d="M 152 110 Q 115 105 125 125 Q 145 125 152 110" fill="#4ade80" stroke="#16a34a" stroke-width="2"/>
+                <path d="M 162 80 Q 200 70 195 95 Q 175 95 162 80" fill="#4ade80" stroke="#16a34a" stroke-width="2"/>
+                <path d="M 155 50 Q 120 40 130 60 Q 150 60 155 50" fill="#4ade80" stroke="#16a34a" stroke-width="2"/>
+
+                <!-- 閃閃金光粒子 -->
+                <circle cx="110" cy="50" r="3" fill="#facc15"/>
+                <circle cx="210" cy="40" r="4" fill="#facc15"/>
+                <circle cx="205" cy="100" r="3.5" fill="#facc15"/>
+              </svg>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+              傑克與魔豆 <i class="fa-solid fa-seedling text-emerald-600"></i>
+            </h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              自然科學與社會跨領域測驗！10秒內答對快速灌溉魔豆長高，連對衝刺突破三段高度直衝3000公尺，開箱雲端城堡神祕寶藏！
+            </p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-emerald-700 font-black text-sm">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play"></i> 開始攀登！</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 視圖 2: 搶救字母大作戰 - 遊戲主畫面                                         -->
+  <!-- ========================================================================= -->
+  <section id="view-game-rescue" class="w-full max-w-3xl mx-auto my-auto hidden card-flip-enter pb-6">
+    <div class="bg-white/95 backdrop-blur-md rounded-lg p-4 sm:p-6 shadow-2xl border border-white">
+      
+      <!-- 頂部功能條 -->
+      <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">
+        <button onclick="backToGamesLobby()" class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>回遊戲選單</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <!-- 語音發音按鈕 -->
+          <button onclick="window.speakCurrentWord()" title="單字發音" class="w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 flex items-center justify-center text-sm shadow-sm transition-all">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+          <!-- 音效靜音切換 -->
+          <button id="btn-toggle-sound" onclick="toggleGameSound()" title="音效開關" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-sm shadow-sm transition-all">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 抬頭資訊看板 (三滴血 + 當前題目與拼字進度 + 分數) -->
+      <div class="bg-gradient-to-r from-amber-50 via-rose-50 to-orange-50 rounded-lg p-4 border border-rose-200/80 mb-4 shadow-sm">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <!-- 三滴血生命值 -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold text-slate-500 mr-1">生命值:</span>
+            <div id="rescue-hearts" class="flex items-center gap-1">
+              <span class="text-2xl text-rose-500"><i class="fa-solid fa-heart"></i></span>
+              <span class="text-2xl text-rose-500"><i class="fa-solid fa-heart"></i></span>
+              <span class="text-2xl text-rose-500"><i class="fa-solid fa-heart"></i></span>
+            </div>
+          </div>
+
+          <!-- 分數與救援統計 -->
+          <div class="flex items-center gap-2 sm:gap-3 text-xs font-black">
+            <div class="flex items-center gap-1 text-purple-700 bg-purple-100/80 px-2.5 py-1 rounded-full border border-purple-200">
+              <i class="fa-solid fa-flag text-purple-600"></i> <span id="rescue-level" class="text-sm">第 1 關</span>
+            </div>
+            <div class="flex items-center gap-1 text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-full border border-amber-200">
+              <i class="fa-solid fa-star text-amber-500"></i> 得分: <span id="rescue-score" class="text-sm">0</span>
+            </div>
+            <div class="flex items-center gap-1 text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-200">
+              <i class="fa-solid fa-check text-emerald-600"></i> 單字: <span id="rescue-count" class="text-sm">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 題目中文釋義與音標 -->
+        <div class="text-center mb-3">
+          <div class="flex items-center justify-center gap-2">
+            <h3 id="rescue-word-meaning" class="text-xl sm:text-2xl font-black text-slate-800">蘋果 (n.)</h3>
+            <span id="rescue-word-phonetic" class="text-xs font-bold text-slate-500 bg-white/80 px-2.5 py-0.5 rounded-full border border-slate-200">/ˈæpl/</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-0.5">接住上方掉下來的英文字母，依序完成拼字！</p>
+        </div>
+
+        <!-- 單字字母插槽 -->
+        <div id="rescue-word-slots" class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 py-1">
+          <!-- JS 動態生成插槽 -->
+        </div>
+      </div>
+
+      <!-- 遊戲 Canvas 容器 -->
+      <div class="relative w-full rounded-lg overflow-hidden border-2 border-slate-800/80 shadow-inner bg-sky-100">
+        <canvas id="rescue-canvas" width="640" height="700" class="w-full h-[400px] sm:h-[480px] block"></canvas>
+
+        <!-- 操作提示浮水印 -->
+        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-none bg-slate-900/40 backdrop-blur-sm text-white text-[11px] px-3 py-1 rounded-full font-bold tracking-wide">
+          <i class="fa-solid fa-computer-mouse mr-1"></i>電腦滑動滑鼠 / <i class="fa-solid fa-hand-pointer mr-1"></i>手機觸控左右拖曳小人
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 遊戲結束 (Game Over) 結算畫面                                          -->
+  <!-- ========================================================================= -->
+  <div id="rescue-gameover-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border border-white card-flip-enter">
+      <div class="w-18 h-18 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 border-2 border-rose-200 shadow-sm animate-pulse">
+        <i class="fa-solid fa-heart-crack"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-1">三滴血已用盡！</h3>
+      <p class="text-xs text-slate-500 font-medium mb-5">沒關係，吸取經驗再接再厲，單字會記得更牢！</p>
+
+      <!-- 戰績結算框 -->
+      <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6 space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-slate-600 font-bold">本次累計得分</span>
+          <span id="rescue-final-score" class="font-black text-xl text-amber-600">0</span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-slate-600 font-bold">成功拯救單字</span>
+          <span id="rescue-final-count" class="font-black text-xl text-emerald-600">0 字</span>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="restartRescueGame()" class="w-full py-3 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再玩一局！
+        </button>
+        <button onclick="closeGameOverAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 視圖 3: 光速小鼠 - 數學速算賽跑遊戲畫面                                      -->
+  <!-- ========================================================================= -->
+  <section id="view-game-mouse" class="w-full max-w-4xl mx-auto my-auto hidden card-flip-enter pb-6">
+    <div class="bg-white/95 backdrop-blur-md rounded-lg p-4 sm:p-6 shadow-2xl border border-white">
+      
+      <!-- 頂部功能條 -->
+      <div class="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200">
+        <button onclick="backToGamesLobbyFromMouse()" class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>回遊戲選單</span>
+        </button>
+
+        <!-- 畫面中間上方：醒目大字顯示已跑距離與倒計時 -->
+        <div class="text-center">
+          <div class="text-[11px] font-bold text-slate-500">🐹 小倉鼠目前奔跑距離</div>
+          <div id="mouse-player-dist" class="text-3xl sm:text-4xl font-black text-amber-600 font-mono tracking-wide leading-none">0.0 m</div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 倒數計時徽章 -->
+          <div class="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs shadow-xs">
+            <i class="fa-solid fa-stopwatch"></i>
+            <span id="mouse-time-left" class="text-sm">60s</span>
+          </div>
+          <!-- 音效開關 -->
+          <button onclick="toggleGameSound()" title="音效開關" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-sm shadow-sm transition-all">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 賽事即時戰況條 (名次 + 衝刺加速狀態反饋) -->
+      <div class="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 rounded-lg mb-3 text-xs font-bold">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-500">目前戰況:</span>
+          <span id="mouse-player-rank" class="bg-amber-400 text-amber-950 px-2.5 py-0.5 rounded-full font-black text-xs shadow-xs animate-bounce">第 1 名</span>
+        </div>
+        <div id="mouse-dash-feedback" class="text-xs font-black text-emerald-600 transition-opacity opacity-0">⚡ 神速衝刺中！</div>
+        <div class="text-slate-500 text-[11px]">初始 1m/s・每 10 秒提速 10%</div>
+      </div>
+
+      <!-- Canvas 賽道主畫面 -->
+      <div class="relative w-full rounded-lg overflow-hidden border-2 border-amber-900/40 shadow-inner bg-amber-100 mb-4">
+        <canvas id="mouse-canvas" width="680" height="420" class="w-full h-[280px] sm:h-[340px] block"></canvas>
+      </div>
+
+      <!-- 下方：數學速算答題面板 -->
+      <div class="bg-gradient-to-r from-sky-50 via-amber-50 to-indigo-50 rounded-lg p-4 border-2 border-sky-200 shadow-sm text-center">
+        <div class="text-xs font-bold text-sky-800 mb-1">
+          <i class="fa-solid fa-bolt text-amber-500 mr-1"></i>回答數學速算題獲取衝刺加速！答得愈快，衝刺時間愈長！
+        </div>
+
+        <div class="bg-white rounded-xl py-3 px-6 border-2 border-slate-300 shadow-sm inline-block min-w-[200px] mb-3">
+          <span class="text-[11px] font-bold text-slate-400 block mb-0.5">速算挑戰</span>
+          <h3 id="mouse-question-text" class="text-3xl sm:text-4xl font-black text-slate-800 font-mono tracking-wider">--</h3>
+        </div>
+
+        <!-- 4 個大選項按鈕 -->
+        <div id="mouse-options-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
+          <!-- JS 動態生成選項按鈕 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 光速小鼠 (Speedy Mouse) 賽跑結算頒獎台                                -->
+  <!-- ========================================================================= -->
+  <div id="mouse-result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border border-white card-flip-enter">
+      <div class="w-18 h-18 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 border-2 border-amber-300 shadow-sm">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-1">比賽結束！最終排名</h3>
+      <p class="text-xs text-slate-500 font-medium mb-4">一分鐘極速賽跑，看看誰跑的距離最遠！</p>
+
+      <!-- 排行榜清單 (6 隻動物) -->
+      <div id="mouse-podium-list" class="space-y-2 mb-4 text-left max-h-[220px] overflow-y-auto pr-1">
+        <!-- JS 動態渲染排名清單 -->
+      </div>
+
+      <!-- 答題統計框 -->
+      <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 mb-5 flex items-center justify-around text-xs font-bold">
+        <div>
+          <span class="text-slate-500 block">答題正確數</span>
+          <span id="mouse-stat-total" class="font-black text-base text-slate-800">-</span>
+        </div>
+        <div class="w-px h-8 bg-slate-200"></div>
+        <div>
+          <span class="text-slate-500 block">心算正確率</span>
+          <span id="mouse-stat-accuracy" class="font-black text-base text-emerald-600">-</span>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="restartSpeedyMouseGame()" class="w-full py-3 bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再賽一場！
+        </button>
+        <button onclick="closeMouseResultAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 遊戲 2: 洞築機先 (Idiom Crossword) - 公視《一字千金》招牌題型                -->
+  <!-- ========================================================================= -->
+  <section id="view-game-idiom" class="w-full max-w-4xl mx-auto hidden pb-8">
+    <div class="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-indigo-300 p-4 sm:p-6 shadow-xl relative overflow-hidden">
+
+      <!-- 頂部資訊列 (關卡、智慧星數、倒數計時、生命/機會、返回、音效) -->
+      <div class="flex items-center justify-between pb-3 mb-3 border-b border-indigo-200/80 gap-2 flex-wrap">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button onclick="backToGamesLobbyFromIdiom()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>大廳</span>
+          </button>
+          <div>
+            <h2 class="text-base sm:text-lg font-black text-slate-800 flex items-center gap-1.5 leading-tight">
+              洞築機先 <span id="idiom-diff-badge" class="text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 font-bold">進士試</span>
+            </h2>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="idiom-level-badge" class="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">第 1 關</span>
+              <span id="idiom-mode-badge" class="text-xs font-bold text-slate-500">十字交錯</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto">
+          <!-- 倒數計時器 (依難度動態運作) -->
+          <div id="idiom-timer-container" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 font-black text-xs shadow-xs transition-all">
+            <i class="fa-solid fa-stopwatch text-indigo-600" id="idiom-timer-icon"></i>
+            <span>計時: <span id="idiom-timer-seconds" class="text-sm font-black">45</span>s</span>
+          </div>
+
+          <!-- 得分 / 積木塔星數 -->
+          <div class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs shadow-xs">
+            <i class="fa-solid fa-crown text-amber-500"></i>
+            <span>通關: <span id="idiom-score-count" class="text-sm">0</span></span>
+          </div>
+
+          <!-- 機會愛心 (3 顆血) -->
+          <div id="idiom-lives-container" class="flex items-center gap-1 bg-rose-50 px-2 sm:px-2.5 py-1.5 rounded-xl border border-rose-200 text-rose-500 text-sm shadow-xs">
+            <i class="fa-solid fa-heart" id="idiom-life-1"></i>
+            <i class="fa-solid fa-heart" id="idiom-life-2"></i>
+            <i class="fa-solid fa-heart" id="idiom-life-3"></i>
+          </div>
+
+          <!-- 音效開關 -->
+          <button onclick="toggleGameSound()" title="音效開關" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center text-xs sm:text-sm shadow-sm transition-all cursor-pointer">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 難度試別切換列 (童生試 / 進士試 / 狀元試) -->
+      <div class="flex items-center justify-between gap-1.5 sm:gap-2 mb-3.5 p-1.5 bg-slate-100/90 rounded-xl border border-slate-200/90">
+        <div class="text-[11px] sm:text-xs font-black text-slate-500 pl-1.5 hidden sm:flex items-center gap-1">
+          <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 挑戰試別：
+        </div>
+        <div class="flex items-center gap-1.5 flex-1 max-w-lg ml-auto">
+          <button id="idiom-tab-easy" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('easy')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 童生試 (初級·積木)
+          </button>
+          <button id="idiom-tab-medium" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('medium')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span> 進士試 (進階·積木)
+          </button>
+          <button id="idiom-tab-hard" onclick="window.coolGameIdiom && window.coolGameIdiom.setDifficulty('hard')" type="button" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> 狀元試 (大師·手寫)
+          </button>
+        </div>
+      </div>
+
+      <!-- 試別作答型態動態指示條 (狀元大師試手寫；童生/進士試積木選字) -->
+      <div id="idiom-mode-indicator-bar" class="flex items-center justify-between gap-2 mb-2.5 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 transition-all">
+        <div class="flex items-center gap-2 truncate">
+          <span id="idiom-mode-icon" class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs shrink-0 font-black">
+            <i class="fa-solid fa-cubes"></i>
+          </span>
+          <span id="idiom-mode-desc" class="truncate">作答方式：<strong>漢字積木選填</strong>（童生／進士試）</span>
+        </div>
+        <span id="idiom-mode-note" class="text-[11px] font-normal text-slate-500 shrink-0 hidden sm:inline">切換「狀元試 (大師)」開啟手寫直接審題</span>
+      </div>
+
+      <!-- 玩法引導提示與限制提示按鈕 -->
+      <div class="flex items-center justify-between px-3 py-1.5 bg-indigo-50/90 rounded-lg mb-2 text-xs font-bold border border-indigo-100 gap-2">
+        <div class="flex items-center gap-2 text-indigo-900 truncate">
+          <i class="fa-solid fa-lightbulb text-amber-500 text-sm shrink-0"></i>
+          <span id="idiom-rule-hint" class="truncate">觀察成語縱橫上下文，點選棋盤空格即可提筆揮毫審定！</span>
+        </div>
+        <button id="idiom-hint-btn" onclick="window.coolGameIdiom && window.coolGameIdiom.showHint()" class="shrink-0 text-indigo-700 hover:text-indigo-900 bg-white/90 hover:bg-white px-2.5 py-1 rounded-lg border border-indigo-200 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+          <span id="idiom-hint-text">提示 (剩2次)</span>
+        </button>
+      </div>
+
+      <!-- 倒數時間進度條 (平滑動畫) -->
+      <div id="idiom-timer-bar-wrap" class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mb-3">
+        <div id="idiom-timer-bar" class="h-full bg-indigo-500 transition-all duration-1000 ease-linear rounded-full" style="width: 100%;"></div>
+      </div>
+
+      <!-- 成語縱橫棋盤容器 (立體交錯盤) -->
+      <div class="w-full bg-gradient-to-b from-indigo-50/60 via-purple-50/30 to-pink-50/60 rounded-2xl border-2 border-indigo-200/90 p-3 sm:p-6 mb-4 shadow-inner flex flex-col items-center justify-center min-h-[300px] overflow-x-auto">
+        <div id="idiom-grid-board" class="inline-grid gap-1.5 sm:gap-2.5 justify-center items-center my-auto transition-all">
+          <!-- JS 動態生成成語交錯矩陣與孔洞 -->
+        </div>
+      </div>
+
+      <!-- 下方：手寫提示卡片 (手寫模式時顯示) -->
+      <div id="idiom-write-mode-card" class="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/60 rounded-2xl p-3 sm:p-4 border-2 border-amber-300 shadow-md text-center">
+        <div class="flex items-center justify-between text-xs font-bold text-amber-900 mb-2.5 px-1">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-pen-nib text-amber-700"></i> 狀元考場 · 提筆揮毫：</span>
+          <span class="text-amber-700 font-normal">點擊棋盤上的任意待填空格，或直接點右側按鈕提筆作答</span>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
+          <div class="text-xs text-amber-800 font-semibold bg-white/90 py-2 px-3.5 rounded-xl border border-amber-200/90 flex items-center gap-2">
+            <i class="fa-solid fa-square-pen text-amber-600 text-base"></i>
+            <span>當前鎖定：<strong id="idiom-active-slot-hint" class="text-amber-900 font-black">點擊空格開始</strong></span>
+          </div>
+          <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.openHandwriteModal()" class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+            <i class="fa-solid fa-feather-pointed"></i> 開啟米字格手寫板作答
+          </button>
+        </div>
+      </div>
+
+      <!-- 下方：備選漢字積木區 (8~12 塊智慧混淆/形近/同音積木按鈕) (選字模式時顯示) -->
+      <div id="idiom-pool-mode-card" class="hidden bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-3 sm:p-4 border-2 border-indigo-300/80 shadow-md text-center">
+        <div class="flex items-center justify-between text-xs font-bold text-indigo-800 mb-2.5 px-1">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-cubes text-indigo-600"></i> 請選擇漢字積木填入：</span>
+          <span id="idiom-target-hint" class="text-indigo-600 font-normal">點擊置入空格，中途離開自動存檔</span>
+        </div>
+
+        <div id="idiom-pool-container" class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-2xl mx-auto py-1">
+          <!-- JS 動態生成候選積木 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 洞築機先 - 米字格手寫板 (支援觸控筆/手指/滑鼠，繁體筆畫軌跡即時審定) -->
+  <!-- ========================================================================= -->
+  <div id="idiom-handwrite-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-gradient-to-b from-[#fffefc] to-[#fefcf8] rounded-2xl p-4 sm:p-6 max-w-sm w-full text-center shadow-2xl border-2 border-amber-400 card-flip-enter relative">
+      <!-- 頂部標題與關閉 -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center text-sm shadow-xs font-black">
+            <i class="fa-solid fa-pen-nib"></i>
+          </span>
+          <div class="text-left">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">提筆揮毫 · 審字作答</h3>
+            <span class="text-[10px] font-bold text-amber-700">寫完即刻審題 · 判定正誤</span>
+          </div>
+        </div>
+        <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.closeHandwriteModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition-all cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 成語上下文字謎線索提示 -->
+      <div id="idiom-handwrite-clue" class="bg-amber-100/70 border border-amber-200 rounded-xl px-3 py-2 mb-3 text-xs font-bold text-amber-900 flex items-center justify-center gap-2 shadow-inner">
+        <i class="fa-solid fa-book-bookmark text-amber-600"></i>
+        <span id="idiom-handwrite-clue-text">橫向成語：口 若 [ 待填 ] 河</span>
+      </div>
+
+      <!-- 米字格手寫畫布容器 -->
+      <div class="relative w-[280px] h-[280px] sm:w-[300px] sm:h-[300px] mx-auto rounded-xl border-4 border-amber-600/80 shadow-md bg-[#fffdf8] overflow-hidden select-none touch-none">
+        <!-- 米字格背景輔助線 (精美古典紅色九宮米字線) -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-30" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <line x1="0" y1="0" x2="100" y2="100" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <line x1="100" y1="0" x2="0" y2="100" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <line x1="50" y1="0" x2="50" y2="100" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="2,2"/>
+          <rect x="0" y="0" width="100" height="100" fill="none" stroke="#dc2626" stroke-width="1.6"/>
+        </svg>
+
+        <canvas id="idiom-handwrite-canvas" width="300" height="300" class="relative z-10 w-full h-full cursor-crosshair touch-none"></canvas>
+
+        <!-- 判定回饋覆蓋層 (成功/失敗瞬間動畫) -->
+        <div id="idiom-handwrite-feedback" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 backdrop-blur-xs transition-all">
+          <div id="idiom-feedback-icon" class="text-4xl mb-1.5 animate-bounce"></div>
+          <div id="idiom-feedback-msg" class="text-sm font-black text-center px-3 py-1.5 rounded-lg shadow-sm"></div>
+        </div>
+      </div>
+
+      <!-- 操作按鈕列 -->
+      <div class="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-amber-200">
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.clearCanvas()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-rotate-left"></i> 重寫
+          </button>
+          <button type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.undoCanvas()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-arrow-rotate-left"></i> 撤銷筆畫
+          </button>
+        </div>
+        <button id="idiom-handwrite-submit-btn" type="button" onclick="window.coolGameIdiom && window.coolGameIdiom.submitHandwriting()" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+          <i class="fa-solid fa-check"></i> 揮毫審定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 洞築機先 - 通關慶祝卡片 (釋義、注音、例句全解析，需逐一確認閱讀)   -->
+  <!-- ========================================================================= -->
+  <div id="idiom-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-indigo-400 card-flip-enter max-h-[90vh] overflow-y-auto">
+      <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-indigo-300 shadow-sm animate-bounce">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </div>
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <span id="idiom-success-diff-badge" class="px-2.5 py-0.5 rounded-md text-xs font-black bg-amber-100 text-amber-800 border border-amber-200">進士試</span>
+        <span id="idiom-success-level-badge" class="px-2.5 py-0.5 rounded-md text-xs font-black bg-indigo-100 text-indigo-700 border border-indigo-200">第 1 關</span>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-0.5">太厲害了！完全答對！</h3>
+      <p class="text-xs text-indigo-600 font-bold mb-3">請點選下方每一則成語卡片確認讀懂，即可晉級下一關！</p>
+
+      <!-- 閱讀進度提示條 -->
+      <div class="flex items-center justify-between text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg mb-4">
+        <span><i class="fa-solid fa-book-open-reader text-indigo-600 mr-1"></i>成語閱讀確認</span>
+        <span id="idiom-read-progress" class="text-indigo-700 font-black">0 / 0 已研讀</span>
+      </div>
+
+      <!-- 包含的成語詳細解說卡 -->
+      <div id="idiom-success-details" class="space-y-3 mb-5 text-left">
+        <!-- JS 動態填入本關成語解析 (可點擊切換已研讀勾選狀態) -->
+      </div>
+
+      <div class="space-y-2">
+        <button id="btn-idiom-next-level" disabled onclick="window.coolGameIdiom && window.coolGameIdiom.nextLevel()" class="w-full py-3.5 bg-slate-300 text-slate-500 font-black rounded-xl shadow-md text-base transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>請先點擊上方成語確認讀懂</span> <i class="fa-solid fa-lock text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 洞築機先 - 遊戲結束 (機會用盡，完整揭曉正確答案與棋盤)              -->
+  <!-- ========================================================================= -->
+  <div id="idiom-gameover-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-lg w-full text-center shadow-2xl border-2 border-rose-300 card-flip-enter max-h-[90vh] overflow-y-auto">
+      <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-rose-300 shadow-sm">
+        <i class="fa-solid fa-heart-crack"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-0.5">生命值耗盡！本題答案揭曉</h3>
+      <p class="text-xs text-slate-500 mb-3">別氣餒！仔細看看正確交會字與成語解析，下次一定能洞築機先！</p>
+
+      <!-- 揭曉正確解答框 (重點顯示缺失交錯字) -->
+      <div class="bg-amber-50 rounded-xl p-3.5 border-2 border-amber-300 text-left mb-4 shadow-inner">
+        <div class="text-xs font-black text-amber-900 flex items-center gap-1.5 mb-2">
+          <i class="fa-solid fa-key text-amber-600"></i> 本關正確填空字：
+          <span id="idiom-gameover-answers" class="text-base text-rose-600 font-black ml-1"></span>
+        </div>
+        <!-- 縮小版完整棋盤還原 -->
+        <div class="text-[11px] font-bold text-slate-500 mb-1">完整交錯棋盤：</div>
+        <div id="idiom-gameover-board-preview" class="inline-grid gap-1.5 justify-center items-center mx-auto my-1 p-2 bg-white/80 rounded-lg border border-amber-200">
+          <!-- JS 動態渲染本題完整答案棋盤 -->
+        </div>
+      </div>
+
+      <!-- 本題成語解析清單 -->
+      <div id="idiom-gameover-details" class="space-y-2.5 mb-4 text-left">
+        <!-- JS 動態填入成語注音與釋義 -->
+      </div>
+
+      <!-- 成績統計 -->
+      <div class="bg-indigo-50 rounded-xl p-2.5 border border-indigo-200 mb-4 text-xs font-bold text-indigo-800 flex items-center justify-around">
+        <span id="idiom-gameover-diff-badge" class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 font-black">進士試</span>
+        <span>本次共成功通關：<strong id="idiom-gameover-score" class="text-base text-indigo-600 font-black">0</strong> 關</span>
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="restartIdiomGame()" class="w-full py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-600 hover:from-indigo-600 hover:to-pink-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 重新開始新挑戰！
+        </button>
+        <button onclick="closeIdiomGameOverAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- ========================================================================= -->
+  <!-- 視圖 5: 傑克與魔豆 - 遊戲主畫面 (模式B：藤蔓攀爬闖關)                         -->
+  <!-- ========================================================================= -->
+  <section id="view-game-beanstalk" class="w-full max-w-3xl mx-auto my-auto hidden card-flip-enter pb-6">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl border border-white flex flex-col gap-4">
+      
+      <!-- 頂部控制與階段儀表 -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <button onclick="backToGamesLobbyFromBeanstalk()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i> 回大廳
+          </button>
+          <span id="beanstalk-stage-badge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
+            <span id="beanstalk-stage-text">🌱 萌芽生長 (0~500m)</span>
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 連對指示徽章 -->
+          <span id="beanstalk-combo-badge" class="hidden items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-xs shadow-xs">
+            <i class="fa-solid fa-fire text-amber-200"></i>
+            <span id="beanstalk-combo-text">0 連對！</span>
+          </span>
+
+          <!-- 音效切換 -->
+          <button onclick="toggleGameSound()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-sm transition-all" title="切換音效">
+            <i class="fa-solid fa-music"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 高度攀爬進度條 -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-inner">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-1.5">
+          <span class="flex items-center gap-1.5">
+            <i class="fa-solid fa-mountain text-emerald-600"></i> 目前高度:
+            <span id="beanstalk-height-text" class="text-base font-black text-emerald-700 font-mono">0</span> m
+          </span>
+          <span class="text-slate-400">雲端城堡目標：3,000 m</span>
+        </div>
+        <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden p-0.5">
+          <div id="beanstalk-height-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-sky-500 to-purple-600 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- 10 秒倒數計時進度條 -->
+      <div class="bg-amber-50/60 border border-amber-200/80 rounded-xl px-3 py-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-amber-900 flex items-center gap-1">
+            <i class="fa-solid fa-stopwatch text-amber-600"></i> 答題倒數 (超過 10 秒摔落！)
+          </span>
+          <span id="beanstalk-timer-text" class="font-black text-slate-700 text-sm font-mono">10.0s</span>
+        </div>
+        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div id="beanstalk-timer-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-100 ease-linear" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 魔豆樹與傑克攀爬 SVG 互動舞台 -->
+      <div id="beanstalk-scene-container" class="w-full h-56 sm:h-64 rounded-xl border border-slate-200 shadow-inner relative overflow-hidden flex items-center justify-center">
+        <!-- 浮動加速衝刺標籤 -->
+        <div id="beanstalk-spurt-badge" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1 rounded-full bg-amber-400 text-amber-950 font-black text-xs sm:text-sm shadow-lg pointer-events-none transition-all duration-300">
+          +150m
+        </div>
+
+        <svg id="beanstalk-svg" viewBox="0 0 400 360" class="w-full h-full select-none">
+          <defs>
+            <!-- 階段1天空漸層 (地表鄉村) -->
+            <linearGradient id="sky-stage1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#bae6fd"/>
+              <stop offset="60%" stop-color="#e0f2fe"/>
+              <stop offset="100%" stop-color="#dcfce7"/>
+            </linearGradient>
+
+            <!-- 階段2天空漸層 (浩瀚藍天雲層) -->
+            <linearGradient id="sky-stage2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0284c7"/>
+              <stop offset="50%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#bae6fd"/>
+            </linearGradient>
+
+            <!-- 階段3天空漸層 (天界暮光與金色城堡) -->
+            <linearGradient id="sky-stage3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2e1065"/>
+              <stop offset="45%" stop-color="#6b21a8"/>
+              <stop offset="85%" stop-color="#c084fc"/>
+              <stop offset="100%" stop-color="#fef08a"/>
+            </linearGradient>
+
+            <!-- 藤蔓枝幹漸層 -->
+            <linearGradient id="vine-grad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#15803d"/>
+              <stop offset="50%" stop-color="#22c55e"/>
+              <stop offset="100%" stop-color="#4ade80"/>
+            </linearGradient>
+
+            <!-- 城堡金色漸層 -->
+            <linearGradient id="castle-gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fef08a"/>
+              <stop offset="50%" stop-color="#facc15"/>
+              <stop offset="100%" stop-color="#eab308"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 背景天空 -->
+          <rect id="beanstalk-svg-bg" width="400" height="360" fill="url(#sky-stage1)"/>
+
+          <!-- 階段1背景裝飾：地面丘陵與草地 (0~500m) -->
+          <g id="beanstalk-stage1-group" opacity="1" class="transition-opacity duration-700">
+            <!-- 遠方丘陵 -->
+            <ellipse cx="80" cy="350" rx="140" ry="40" fill="#86efac" opacity="0.6"/>
+            <ellipse cx="320" cy="355" rx="130" ry="38" fill="#4ade80" opacity="0.7"/>
+            <rect x="0" y="335" width="400" height="25" fill="#16a34a"/>
+            <!-- 小花朵 -->
+            <circle cx="60" cy="336" r="3" fill="#f43f5e"/>
+            <circle cx="75" cy="338" r="2.5" fill="#fde047"/>
+            <circle cx="340" cy="337" r="3" fill="#ec4899"/>
+            <circle cx="325" cy="339" r="2.5" fill="#38bdf8"/>
+          </g>
+
+          <!-- 階段2背景裝飾：漂浮立體白雲 (500~1500m) -->
+          <g id="beanstalk-stage2-group" opacity="0" class="transition-opacity duration-700 pointer-events-none">
+            <!-- 左浮雲 -->
+            <g transform="translate(20, 90)">
+              <ellipse cx="40" cy="20" rx="35" ry="18" fill="#ffffff" opacity="0.9"/>
+              <ellipse cx="60" cy="15" rx="25" ry="20" fill="#ffffff" opacity="0.95"/>
+              <ellipse cx="25" cy="22" rx="20" ry="14" fill="#ffffff" opacity="0.85"/>
+            </g>
+            <!-- 右浮雲 -->
+            <g transform="translate(280, 160)">
+              <ellipse cx="45" cy="20" rx="40" ry="18" fill="#ffffff" opacity="0.9"/>
+              <ellipse cx="65" cy="14" rx="28" ry="20" fill="#ffffff" opacity="0.95"/>
+              <ellipse cx="25" cy="22" rx="22" ry="15" fill="#ffffff" opacity="0.85"/>
+            </g>
+            <!-- 氣流線條 -->
+            <path d="M 50 180 Q 90 175 140 182" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="8 6"/>
+            <path d="M 270 110 Q 320 105 370 112" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="8 6"/>
+          </g>
+
+          <!-- 階段3背景裝飾：彩虹與雲端巨人古堡 (1500~3000m) -->
+          <g id="beanstalk-stage3-group" opacity="0" class="transition-opacity duration-700 pointer-events-none">
+            <!-- 彩虹光芒 -->
+            <path d="M 40 180 A 180 180 0 0 1 360 180" fill="none" stroke="#f43f5e" stroke-width="3" opacity="0.4"/>
+            <path d="M 45 180 A 175 175 0 0 1 355 180" fill="none" stroke="#facc15" stroke-width="3" opacity="0.4"/>
+            <path d="M 50 180 A 170 170 0 0 1 350 180" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.4"/>
+
+            <!-- 閃閃金星 -->
+            <polygon points="90,45 92,50 97,52 92,54 90,59 88,54 83,52 88,50" fill="#fef08a"/>
+            <polygon points="310,35 312,40 317,42 312,44 310,49 308,44 303,42 308,40" fill="#fef08a"/>
+
+            <!-- 頂部巨大金黃雲端城堡 -->
+            <g transform="translate(130, 8)">
+              <!-- 城堡底座雲朵 -->
+              <ellipse cx="70" cy="50" rx="85" ry="18" fill="#ffffff" opacity="0.95"/>
+              <ellipse cx="40" cy="46" rx="45" ry="16" fill="#ffffff"/>
+              <ellipse cx="100" cy="46" rx="45" ry="16" fill="#ffffff"/>
+              <!-- 城堡主體塔樓 -->
+              <rect x="35" y="16" width="70" height="30" fill="url(#castle-gold)" rx="3" stroke="#ca8a04" stroke-width="1.5"/>
+              <!-- 左側小塔樓 -->
+              <rect x="22" y="10" width="18" height="35" fill="url(#castle-gold)" stroke="#ca8a04" stroke-width="1.5"/>
+              <polygon points="22,10 31,0 40,10" fill="#f43f5e" stroke="#be123c" stroke-width="1.5"/>
+              <!-- 右側小塔樓 -->
+              <rect x="100" y="10" width="18" height="35" fill="url(#castle-gold)" stroke="#ca8a04" stroke-width="1.5"/>
+              <polygon points="100,10 109,0 118,10" fill="#f43f5e" stroke="#be123c" stroke-width="1.5"/>
+              <!-- 中央大主塔 -->
+              <rect x="58" y="2" width="24" height="25" fill="url(#castle-gold)" stroke="#ca8a04" stroke-width="1.5"/>
+              <polygon points="56,2 70,-10 84,2" fill="#e11d48" stroke="#9f1239" stroke-width="1.5"/>
+              <!-- 旗幟 -->
+              <line x1="70" y1="-10" x2="70" y2="-18" stroke="#ca8a04" stroke-width="2"/>
+              <polygon points="70,-18 82,-14 70,-10" fill="#38bdf8"/>
+              <!-- 城堡大門拱門 -->
+              <path d="M 62 46 L 62 30 Q 70 24 78 30 L 78 46 Z" fill="#713f12"/>
+            </g>
+          </g>
+
+          <!-- 中央通天魔豆藤主藤蔓 -->
+          <g id="beanstalk-vine-group">
+            <!-- 蜿蜒主藤蔓 -->
+            <path d="M 200 360 Q 155 300 200 240 Q 245 180 190 120 Q 145 70 200 30" 
+                  fill="none" stroke="url(#vine-grad)" stroke-width="22" stroke-linecap="round"/>
+            <path d="M 200 360 Q 155 300 200 240 Q 245 180 190 120 Q 145 70 200 30" 
+                  fill="none" stroke="#15803d" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+
+            <!-- 捲曲藤蔓細鬚裝飾 -->
+            <path d="M 180 270 Q 150 280 145 260 Q 140 245 155 248" fill="none" stroke="#22c55e" stroke-width="3"/>
+            <path d="M 220 160 Q 255 170 258 150 Q 260 135 245 140" fill="none" stroke="#22c55e" stroke-width="3"/>
+            <path d="M 175 100 Q 145 110 140 90 Q 135 75 150 80" fill="none" stroke="#22c55e" stroke-width="3"/>
+
+            <!-- 葉片站台 0: 地表出發點 (x:175, y:280) -->
+            <g transform="translate(165, 305)">
+              <ellipse cx="35" cy="15" rx="30" ry="12" fill="#15803d" opacity="0.3"/>
+            </g>
+
+            <!-- 葉片站台 1: 左下大葉片 (x:125, y:235) -->
+            <g transform="translate(90, 240) rotate(-10)">
+              <path d="M 85 10 Q 30 -5 10 18 Q 40 38 85 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 85 14 Q 50 12 25 18" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 2: 右下大葉片 (x:230, y:185) -->
+            <g transform="translate(205, 190) rotate(15)">
+              <path d="M 0 14 Q 50 -8 85 15 Q 50 35 0 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 0 16 Q 40 12 70 15" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 3: 左中大葉片 (x:120, y:135) -->
+            <g transform="translate(85, 140) rotate(-12)">
+              <path d="M 85 10 Q 30 -5 10 18 Q 40 38 85 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 85 14 Q 50 12 25 18" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 4: 右中大葉片 (x:235, y:85) -->
+            <g transform="translate(210, 90) rotate(12)">
+              <path d="M 0 14 Q 50 -8 85 15 Q 50 35 0 18 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
+              <path d="M 0 16 Q 40 12 70 15" stroke="#15803d" stroke-width="1.5" fill="none"/>
+            </g>
+
+            <!-- 葉片站台 5: 頂端雲端入口雲台 (x:180, y:40) -->
+            <g transform="translate(150, 48)">
+              <ellipse cx="50" cy="15" rx="45" ry="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+              <ellipse cx="30" cy="12" rx="22" ry="12" fill="#ffffff"/>
+              <ellipse cx="70" cy="12" rx="22" ry="12" fill="#ffffff"/>
+            </g>
+          </g>
+
+          <!-- 冒險小傑克 (Jack Character Group) -->
+          <g id="beanstalk-jack-group" transform="translate(175, 280)" class="transition-transform duration-500 ease-out">
+            <!-- 陰影 -->
+            <ellipse cx="25" cy="38" rx="14" ry="5" fill="#0f172a" opacity="0.3"/>
+            <!-- 身體與服裝 (藍色吊帶褲) -->
+            <rect x="17" y="16" width="16" height="18" rx="4" fill="#2563eb"/>
+            <!-- 黃色襯衫袖子與手臂 -->
+            <rect x="14" y="16" width="22" height="7" rx="3" fill="#facc15"/>
+            <!-- 雙手抓握姿勢 -->
+            <circle cx="12" cy="20" r="3.5" fill="#fed7aa"/>
+            <circle cx="38" cy="20" r="3.5" fill="#fed7aa"/>
+            <!-- 雙腿 -->
+            <rect x="17" y="32" width="6" height="7" fill="#1e40af"/>
+            <rect x="27" y="32" width="6" height="7" fill="#1e40af"/>
+            <!-- 咖啡色靴子 -->
+            <rect x="15" y="36" width="8" height="4" rx="2" fill="#78350f"/>
+            <rect x="27" y="36" width="8" height="4" rx="2" fill="#78350f"/>
+            <!-- 傑克頭部 (生動圓臉) -->
+            <circle cx="25" cy="8" r="9" fill="#fed7aa" stroke="#ea580c" stroke-width="1"/>
+            <!-- 眼睛 -->
+            <circle cx="22" cy="7" r="1.5" fill="#1e293b"/>
+            <circle cx="28" cy="7" r="1.5" fill="#1e293b"/>
+            <!-- 微笑 -->
+            <path d="M 23 11 Q 25 14 27 11" fill="none" stroke="#e11d48" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- 冒險草帽 (草黃色 + 紅緞帶) -->
+            <ellipse cx="25" cy="3" rx="16" ry="5" fill="#fde047" stroke="#ca8a04" stroke-width="1.2"/>
+            <path d="M 16 2 Q 25 -8 34 2 Z" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+            <rect x="18" y="1" width="14" height="2" fill="#ef4444"/>
+            <!-- 冒險小水壺 -->
+            <circle cx="35" cy="24" r="3.5" fill="#06b6d4" stroke="#0891b2" stroke-width="1"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 題目與選項面板 -->
+      <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
+        <!-- 題目類別與標籤 -->
+        <div class="flex items-center gap-2 mb-2">
+          <span id="beanstalk-question-category" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            自然科學
+          </span>
+          <span id="beanstalk-question-topic" class="text-xs font-bold text-slate-500">
+            水溶液與酸鹼
+          </span>
+        </div>
+
+        <!-- 題幹 -->
+        <h4 id="beanstalk-question-text" class="text-base sm:text-lg font-black text-slate-800 leading-relaxed mb-4">
+          載入題目中...
+        </h4>
+
+        <!-- 四個選項按鈕 (A, B, C, D) -->
+        <div id="beanstalk-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+          <!-- 由 JS 動態注入選項按鈕 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 傑克與魔豆 - 摔落 Game Over 彈窗 (超時10秒或答錯摔落，含答案與解析)   -->
+  <!-- ========================================================================= -->
+  <div id="beanstalk-gameover-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border-2 border-rose-200 transform transition-all flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      
+      <!-- 頂部摔落插畫 -->
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-2 text-2xl shadow-inner animate-bounce">
+          <i class="fa-solid fa-person-falling"></i>
+        </div>
+        <h3 id="beanstalk-gameover-title" class="text-xl font-black text-slate-800">
+          哎呀！攀爬失足摔落！
+        </h3>
+        <p id="beanstalk-gameover-reason" class="text-xs text-rose-600 font-bold mt-1">
+          每一題作答時間為 10 秒，魔豆藤蔓劇烈晃動，傑克沒抓穩掉下去啦！
+        </p>
+      </div>
+
+      <!-- 成績簡報 -->
+      <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">攀爬高度</div>
+          <div id="beanstalk-gameover-height" class="text-base font-black text-emerald-600 font-mono">0 m</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">答對題數</div>
+          <div id="beanstalk-gameover-score" class="text-base font-black text-indigo-600 font-mono">0 題</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">最高連擊</div>
+          <div id="beanstalk-gameover-combo" class="text-base font-black text-amber-500 font-mono">0 次</div>
+        </div>
+      </div>
+
+      <!-- 錯題檢視與解析 -->
+      <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 text-xs text-left">
+        <div class="font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-lightbulb text-amber-600"></i> 本題正解與觀念解析：
+        </div>
+        <div id="beanstalk-gameover-question" class="text-slate-800 font-bold mb-2 text-xs sm:text-sm leading-relaxed">
+          -
+        </div>
+        <div class="bg-white p-2.5 rounded-lg border border-amber-200 mb-2">
+          <span class="text-slate-500 font-medium">正確答案：</span>
+          <span id="beanstalk-gameover-answer" class="font-black text-emerald-600 text-sm">-</span>
+        </div>
+        <p id="beanstalk-gameover-explanation" class="text-slate-600 leading-relaxed text-[11px]">
+          -
+        </p>
+      </div>
+
+      <!-- 按鈕區 -->
+      <div class="flex flex-col gap-2 pt-1">
+        <button onclick="restartBeanstalkGame()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再次攀登新挑戰！
+        </button>
+        <button onclick="closeBeanstalkGameOverAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 彈窗: 傑克與魔豆 - 雲端古堡登頂開寶箱 (Victory Modal)                          -->
+  <!-- ========================================================================= -->
+  <div id="beanstalk-victory-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-purple-50 via-white to-amber-50 rounded-2xl max-w-lg w-full p-6 shadow-2xl border-2 border-amber-300 transform transition-all flex flex-col gap-4 text-center">
+      
+      <!-- 登頂皇冠 -->
+      <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center mx-auto text-3xl shadow-md animate-bounce">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800">
+        🎉 成功登頂雲端巨人古堡！
+      </h3>
+      <p class="text-xs text-purple-700 font-bold">
+        恭喜你勇破 3,000 公尺天界！神聖魔豆直衝雲霄，解鎖傳說中的天界寶藏！
+      </p>
+
+      <!-- 寶箱開箱互動區 -->
+      <div class="bg-white/80 p-5 rounded-xl border border-amber-200 shadow-inner flex flex-col items-center justify-center min-h-[160px]">
+        
+        <!-- 未開箱狀態 -->
+        <div id="beanstalk-chest-closed" onclick="openBeanstalkChest()" class="cursor-pointer group flex flex-col items-center">
+          <div class="text-6xl text-amber-500 drop-shadow-md group-hover:scale-110 transition-transform animate-pulse">
+            <i class="fa-solid fa-box-open"></i>
+          </div>
+          <span class="mt-3 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-black text-xs shadow-md group-hover:scale-105 transition-transform flex items-center gap-1.5">
+            <i class="fa-solid fa-key"></i> 點擊開啟金色寶箱！
+          </span>
+        </div>
+
+        <!-- 開箱後榮耀展示 -->
+        <div id="beanstalk-chest-opened" class="hidden flex flex-col items-center gap-2">
+          <div class="flex items-center justify-center gap-4 text-4xl text-amber-500 my-1">
+            <span title="生金蛋的鵝"><i class="fa-solid fa-egg text-yellow-400 drop-shadow-sm"></i></span>
+            <span title="黃金金幣"><i class="fa-solid fa-coins text-amber-500 drop-shadow-sm"></i></span>
+            <span title="會唱歌的魔法豎琴"><i class="fa-solid fa-music text-purple-500 drop-shadow-sm"></i></span>
+          </div>
+          <h4 class="text-lg font-black text-amber-800">
+            獲得「👑 雲端巨人征服者」傳奇勳章！
+          </h4>
+          <p class="text-xs text-slate-600 leading-relaxed max-w-xs">
+            你獲得了金蛋、魔法豎琴與無數金幣！你的自然與社會學科知識已登峰造極！
+          </p>
+        </div>
+      </div>
+
+      <!-- 成績總覽 -->
+      <div class="grid grid-cols-3 gap-2 bg-white/70 p-3 rounded-xl border border-purple-200 text-center">
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">登頂高度</div>
+          <div id="beanstalk-victory-height" class="text-base font-black text-emerald-600 font-mono">3,000 m</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">總答對</div>
+          <div id="beanstalk-victory-score" class="text-base font-black text-indigo-600 font-mono">-</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400">最高連擊</div>
+          <div id="beanstalk-victory-combo" class="text-base font-black text-amber-500 font-mono">-</div>
+        </div>
+      </div>
+
+      <!-- 按鈕區 -->
+      <div class="flex flex-col gap-2 pt-2">
+        <button onclick="restartBeanstalkGame()" class="w-full py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 text-white font-black rounded-xl shadow-md text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 再玩一局！
+        </button>
+        <button onclick="closeBeanstalkVictoryAndBack()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+          返回遊戲大廳
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/data/idioms200.js"></script>
+  <script src="assets/js/data/beanstalk_questions.js"></script>
+  <script src="assets/js/games.js"></script>
+
+  <script>
+    // 初始化使用者顯示
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = JSON.parse(sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user') || 'null');
+      if (user) {
+        const badge = document.getElementById('user-profile-badge');
+        const nameEl = document.getElementById('header-user-name');
+        const seatEl = document.getElementById('header-user-seat');
+        if (badge) badge.classList.remove('hidden');
+        if (nameEl) nameEl.textContent = user.name || '同學';
+        if (seatEl) seatEl.textContent = `座號: ${user.seatNo || '-'}`;
+      }
+    });
+
+    function logoutCurrentStudent() {
+      sessionStorage.removeItem('g6_portal_user');
+      localStorage.removeItem('g6_portal_user');
+      window.location.assign('index.html');
+    }
+
+    // 搶救字母大作戰控制器
+    function openRescueGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
+      const gameView = document.getElementById('view-game-rescue');
+      gameView.classList.remove('hidden');
+      
+      if (window.coolGameRescue) {
+        window.coolGameRescue.start();
+      }
+    }
+
+    function backToGamesLobby() {
+      if (window.coolGameRescue) {
+        window.coolGameRescue.isRunning = false;
+      }
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartRescueGame() {
+      const modal = document.getElementById('rescue-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      if (window.coolGameRescue) {
+        window.coolGameRescue.start();
+      }
+    }
+
+    function closeGameOverAndBack() {
+      const modal = document.getElementById('rescue-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobby();
+    }
+
+    // 光速小鼠控制器
+    function openSpeedyMouseGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
+      const mouseView = document.getElementById('view-game-mouse');
+      mouseView.classList.remove('hidden');
+
+      if (window.coolGameSpeedyMouse) {
+        window.coolGameSpeedyMouse.start();
+      }
+    }
+
+    function backToGamesLobbyFromMouse() {
+      if (window.coolGameSpeedyMouse) {
+        window.coolGameSpeedyMouse.isRunning = false;
+        if (window.coolGameSpeedyMouse.timerInterval) clearInterval(window.coolGameSpeedyMouse.timerInterval);
+      }
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartSpeedyMouseGame() {
+      const modal = document.getElementById('mouse-result-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      if (window.coolGameSpeedyMouse) {
+        window.coolGameSpeedyMouse.start();
+      }
+    }
+
+    function closeMouseResultAndBack() {
+      const modal = document.getElementById('mouse-result-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromMouse();
+    }
+
+    // 成語疊疊樂控制器
+    function openIdiomGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
+      const idiomView = document.getElementById('view-game-idiom');
+      idiomView.classList.remove('hidden');
+
+      if (window.coolGameIdiom) {
+        window.coolGameIdiom.start();
+      }
+    }
+
+    function backToGamesLobbyFromIdiom() {
+      if (window.coolGameIdiom) {
+        window.coolGameIdiom.isRunning = false;
+        if (window.coolGameIdiom.stopTimer) {
+          window.coolGameIdiom.stopTimer();
+        }
+      }
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartIdiomGame() {
+      const modal = document.getElementById('idiom-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      if (window.coolGameIdiom) {
+        window.coolGameIdiom.start();
+      }
+    }
+
+    function closeIdiomGameOverAndBack() {
+      const modal = document.getElementById('idiom-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromIdiom();
+    }
+
+    
+    // 傑克與魔豆控制器
+    function openBeanstalkGame() {
+      document.getElementById('view-games-lobby').classList.add('hidden');
+      document.getElementById('view-game-rescue').classList.add('hidden');
+      document.getElementById('view-game-mouse').classList.add('hidden');
+      document.getElementById('view-game-idiom').classList.add('hidden');
+      const beanstalkView = document.getElementById('view-game-beanstalk');
+      beanstalkView.classList.remove('hidden');
+
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.start();
+      }
+    }
+
+    function backToGamesLobbyFromBeanstalk() {
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.isRunning = false;
+        if (window.coolGameBeanstalk.timerInterval) {
+          clearInterval(window.coolGameBeanstalk.timerInterval);
+          window.coolGameBeanstalk.timerInterval = null;
+        }
+      }
+      document.getElementById('view-game-beanstalk').classList.add('hidden');
+      document.getElementById('view-games-lobby').classList.remove('hidden');
+    }
+
+    function restartBeanstalkGame() {
+      const goModal = document.getElementById('beanstalk-gameover-modal');
+      const vicModal = document.getElementById('beanstalk-victory-modal');
+      if (goModal) { goModal.classList.add('hidden'); goModal.classList.remove('flex'); }
+      if (vicModal) { vicModal.classList.add('hidden'); vicModal.classList.remove('flex'); }
+
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.start();
+      }
+    }
+
+    function closeBeanstalkGameOverAndBack() {
+      const modal = document.getElementById('beanstalk-gameover-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromBeanstalk();
+    }
+
+    function closeBeanstalkVictoryAndBack() {
+      const modal = document.getElementById('beanstalk-victory-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      backToGamesLobbyFromBeanstalk();
+    }
+
+    function openBeanstalkChest() {
+      if (window.coolGameBeanstalk) {
+        window.coolGameBeanstalk.openChest();
+      }
+    }
+
+    function toggleGameSound() {
+      if (window.coolGameSounds) {
+        const isMuted = window.coolGameSounds.toggleMute();
+        const btn = document.getElementById('btn-toggle-sound');
+        if (btn) {
+          btn.innerHTML = isMuted ? '<i class="fa-solid fa-volume-xmark text-slate-400"></i>' : '<i class="fa-solid fa-music text-slate-700"></i>';
+        }
+        showGameToast(isMuted ? '音效已靜音' : '音效已開啟');
+      }
+    }
+
+    function showGameToast(msg, icon = 'fa-circle-info') {
+      const c = document.getElementById('toast-container');
+      const t = document.getElementById('toast-text');
+      const i = document.getElementById('toast-icon');
+      if (!c || !t) return;
+      t.textContent = msg;
+      if (i) i.className = `fa-solid ${icon} text-amber-300`;
+      c.style.opacity = '1';
+      c.style.transform = 'translate(-50%, -50%) scale(1)';
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        c.style.opacity = '0';
+        c.style.transform = 'translate(-50%, -50%) scale(0.9)';
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,819 @@
+/**
+ * 酷學習 (Cool Learning) - 現代極簡磨砂微光主題 (Modern Commercial Theme)
+ * 依據 @ui-ux-pro-max 規範量身打造：半透明磨砂質感、高年級學童活力配色、商業化遊戲儀表板。
+ * 僅在 [data-theme="modern"] 或 body.theme-modern 時生效，完全不干擾經典版本樣式。
+ */
+
+/* ==========================================================================
+   0. 商業化設計變數 (Design Tokens)
+   ========================================================================== */
+:root, [data-theme="modern"] {
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+
+  /* 磨砂玻璃 (Glassmorphism) 高級質感 */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-bg-hover: rgba(255, 255, 255, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.07), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --glass-shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.13), 0 8px 20px -4px rgba(15, 23, 42, 0.06);
+
+  /* 商業級兒童活力學科色 (符合 4.5:1 對比度) */
+  --subject-math: #0284C7;
+  --subject-math-light: #E0F2FE;
+  --subject-math-gradient: linear-gradient(135deg, #0284C7, #0EA5E9);
+
+  --subject-english: #F43F5E;
+  --subject-english-light: #FFE4E6;
+  --subject-english-gradient: linear-gradient(135deg, #E11D48, #F43F5E);
+
+  --subject-nature: #D97706;
+  --subject-nature-light: #FEF3C7;
+  --subject-nature-gradient: linear-gradient(135deg, #D97706, #F59E0B);
+
+  --subject-chinese: #059669;
+  --subject-chinese-light: #D1FAE5;
+  --subject-chinese-gradient: linear-gradient(135deg, #059669, #10B981);
+
+  --subject-social: #7C3AED;
+  --subject-social-light: #EDE9FE;
+  --subject-social-gradient: linear-gradient(135deg, #7C3AED, #8B5CF6);
+
+  --subject-games: #DB2777;
+  --subject-games-light: #FCE7F3;
+  --subject-games-gradient: linear-gradient(135deg, #DB2777, #EC4899);
+
+  --ease-linear: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-snappy: 0.22s;
+}
+
+/* ==========================================================================
+   1. 現代畫布底色與字體
+   ========================================================================== */
+[data-theme="modern"] body {
+  background-color: #F8FAFC !important;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 48%),
+    radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.14) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(245, 158, 11, 0.08) 0px, transparent 52%),
+    linear-gradient(145deg, #F8FAFC 0%, #F1F5F9 100%) !important;
+  background-attachment: fixed !important;
+  color: #0F172A !important;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme="modern"] body.is-login-state {
+  background-color: #F8FAFC !important;
+  background-image: 
+    radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.16) 0px, transparent 45%),
+    radial-gradient(at 85% 80%, rgba(14, 165, 233, 0.16) 0px, transparent 45%),
+    radial-gradient(at 50% 50%, rgba(245, 158, 11, 0.08) 0px, transparent 55%),
+    linear-gradient(135deg, #EEF2F6 0%, #F8FAFC 100%) !important;
+}
+
+/* ==========================================================================
+   2. 雙軌切換開關 (Feature Flag Toggle Button)
+   ========================================================================== */
+.btn-ui-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  background: rgba(255, 255, 255, 0.92);
+  color: #475569;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+  user-select: none;
+}
+
+.btn-ui-theme-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="modern"] .btn-ui-theme-toggle {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #4F46E5;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+}
+
+/* ==========================================================================
+   3. 全域頂部導覽列 (Global Header) 磨砂微光升級
+   ========================================================================== */
+[data-theme="modern"] #global-header {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.04) !important;
+  padding: 12px 20px !important;
+  transition: all 0.25s ease;
+}
+
+[data-theme="modern"] #btn-go-home img,
+[data-theme="modern"] #btn-home > div:first-child {
+  border-radius: 14px !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.22) !important;
+}
+
+/* ==========================================================================
+   4. 登入畫面 (Login Screen) 商業極簡磨砂質感
+   ========================================================================== */
+[data-theme="modern"] #view-login {
+  max-width: 480px;
+}
+
+[data-theme="modern"] #view-login > div {
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  border-radius: 26px !important;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.13), 0 8px 20px -4px rgba(15, 23, 42, 0.06) !important;
+  padding: 36px 32px !important;
+}
+
+/* 學生/家長 Segmented Tab 切換列 */
+[data-theme="modern"] #login-tab-student,
+[data-theme="modern"] #login-tab-guardian {
+  font-family: inherit;
+  font-weight: 800;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 輸入框 Linear 風格加強 */
+[data-theme="modern"] #view-login input {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="modern"] #view-login input:focus {
+  border-color: #0284C7 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 0 3.5px rgba(2, 132, 199, 0.16) !important;
+}
+
+/* 登入主要按鈕 Linear 漸變膠囊 */
+[data-theme="modern"] #btn-student-login-submit,
+[data-theme="modern"] #btn-guardian-login-submit {
+  background: linear-gradient(135deg, #0284C7 0%, #4F46E5 100%) !important;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3) !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px;
+}
+
+[data-theme="modern"] #btn-student-login-submit:hover,
+[data-theme="modern"] #btn-guardian-login-submit:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4) !important;
+}
+
+/* ==========================================================================
+   5. 首頁大廳畫面 (Subject Lobby) - Apple 旗艦流體 Bento Grid ＋ 懸浮動態島
+   ========================================================================== */
+
+/* 預設現代旗艦版為第一公民 (Default Modern Bento Grid) */
+.subjects-classic-view {
+  display: none !important;
+}
+.subjects-modern-view {
+  display: block !important;
+}
+.apple-floating-dock {
+  display: flex !important;
+}
+
+#view-subjects {
+  max-width: 1240px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 12px 14px 110px !important; /* 保留底部懸浮 Dock 空間 */
+}
+
+/* 僅當明確設定 data-theme="classic" 時切回經典版 */
+[data-theme="classic"] .subjects-modern-view,
+[data-theme="classic"] .apple-floating-dock {
+  display: none !important;
+}
+[data-theme="classic"] .subjects-classic-view {
+  display: block !important;
+}
+[data-theme="classic"] #view-subjects {
+  max-width: 48rem !important; /* 還原經典版 3xl 寬度 */
+  padding: 12px 14px 40px !important;
+}
+
+[data-theme="modern"] .subjects-classic-view {
+  display: none !important;
+}
+[data-theme="modern"] .subjects-modern-view {
+  display: block !important;
+}
+[data-theme="modern"] .apple-floating-dock {
+  display: flex !important;
+}
+
+/* 1. 頂部懸浮動態島 (Floating Dynamic Island HUD) */
+.dynamic-island-bar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(32px) saturate(210%);
+  -webkit-backdrop-filter: blur(32px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 16px 36px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03), inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  border-radius: 9999px;
+  padding: 10px 22px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.island-greeting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.island-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366F1, #0284C7);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.island-user-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.island-user-sub {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.island-chips-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.island-chip {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.03);
+}
+
+.xp-progress-bar {
+  width: 48px;
+  height: 6px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.xp-progress-fill {
+  width: 71%;
+  height: 100%;
+  background: #4F46E5;
+}
+
+.streak-badge {
+  font-size: 9px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #B45309;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.island-btn-claim {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.island-btn-claim:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.45);
+}
+
+/* 2. 非對稱 Bento Grid 容器 */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+/* Bento 卡片格數分配 (12 欄網格) */
+.bento-span-12 { grid-column: span 12 / span 12; }
+.bento-span-8  { grid-column: span 8 / span 8; }
+.bento-span-6  { grid-column: span 6 / span 6; }
+.bento-span-4  { grid-column: span 4 / span 4; }
+.bento-span-3  { grid-column: span 3 / span 3; }
+
+/* Bento 卡片通用視覺 */
+.bento-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 26px;
+  padding: 24px;
+  box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 20px 44px -8px rgba(15, 23, 42, 0.12), 0 6px 16px -2px rgba(15, 23, 42, 0.05);
+  border-color: rgba(255, 255, 255, 0.98);
+}
+
+/* 🌟 Border Beam 動態流光邊框 (Hero Spotlight 專用) */
+.bento-border-beam {
+  position: relative;
+  border: none !important;
+  background: transparent !important;
+}
+
+.bento-border-beam::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    transparent,
+    rgba(2, 132, 199, 0.4),
+    rgba(99, 102, 241, 0.8),
+    rgba(244, 63, 94, 0.7),
+    rgba(245, 158, 11, 0.5),
+    transparent 65%
+  );
+  animation: rotateBorderBeam 6s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bento-border-beam::after {
+  content: '';
+  position: absolute;
+  inset: 1.8px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border-radius: 25px;
+  z-index: 1;
+}
+
+.bento-border-beam > * {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes rotateBorderBeam {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Bento 圖標與版本標籤 */
+.subject-icon-squircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
+.subject-edition-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.edition-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(241, 245, 249, 0.9);
+  color: #475569;
+  border: 1px solid rgba(203, 213, 225, 0.7);
+}
+
+/* 精熟度進度條 */
+.mastery-progress-section {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.mastery-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.mastery-bar-bg {
+  width: 100%;
+  height: 7px;
+  background: rgba(226, 232, 240, 0.8);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.mastery-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+}
+
+.card-bottom-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.btn-card-cta {
+  background: #FFFFFF;
+  border: 1px solid currentColor;
+  color: currentColor;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.bento-card:hover .btn-card-cta {
+  background: currentColor;
+  color: #FFFFFF;
+}
+
+/* 膠囊預覽字卡 (英文/國語) */
+.live-flashcard {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+/* 學科色彩指派 (符合 4.5:1 對比度) */
+.c-math { color: var(--subject-math); }
+.c-math .subject-icon-squircle { background: var(--subject-math-gradient); }
+.c-math .mastery-bar-fill { background: var(--subject-math); }
+
+.c-english { color: var(--subject-english); }
+.c-english .subject-icon-squircle { background: var(--subject-english-gradient); }
+.c-english .mastery-bar-fill { background: var(--subject-english); }
+
+.c-nature { color: var(--subject-nature); }
+.c-nature .subject-icon-squircle { background: var(--subject-nature-gradient); }
+.c-nature .mastery-bar-fill { background: var(--subject-nature); }
+
+.c-chinese { color: var(--subject-chinese); }
+.c-chinese .subject-icon-squircle { background: var(--subject-chinese-gradient); }
+.c-chinese .mastery-bar-fill { background: var(--subject-chinese); }
+
+.c-social { color: var(--subject-social); }
+.c-social .subject-icon-squircle { background: var(--subject-social-gradient); }
+.c-social .mastery-bar-fill { background: var(--subject-social); }
+
+.c-games { color: var(--subject-games); }
+.c-games .subject-icon-squircle { background: var(--subject-games-gradient); }
+.c-games .mastery-bar-fill { background: var(--subject-games); }
+
+/* 熱力圖與排位列 */
+.activity-heatmap-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.heatmap-day-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.heatmap-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.dot-complete { background: #059669; }
+.dot-today { background: #0284C7; box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3); }
+
+.league-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.league-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 3. 底部蘋果懸浮 Dock (macOS / iPadOS Floating Dock) */
+.apple-floating-dock {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(36px) saturate(210%);
+  -webkit-backdrop-filter: blur(36px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 48px -6px rgba(15, 23, 42, 0.16), 0 6px 16px -2px rgba(15, 23, 42, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dock-item {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+  user-select: none;
+}
+
+.dock-item:hover {
+  transform: translateY(-8px) scale(1.22);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
+}
+
+.dock-item:active {
+  transform: translateY(-4px) scale(1.1);
+}
+
+.dock-tooltip {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: rgba(15, 23, 42, 0.92);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.dock-item:hover .dock-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dock-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(203, 213, 225, 0.8);
+  margin: 0 2px;
+}
+
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .bento-span-12 { grid-column: span 6 / span 6; }
+  .bento-span-8  { grid-column: span 6 / span 6; }
+  .bento-span-6  { grid-column: span 6 / span 6; }
+  .bento-span-4  { grid-column: span 3 / span 3; }
+  .bento-span-3  { grid-column: span 3 / span 3; }
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .bento-span-12,
+  .bento-span-8,
+  .bento-span-6,
+  .bento-span-4,
+  .bento-span-3 {
+    grid-column: span 1 / span 1;
+  }
+  .dynamic-island-bar {
+    border-radius: 22px;
+    padding: 12px 16px;
+  }
+  .apple-floating-dock {
+    bottom: 12px;
+    padding: 6px 12px;
+    gap: 8px;
+    max-width: 95vw;
+    overflow-x: auto;
+  }
+  .dock-item {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+}
+
+/* ==========================================================================
+   6. 數學天地 (Math Quiz) 遊戲化駕駛艙升級
+   ========================================================================== */
+[data-theme="modern"] #view-setup > div:first-child,
+[data-theme="modern"] #view-quiz > div:first-child,
+[data-theme="modern"] #view-result > div:first-child {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 48px -10px rgba(15, 23, 42, 0.1) !important;
+  padding: 26px 30px !important;
+}
+
+/* 選項按鈕磨砂玻璃升級 */
+[data-theme="modern"] .answer-option {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(203, 213, 225, 0.75) !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="modern"] .answer-option:hover:not([disabled]) {
+  background: #FFFFFF !important;
+  border-color: #0284C7 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.15) !important;
+}
+
+[data-theme="modern"] .answer-option.is-correct {
+  border-color: #0284C7 !important;
+  background: #F0F9FF !important;
+  color: #0369A1 !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3), 0 6px 16px rgba(2, 132, 199, 0.18) !important;
+}
+
+/* 填空輸入框加強 */
+[data-theme="modern"] #answer-input {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 2px solid rgba(203, 213, 225, 0.85) !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="modern"] #answer-input:focus {
+  border-color: #0284C7 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15) !important;
+}
+
+/* 送出答案按鈕加強 */
+[data-theme="modern"] #btn-submit-answer,
+[data-theme="modern"] #btn-start {
+  background: linear-gradient(135deg, #0284C7 0%, #4F46E5 100%) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3) !important;
+  font-weight: 900 !important;
+}
+
+/* 提示與詳解卡片微光效果 */
+[data-theme="modern"] #hint-card {
+  background: rgba(254, 243, 199, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  border-radius: 18px !important;
+}
+
+[data-theme="modern"] #explanation-card {
+  background: rgba(255, 228, 230, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+  border-radius: 18px !important;
+}
+
+/* ==========================================================================
+   7. 各學科與遊戲化視圖 (Subject Modules & Games) 統一現代磨砂微光
+   ========================================================================== */
+[data-theme="modern"] #view-setup > div,
+[data-theme="modern"] #view-quiz > div,
+[data-theme="modern"] #view-result > div,
+[data-theme="modern"] #view-review > div,
+[data-theme="modern"] #view-speed-quiz > div,
+[data-theme="modern"] #view-speed-result > div,
+[data-theme="modern"] #view-idiom-quiz > div,
+[data-theme="modern"] #view-idiom-quiz-result > div,
+[data-theme="modern"] #view-games-lobby > div,
+[data-theme="modern"] #view-game-rescue > div,
+[data-theme="modern"] #view-game-mouse > div,
+[data-theme="modern"] #view-game-idiom > div,
+[data-theme="modern"] #view-game-beanstalk > div,
+[data-theme="modern"] #view-english-app > div,
+[data-theme="modern"] #view-guardian-dashboard > div {
+  background: rgba(255, 255, 255, 0.86) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-radius: 26px !important;
+  box-shadow: 0 16px 36px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
+}

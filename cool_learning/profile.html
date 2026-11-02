@@ -16,11 +16,13 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <link rel="stylesheet" href="assets/css/tailwind.css">
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/theme-modern.css?v=20261103-apple-bento">
+  <script src="assets/js/theme-toggle.js?v=20261103-apple-bento"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -53,6 +55,14 @@
         <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight group-hover:text-teal-700 transition-colors">孩子自我設定</h1>
         <p class="text-[11px] text-slate-500 font-medium">學習歷程與生長發育總覽</p>
       </div>
+    </div>
+
+    <!-- 雙軌風格切換開關 (Feature Flag) -->
+    <div class="flex items-center gap-2">
+      <button type="button" class="btn-ui-theme-toggle" onclick="toggleUiTheme()" title="切換新版微光 / 經典風格介面">
+        <i class="fa-solid fa-wand-magic-sparkles text-indigo-500 theme-toggle-icon"></i>
+        <span class="theme-toggle-text">新版微光</span>
+      </button>
     </div>
 
     <!-- 2. 右上角：由右至左分別為 登出、姓名座號、科目大廳 -->

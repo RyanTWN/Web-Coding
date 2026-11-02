@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/logo-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo-192.png">
+  <meta name="theme-color" content="#f43f5e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="酷學習">
+  <title>英文單字天地｜酷學習</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="assets/css/tailwind.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    body {
+      background: radial-gradient(circle at top left, #fff1f2, #f8fafc 45%, #fef2f2);
+      min-height: 100vh;
+    }
+    
+    .calendar-cell { aspect-ratio: 1; }
+
+    /* 3D 翻轉卡片 Core CSS (與成語200樣式完全一致) */
+    .word-card-perspective {
+      perspective: 1200px;
+      -webkit-perspective: 1200px;
+    }
+    .word-card-inner {
+      position: relative;
+      width: 100%;
+      min-height: 420px;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+    .word-card-inner.is-flipped {
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
+    }
+    .word-card-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden !important;
+      backface-visibility: hidden !important;
+      border-radius: 0.75rem;
+      box-sizing: border-box;
+    }
+    .word-card-back {
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
+    }
+
+    #card-word {
+      line-height: 1.1;
+      text-wrap: balance;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgba(244, 63, 94, 0.25);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="english-page text-slate-800 min-h-screen p-3 sm:p-6" data-english-tab="learn">
+
+  <!-- Toast 訊息通知 (畫面正中央，現代半透明毛玻璃感) -->
+  <div id="toast-container" class="fixed left-1/2 top-1/2 max-w-[90vw] pointer-events-none opacity-0 transition-all duration-300" style="z-index: 9999999; transform: translate(-50%, -50%) scale(0.9);">
+    <div id="toast-inner" style="background: rgba(15, 23, 42, 0.82) !important; -webkit-backdrop-filter: blur(16px) saturate(180%) !important; backdrop-filter: blur(16px) saturate(180%) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) !important; border-radius: 16px !important; padding: 14px 26px !important; display: flex; align-items: center; gap: 14px;">
+      <i id="toast-icon" class="fa-solid fa-circle-info text-amber-300" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;"></i>
+      <span id="toast-text" style="color: #ffffff !important; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; line-height: 1.5; max-width: min(75vw, 360px); text-align: left;">訊息通知</span>
+    </div>
+  </div>
+
+  <!-- 確認對話框 -->
+  <div id="custom-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-white/60 text-center card-flip-enter">
+      <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-md flex items-center justify-center text-2xl mx-auto mb-3">
+        <i id="modal-icon" class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2">確定要執行嗎？</h3>
+      <p id="modal-desc" class="text-xs text-slate-500 mb-6">此動作無法復原，請確認是否繼續。</p>
+      <div class="flex gap-3">
+        <button id="modal-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">取消</button>
+        <button id="modal-confirm-btn" class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md transition">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全域頂部導覽列 (與成語200/國語文學完全一致) -->
+  <header id="global-header" class="w-full max-w-5xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-4 sm:px-5 py-3 rounded-lg border border-white/70 shadow-sm mb-4">
+    <!-- 1. 左上角：科目與 Logo (點擊回到首頁大廳) -->
+    <div id="btn-go-home" class="flex items-center gap-3 cursor-pointer group select-none" onclick="window.location.assign('index.html')">
+      <div class="w-10 h-10 rounded-md bg-gradient-to-tr from-rose-500 to-red-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md group-hover:scale-105 transition-transform">
+        <i class="fa-solid fa-language"></i>
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-black text-slate-800 leading-tight group-hover:text-rose-700 transition-colors">英文單字天地</h1>
+        <p class="text-[11px] text-slate-500 font-medium">115 學年度・國小六年級常用字庫</p>
+      </div>
+    </div>
+
+    <!-- 2. 右上角：由右至左分別為 登出、姓名座號、科目大廳 -->
+    <div id="user-profile-badge" class="flex items-center gap-2 sm:gap-3">
+      <!-- 科目大廳按鈕 (手機版隱藏以節省版面) -->
+      <button type="button" id="btn-subject-lobby" onclick="window.location.assign('index.html')" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-house text-slate-500"></i>
+        <span>科目大廳</span>
+      </button>
+
+      <!-- 姓名座號 (姓名在上、座號在下，可點擊進入孩子自我設定頁) -->
+      <a href="profile.html" id="btn-child-profile" title="點擊進入孩子自我設定頁" class="text-right cursor-pointer group px-2 py-1 rounded-lg hover:bg-slate-100/70 transition-all select-none block">
+        <span id="header-user-name" class="block font-bold text-xs sm:text-sm text-slate-800 leading-tight group-hover:text-rose-700 transition-colors">學生</span>
+        <span id="header-user-seat" class="block text-[10px] sm:text-[11px] text-rose-600 font-semibold">座號: -</span>
+      </a>
+
+      <!-- 登出按鈕 (箭頭向右符號) -->
+      <button type="button" id="btn-logout" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center text-xs sm:text-sm transition-all active:scale-95 shadow-sm cursor-pointer" title="登出系統" onclick="logoutEnglishStudent()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 子功能導引列：位於頂端列正下方 (與成語200頂部導引一致) -->
+  <nav id="english-tabs" aria-label="英文學習子功能導引" class="w-full max-w-5xl mx-auto mb-5 flex gap-2 p-1.5 bg-rose-100/70 rounded-lg border border-rose-200/60 shadow-inner">
+    <button id="nav-learn" type="button" class="tab-btn flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 bg-white text-rose-700 shadow-md is-active whitespace-nowrap" aria-selected="true">
+      <i class="fa-solid fa-book-open"></i> <span>每日學習 (單字卡)</span>
+    </button>
+    <button id="nav-starred" type="button" class="tab-btn flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50 whitespace-nowrap" aria-selected="false">
+      <i class="fa-solid fa-bookmark"></i> <span>難字卡(<span id="starred-count-badge">0</span>)</span>
+    </button>
+    <button id="nav-quiz" type="button" class="tab-btn flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-rose-900 hover:text-rose-700 hover:bg-white/50 whitespace-nowrap" aria-selected="false">
+      <i class="fa-solid fa-circle-check"></i> <span>每日測驗</span>
+    </button>
+    <!-- 相容原本JS的日曆按鈕 (隱藏或備用) -->
+    <button id="nav-calendar" type="button" class="hidden"></button>
+  </nav>
+
+  <!-- 主內容區域 (與成語200版面相同：字卡在左、學習日曆在右) -->
+  <main class="w-full max-w-5xl mx-auto space-y-6">
+
+    <!-- ============================================== -->
+    <!-- 模組 1: 每日學習 (字卡在左，學習日曆在右)         -->
+    <!-- ============================================== -->
+    <div id="app-view-learn" class="tab-view grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- 左側/主欄: 3D 翻轉字卡學習區 (lg:col-span-8) -->
+      <div class="lg:col-span-8 space-y-4">
+
+        <!-- 今日單字進度條 -->
+        <div id="progress-container" class="bg-white/95 rounded-lg p-4 sm:p-5 shadow-lg border border-white">
+          <div class="flex justify-between items-center text-xs font-black text-slate-600 mb-2">
+            <span id="progress-title" class="flex items-center gap-1.5 text-rose-700">
+              <i id="progress-icon" class="fa-solid fa-graduation-cap"></i> <span id="progress-label">今日單字學習進度</span>
+            </span>
+            <div class="flex items-center gap-2">
+              <button type="button" id="btn-return-starred-list" onclick="returnToStarredList()" class="hidden px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-[11px] transition-all cursor-pointer items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> 返回難字本
+              </button>
+              <span id="progress-text" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">1 / 30</span>
+            </div>
+          </div>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-300" style="width: 3.33%;"></div>
+          </div>
+        </div>
+
+        <!-- 3D 翻轉字卡容器 (word-card-perspective) -->
+        <div id="flashcard-container" class="w-full max-w-2xl mx-auto word-card-perspective">
+          <div id="flashcard" class="word-card-inner shadow-2xl cursor-pointer" onclick="this.classList.toggle('is-flipped')">
+            
+            <!-- 【正面】字卡正面 -->
+            <div class="word-card-face relative bg-gradient-to-br from-white via-rose-50/40 to-pink-50/30 border-2 border-white/80 p-6 sm:p-10 flex flex-col justify-between shadow-xl select-none">
+              <!-- 頂部資訊列：章節與詞性標籤 -->
+              <div class="flex items-center justify-between pr-14 sm:pr-16">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-black text-xs tracking-wider">English 6</span>
+                  <span id="card-part-of-speech" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px] italic">word</span>
+                  <span id="card-mode-badge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px] hidden"><i class="fa-solid fa-star text-amber-500 mr-1"></i>難字卡片</span>
+                </div>
+              </div>
+
+              <!-- 右上角難字星號按鈕 -->
+              <div class="absolute right-4 sm:right-6 top-4 sm:top-6 z-30" onclick="event.stopPropagation();">
+                <button type="button" id="star-btn" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-star"></i>
+                </button>
+              </div>
+
+              <!-- 隱藏圖片節點相容舊程式碼 -->
+              <img id="card-image" src="https://placehold.co/1x1/transparent/transparent" alt="" class="hidden" aria-hidden="true">
+
+              <!-- 中間核心英文單字、音標與釋義 -->
+              <div class="text-center my-auto py-6">
+                <h2 id="card-word" class="text-4xl sm:text-6xl font-black text-slate-800 tracking-wider font-['Fredoka','Noto_Sans_TC'] mb-3">word</h2>
+                
+                <div class="inline-flex items-center justify-center gap-2 mb-4">
+                  <span id="card-phonetic" class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs sm:text-sm font-mono font-bold tracking-wide">[phonetic]</span>
+                </div>
+                
+                <div class="mt-2">
+                  <span id="card-chinese" class="inline-block bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-xl sm:text-2xl px-8 py-2.5 rounded-full shadow-md">中文釋義</span>
+                </div>
+              </div>
+
+              <!-- 底部翻面提示 -->
+              <div class="flex items-center justify-center pt-4 border-t border-rose-100/60 pr-14 sm:pr-0">
+                <span class="text-xs text-slate-400 font-bold flex items-center gap-1 animate-pulse">
+                  <i class="fa-solid fa-arrows-rotate"></i> 點擊卡片翻面看例句
+                </span>
+              </div>
+
+              <!-- 右下角單字發音按鈕 -->
+              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 z-30" onclick="event.stopPropagation();">
+                <button type="button" id="btn-speak-word" aria-label="播放單字發音" title="聽單字發音 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 【背面】字卡背面 (實用例句) -->
+            <div class="word-card-face word-card-back relative bg-white border-2 border-white/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto custom-scrollbar">
+              <div class="space-y-4">
+                <!-- 背面頂部標題列 -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 pr-14 sm:pr-16">
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-lightbulb"></i></span>
+                    <h3 class="text-lg font-black text-slate-800">Example 例句學習</h3>
+                  </div>
+                  <button type="button" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs" onclick="event.stopPropagation(); document.getElementById('flashcard').classList.remove('is-flipped');" title="翻回正面">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
+                </div>
+
+                <!-- 實用生活例句框 -->
+                <div class="bg-rose-50/70 p-4 sm:p-5 rounded-lg border border-rose-100/80">
+                  <div class="mb-2">
+                    <strong class="block text-xs font-black text-rose-800"><i class="fa-solid fa-pen-nib mr-1"></i>例句與對話</strong>
+                  </div>
+                  <p id="card-sentence" class="text-base sm:text-lg font-black text-slate-800 leading-relaxed mb-3">Example sentence here.</p>
+                  <div class="w-full h-px bg-rose-200/60 mb-2"></div>
+                  <p id="card-translate" class="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">Example translate here.</p>
+                </div>
+              </div>
+
+              <!-- 背面翻轉回正面提示 -->
+              <div class="pt-3 text-center text-[11px] font-bold text-slate-400 pr-14 sm:pr-0">
+                <i class="fa-solid fa-arrow-left mr-1"></i> 點擊任意處翻回正面
+              </div>
+
+              <!-- 右上角難字星號按鈕 -->
+              <div class="absolute right-4 sm:right-6 top-4 sm:top-6 z-30" onclick="event.stopPropagation();">
+                <button type="button" id="star-btn-back" title="加入難字本" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-white text-slate-300 hover:text-amber-400 flex items-center justify-center text-xl shadow-lg border border-slate-200/80 transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-star"></i>
+                </button>
+              </div>
+
+              <!-- 右下角例句朗讀發音按鈕 -->
+              <div class="absolute right-4 sm:right-6 bottom-4 sm:bottom-6 z-30" onclick="event.stopPropagation();">
+                <button type="button" id="btn-speak-sentence" aria-label="朗讀例句發音" title="聽例句朗讀 (TTS)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white flex items-center justify-center text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 翻卡控制列 (上一則 / 計數器 / 下一則) -->
+          <div class="mt-5 flex items-center justify-between gap-4">
+            <button id="btn-prev-word" class="w-12 h-12 rounded-lg bg-white shadow-md border border-slate-200/80 text-slate-700 hover:text-rose-600 hover:scale-105 active:scale-95 transition flex items-center justify-center font-bold">
+              <i class="fa-solid fa-chevron-left text-base"></i>
+            </button>
+            
+            <div class="flex items-center gap-3">
+              <span id="word-counter-badge" class="text-sm font-black text-slate-600 bg-white/90 px-4 py-2 rounded-xl shadow-sm border border-slate-200/60">
+                01 / 30
+              </span>
+            </div>
+
+            <button id="btn-next-word" class="flex-1 max-w-[220px] py-3.5 px-6 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black shadow-md hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 text-sm">
+              下一個單字 <i class="fa-solid fa-chevron-right text-base ml-1"></i>
+            </button>
+          </div>
+          <p class="text-center text-[11px] text-slate-400 font-bold mt-2">
+            <i class="fa-regular fa-keyboard mr-1"></i>支援鍵盤左右方向鍵切換，點擊字卡任意處翻面
+          </p>
+        </div>
+      </div>
+
+      <!-- 右側/側欄: 學習日曆與累計進度 (lg:col-span-4) -->
+      <aside class="lg:col-span-4 space-y-5">
+        <!-- 學習打卡日曆 (置頂) -->
+        <div id="calendar-card" class="bg-white/95 rounded-lg p-5 shadow-lg border border-white">
+          <div class="flex justify-between items-center">
+            <h2 class="font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-rose-500"></i>學習打卡日曆
+            </h2>
+            <span class="text-xs font-bold text-rose-600">每日 30 字</span>
+          </div>
+          <div class="flex justify-between items-center my-4">
+            <button id="btn-prev-month" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 transition flex items-center justify-center"><i class="fa-solid fa-chevron-left"></i></button>
+            <strong id="cal-month-title" class="text-sm font-black text-slate-700"></strong>
+            <button id="btn-next-month" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 transition flex items-center justify-center"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          <p id="calendar-detail" class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選過去日期可複習或補學當日單字</p>
+          <div id="today-status-card" class="mt-4 py-2.5 rounded-xl bg-rose-50 text-rose-800 text-center text-xs font-bold">
+            <i class="fa-solid fa-clock mr-1"></i>完成今日 30 字將自動打卡
+          </div>
+        </div>
+
+        <!-- 學習成就與記憶卡片 -->
+        <div class="bg-gradient-to-br from-rose-50 to-pink-50/60 rounded-lg p-5 border border-rose-200/80 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-rose-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-fire text-rose-600"></i>學習累積成就
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full bg-rose-200/80 text-rose-900 text-[11px] font-black">每日打卡</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="bg-white/80 p-3 rounded-xl border border-rose-100 shadow-sm">
+              <small class="block text-[10px] font-bold text-slate-500 mb-0.5">連續打卡</small>
+              <strong id="streak-count" class="text-xl font-black text-rose-600">0 天</strong>
+            </div>
+            <div class="bg-white/80 p-3 rounded-xl border border-rose-100 shadow-sm">
+              <small class="block text-[10px] font-bold text-slate-500 mb-0.5">累積完成</small>
+              <strong id="total-days-count" class="text-xl font-black text-slate-800">0 天</strong>
+            </div>
+          </div>
+          <p class="text-xs font-bold text-slate-600 leading-relaxed">
+            每日固定練習 30 個核心字詞，翻卡、聽音、看句型，循序累積國小六年級必備英文字彙力！
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 模組 2: 難字本 (難字複習)                         -->
+    <!-- ============================================== -->
+    <div id="app-view-starred" class="tab-view hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
+        <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-5">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-bookmark text-rose-500"></i>難字複習寶典
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">點擊難字可直接進入卡片學習；需在「難字本拼字特訓」連續拼對 3 次才能移除</p>
+          </div>
+          <button type="button" onclick="returnToDailyLearn()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-arrow-left"></i> 返回單字卡
+          </button>
+        </div>
+        <div id="starred-list-container" class="space-y-3 max-h-[480px] overflow-y-auto custom-scrollbar pr-1"></div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 模組 3: 每日測驗 (隨堂測驗評量)                   -->
+    <!-- ============================================== -->
+    <div id="app-view-quiz" class="tab-view hidden max-w-3xl mx-auto">
+      <div class="bg-white/95 rounded-lg p-5 sm:p-8 shadow-xl border border-white">
+        
+        <!-- 測驗起始選單 -->
+        <div id="quiz-screen-start" class="text-center py-6">
+          <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <h3 class="text-2xl font-black text-slate-800 mb-1">每日總結測驗</h3>
+          <p class="text-sm font-bold text-slate-500 mb-6 max-w-xs mx-auto">挑戰自我，強化英文單字記憶力！</p>
+          
+          <div class="space-y-3 max-w-xs mx-auto">
+            <button id="btn-quiz-mode-choice" class="w-full py-3.5 px-5 bg-gradient-to-r from-rose-500 to-pink-600 hover:brightness-105 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-list-check"></i><span>基礎選擇題測驗</span></div>
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+            <button id="btn-quiz-mode-spelling" class="w-full py-3.5 px-5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-keyboard"></i><span>進階拼字特訓</span></div>
+              <span class="bg-slate-900 text-white text-[10px] px-2 py-0.5 rounded-full font-black">手動輸入</span>
+            </button>
+            <button id="btn-quiz-mode-starred" class="w-full py-3.5 px-5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-star"></i><span>難字本選擇題</span></div>
+              <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full font-black">專攻難字</span>
+            </button>
+            <button id="btn-quiz-mode-starred-spelling" class="w-full py-3.5 px-5 bg-purple-500 hover:bg-purple-600 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-spell-check"></i><span>難字本拼字特訓</span></div>
+              <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full font-black">連對3次消除</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 測驗進行中 -->
+        <div id="quiz-screen-active" class="hidden">
+          <div class="flex justify-between items-center text-xs font-black text-slate-500 mb-3 border-b border-slate-100 pb-3">
+            <span id="quiz-mode-badge" class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-bold">基礎選擇題</span>
+            <span id="quiz-progress-num" class="font-bold">第 1 / 10 題</span>
+            <span id="quiz-score-num" class="text-rose-600 font-bold">得分: 0</span>
+          </div>
+          
+          <div class="bg-rose-50/60 rounded-xl p-6 text-center mb-5 border border-rose-100">
+            <p id="quiz-instruction-text" class="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">請選擇正確對應單字</p>
+            <h4 id="quiz-question-chinese" class="text-3xl font-black text-slate-800">「釋義」</h4>
+            <p id="quiz-hint-phonetic" class="text-sm font-bold text-slate-500 mt-2 bg-white inline-block px-3 py-1 rounded-full shadow-sm"></p>
+          </div>
+
+          <div id="quiz-options-grid" class="grid grid-cols-1 gap-3"></div>
+          
+          <div id="quiz-spelling-container" class="hidden space-y-3">
+            <input type="text" id="quiz-spelling-input" placeholder="Type English here..." autocomplete="off" spellcheck="false" class="w-full py-3.5 px-5 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-rose-500 font-black text-xl text-center shadow-sm">
+            <button id="quiz-submit-spelling-btn" class="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> 送出答案
+            </button>
+          </div>
+
+          <div id="quiz-feedback" class="text-center font-black text-base min-h-[28px] my-3"></div>
+          <button id="quiz-next-btn" class="hidden w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl shadow-md transition-all">下一題 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+        </div>
+
+        <!-- 測驗結果 -->
+        <div id="quiz-screen-results" class="hidden text-center py-8">
+          <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-inner">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <h3 class="text-2xl sm:text-3xl font-black text-slate-800 mb-2">測驗完成！</h3>
+          <div class="inline-block bg-rose-50 border border-rose-200 rounded-xl px-8 py-4 mb-4 mt-2">
+            <p id="quiz-final-score" class="text-4xl font-black text-rose-600">0 / 100 分</p>
+          </div>
+          <p id="quiz-evaluation-text" class="text-base font-bold text-slate-600 mb-6">做得好！持續練習！</p>
+          <button id="btn-reset-quiz-menu" class="w-full max-w-xs mx-auto py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-rotate-left"></i> 返回測驗選單
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 載入腳本 -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/ai-tutor.js"></script>
+  <script src="assets/js/app.js?v=20261019-star-btn-relocate"></script>
+  <script src="assets/js/quiz.js?v=20260924-layout-sync"></script> 
+  
+  <!-- 網頁載入完成後的初始化邏輯 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. 檢查是否有登入的使用者 (同時從 sessionStorage 與 localStorage 讀取)
+      if (!currentUser) {
+        const stored = sessionStorage.getItem('g6_portal_user') || localStorage.getItem('g6_portal_user');
+        if (stored) {
+          try {
+            currentUser = JSON.parse(stored);
+            sessionStorage.setItem('g6_portal_user', stored);
+          } catch(e) {}
+        }
+      }
+
+      if (!currentUser) {
+        // 如果沒有登入，將使用者導回首頁
+        window.location.assign('index.html');
+        return;
+      }
+
+      // 2. 更新右上角的使用者資訊
+      const hName = document.getElementById('header-user-name');
+      const hSeat = document.getElementById('header-user-seat');
+      if (hName) hName.textContent = currentUser.name;
+      if (hSeat) hSeat.textContent = currentUser.isAdmin ? '系統管理員' : `座號: ${currentUser.seatNo}`;
+      
+      // 3. 確保單字卡區塊有顯示
+      switchAppTab('learn');
+
+      // 4. 主動觸發：向資料庫抓取單字資料，並將其渲染到畫面上
+      loadStudentAppData(currentUser.seatNo);
+    });
+
+    function logoutEnglishStudent() {
+      try {
+        localStorage.removeItem('g6_portal_user');
+        sessionStorage.removeItem('g6_portal_user');
+      } catch(e) {}
+      window.location.assign('index.html');
+    }
+  </script>
+
+  <script>
+    window.showToast = window.showToast || function(text, iconClass = "fa-circle-info") {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const textEl = document.getElementById('toast-text');
+      const iconEl = document.getElementById('toast-icon');
+      
+      container.style.position = 'fixed';
+      container.style.zIndex = '9999999';
+      container.style.top = '50%';
+      container.style.left = '50%';
+      container.style.transform = 'translate(-50%, -50%) scale(1)';
+      container.style.opacity = '1';
+      container.style.pointerEvents = 'auto';
+
+      if (iconEl) {
+        iconEl.className = `fa-solid ${iconClass} text-amber-300`;
+      }
+
+      if (textEl) {
+        textEl.textContent = text;
+      }
+
+      if (window._toastTimer) clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        container.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        container.style.opacity = '0';
+        container.style.pointerEvents = 'none';
+      }, 3200);
+    };
+  </script>
+
+  <!-- 付費解鎖彈窗 -->
+  <div id="paywall-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center card-flip-enter relative overflow-hidden">
+      <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      
+      <h3 class="text-2xl font-black text-slate-800 mb-2">試用期已屆滿</h3>
+      <p class="text-sm font-bold text-slate-500 mb-6">您的 7 天體驗已結束。<br>立即升級 VIP，解鎖無限制學習！</p>
+      
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left space-y-2 text-xs font-bold text-slate-700">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 無限制英文 2000 字測驗</div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 解鎖每日動態數學天地</div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 跨平台進度雲端即時同步</div>
+      </div>
+
+      <button id="btn-subscribe" class="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl shadow-md transition-all text-base flex items-center justify-center gap-2">
+        立即訂閱升級 <i class="fa-solid fa-cart-shopping"></i>
+      </button>
+      <button onclick="logoutEnglishStudent()" class="mt-4 text-xs font-bold text-slate-400 hover:text-slate-700 underline">切換其他帳號</button>
+    </div>
+  </div>
+</body>
+</html>
