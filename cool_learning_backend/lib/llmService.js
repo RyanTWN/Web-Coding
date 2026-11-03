@@ -18,7 +18,7 @@ function sanitizeKey(k) {
   return String(k).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim();
 }
 
-const DEFAULT_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+const DEFAULT_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
 const DEFAULT_GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
 
 /**
