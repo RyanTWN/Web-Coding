@@ -13,7 +13,12 @@
  * 3. 【嚴格逾時防護】每一層呼叫均具備 AbortController 逾時截斷 (預設 6.5 秒)，防止阻塞 Node.js 事件循環與 LINE Webhook。
  */
 
-const DEFAULT_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+function sanitizeKey(k) {
+  if (!k) return '';
+  return String(k).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim();
+}
+
+const DEFAULT_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
 const DEFAULT_GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
 
 /**
@@ -30,7 +35,8 @@ async function callGemini({
   models = DEFAULT_GEMINI_MODELS,
   fetchFn = fetch
 } = {}) {
-  if (!apiKey) {
+  const cleanApiKey = sanitizeKey(apiKey);
+  if (!cleanApiKey) {
     throw new Error('未設定 GEMINI_API_KEY');
   }
 
@@ -56,7 +62,7 @@ async function callGemini({
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanApiKey}`;
       const res = await fetchFn(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +125,8 @@ async function callGroq({
   models = DEFAULT_GROQ_MODELS,
   fetchFn = fetch
 } = {}) {
-  if (!apiKey) {
+  const cleanApiKey = sanitizeKey(apiKey);
+  if (!cleanApiKey) {
     throw new Error('未設定 GROQ_API_KEY');
   }
 
@@ -160,7 +167,7 @@ async function callGroq({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${cleanApiKey}`
         },
         signal: controller.signal,
         body: JSON.stringify({
@@ -215,11 +222,14 @@ async function callLLMWithFallback({
   timeoutMs = 6500,
   fetchFn = fetch
 } = {}) {
+  const cleanGeminiKey = sanitizeKey(geminiKey);
+  const cleanGroqKey = sanitizeKey(groqKey);
+
   // 1. 優先嘗試 Google Gemini
-  if (geminiKey) {
+  if (cleanGeminiKey) {
     try {
       const result = await callGemini({
-        apiKey: geminiKey,
+        apiKey: cleanGeminiKey,
         systemPrompt,
         userPrompt,
         messages,
@@ -235,10 +245,10 @@ async function callLLMWithFallback({
   }
 
   // 2. 備援嘗試 Groq
-  if (groqKey) {
+  if (cleanGroqKey) {
     try {
       const result = await callGroq({
-        apiKey: groqKey,
+        apiKey: cleanGroqKey,
         systemPrompt,
         userPrompt,
         messages,

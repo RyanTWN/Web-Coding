@@ -28,6 +28,58 @@ module.exports = function createLineBotRouter({ pool }) {
     });
   });
 
+  // [GET /api/line-bot/diagnose] 即時診斷雙軌 LLM 連線細節
+  router.get('/line-bot/diagnose', async (req, res) => {
+    const { callGemini, callGroq, callLLMWithFallback } = require('../lib/llmService');
+    const diag = {
+      gemini: {
+        configured: !!process.env.GEMINI_API_KEY,
+        length: (process.env.GEMINI_API_KEY || '').length,
+        prefix: (process.env.GEMINI_API_KEY || '').slice(0, 6) + '...',
+        testResult: null
+      },
+      groq: {
+        configured: !!process.env.GROQ_API_KEY,
+        length: (process.env.GROQ_API_KEY || '').length,
+        prefix: (process.env.GROQ_API_KEY || '').slice(0, 6) + '...',
+        testResult: null
+      },
+      fallbackTest: null
+    };
+
+    try {
+      diag.gemini.testResult = await callGemini({
+        userPrompt: '請回覆「測試成功」四個字',
+        maxTokens: 30,
+        timeoutMs: 6000
+      });
+    } catch (err) {
+      diag.gemini.testResult = { error: err.message };
+    }
+
+    try {
+      diag.groq.testResult = await callGroq({
+        userPrompt: '請回覆「測試成功」四個字',
+        maxTokens: 30,
+        timeoutMs: 6000
+      });
+    } catch (err) {
+      diag.groq.testResult = { error: err.message };
+    }
+
+    try {
+      diag.fallbackTest = await callLLMWithFallback({
+        userPrompt: '請回覆「測試成功」四個字',
+        maxTokens: 30,
+        timeoutMs: 6000
+      });
+    } catch (err) {
+      diag.fallbackTest = { error: err.message };
+    }
+
+    res.json(diag);
+  });
+
   // [POST /api/line-bot/webhook] 核心 Webhook 接收點
   router.post('/line-bot/webhook', async (req, res) => {
     const signature = req.headers['x-line-signature'];
