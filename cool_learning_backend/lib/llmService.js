@@ -18,7 +18,7 @@ function sanitizeKey(k) {
   return String(k).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim();
 }
 
-const DEFAULT_GEMINI_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+const DEFAULT_GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3-flash-preview'];
 const DEFAULT_GROQ_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b'];
 
 /**
@@ -76,7 +76,8 @@ async function callGemini({
           ],
           generationConfig: {
             temperature,
-            maxOutputTokens: maxTokens
+            maxOutputTokens: maxTokens,
+            thinkingConfig: { thinkingBudget: 0 }
           }
         })
       });
@@ -122,7 +123,7 @@ async function callGeminiVision({
   mimeType = 'image/jpeg',
   temperature = 0.3,
   maxTokens = 1000,
-  timeoutMs = 15000,
+  timeoutMs = 35000,
   models = DEFAULT_GEMINI_MODELS,
   fetchFn = fetch
 } = {}) {
@@ -169,7 +170,8 @@ async function callGeminiVision({
           ],
           generationConfig: {
             temperature,
-            maxOutputTokens: maxTokens
+            maxOutputTokens: maxTokens,
+            thinkingConfig: { thinkingBudget: 0 }
           }
         })
       });

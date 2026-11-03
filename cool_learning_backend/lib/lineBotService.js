@@ -639,7 +639,7 @@ ${isGroupChat ? '2. 【群組重要規則】：若照片明顯為「風景、自
     mimeType,
     temperature: 0.3,
     maxTokens: 1000,
-    timeoutMs: 15000,
+    timeoutMs: 35000,
     fetchFn
   });
 }
