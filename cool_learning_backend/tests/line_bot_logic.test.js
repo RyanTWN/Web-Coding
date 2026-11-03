@@ -121,6 +121,46 @@ const {
   assert.strictEqual(session.currentQuiz, null, '閱卷後應清空當前試卷');
   assert.ok(sentReplies[0].messages[0].text.includes('閱卷'), '應回傳閱卷報告');
 
+  // 8.1 測試群組聊天 (Group Chat) 智慧過濾與防洗版
+  const testGroupId = 'group-test-' + Date.now();
+  // 8.1.1 群組日常聊天未點名小酷時，小酷應保持安靜 (sentReplies 為空)
+  sentReplies = [];
+  await processLineTextMessage({
+    event: {
+      source: { type: 'group', groupId: testGroupId, userId: 'user-a' },
+      replyToken: 'token-group-1',
+      message: { text: '大家今天功課寫完了嗎？' }
+    },
+    fetchFn: mockFetch
+  });
+  assert.strictEqual(sentReplies.length, 0, '未喚醒時小酷在群組應保持靜音');
+
+  // 8.1.2 群組中呼叫「@小酷」或「小酷」，應觸發回應
+  sentReplies = [];
+  await processLineTextMessage({
+    event: {
+      source: { type: 'group', groupId: testGroupId, userId: 'user-b' },
+      replyToken: 'token-group-2',
+      message: { text: '@小酷 這題最大公因數怎麼算？' }
+    },
+    fetchFn: mockFetch
+  });
+  assert.strictEqual(sentReplies.length, 1, '被呼叫時應在群組回覆');
+  assert.ok(sentReplies[0].messages[0].text.includes('小助教'));
+
+  // 8.1.3 群組中呼叫「出自然卷」，群組 Session 記錄考卷
+  sentReplies = [];
+  await processLineTextMessage({
+    event: {
+      source: { type: 'group', groupId: testGroupId, userId: 'user-c' },
+      replyToken: 'token-group-3',
+      message: { text: '出自然卷' }
+    },
+    fetchFn: mockFetch
+  });
+  assert.strictEqual(sentReplies.length, 1);
+  assert.ok(sentReplies[0].messages[0].text.includes('出卷完畢'));
+
   // 9. 測試 Express Webhook 整合測試
   const app = express();
   app.use(express.json({

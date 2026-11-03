@@ -447,16 +447,51 @@ async function processLineTextMessage({
   fetchFn = fetch,
   accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN
 }) {
-  const userId = event.source?.userId || 'anonymous-user';
+  const isGroupChat = event.source?.type === 'group' || event.source?.type === 'room';
+  const sessionId = isGroupChat
+    ? (event.source?.groupId || event.source?.roomId || 'anonymous-group')
+    : (event.source?.userId || 'anonymous-user');
   const replyToken = event.replyToken;
   const rawText = String(event.message?.text || '').trim();
 
   if (!rawText) return;
 
-  const session = getOrCreateSession(userId);
+  const session = getOrCreateSession(sessionId);
+
+  // 群組防洗版過濾：在群組內需喚醒「@小酷」、「小酷」、「小助教」或特定指令，避免插話打擾群內成員
+  let cleanText = rawText;
+  let isInvoked = !isGroupChat;
+
+  const invokePrefixRegex = /^(@?小酷|@?貓頭鷹|@?小助教)\s*[,，:：]?\s*/i;
+  if (isGroupChat) {
+    if (invokePrefixRegex.test(rawText)) {
+      isInvoked = true;
+      cleanText = rawText.replace(invokePrefixRegex, '').trim();
+    } else if (rawText.startsWith('出') && rawText.includes('卷')) {
+      isInvoked = true;
+    } else if (rawText === '切換家長模式' || rawText === '切換學生模式' || rawText === '家長模式' || rawText === '學生模式') {
+      isInvoked = true;
+    } else if (session.currentQuiz) {
+      isInvoked = true;
+    }
+  }
+
+  // 群組內未被呼叫時保持靜音
+  if (isGroupChat && !isInvoked) {
+    return;
+  }
+
+  // 若群組中僅輸入「@小酷」或「小酷」而無後續內容，給予告知導引
+  if (isGroupChat && !cleanText) {
+    const reply = createTextMessage(
+      '🦉 嗨！我是酷學習 AI 助教「小酷」！\n在群組中您可以隨時呼叫我：\n• 輸入「出數學卷 / 出自然卷 / 出成語卷」進行群內隨堂快測\n• 輸入「@小酷 這題怎麼算？」進行伴讀思考引導喔！',
+      getDefaultQuickReplies(session.mode)
+    );
+    return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
+  }
 
   // 1. 處理模式切換指令
-  if (rawText === '切換家長模式' || rawText === '家長模式') {
+  if (cleanText === '切換家長模式' || cleanText === '家長模式') {
     session.mode = 'guardian';
     session.currentQuiz = null; // 切換時清空未完成測驗
     const reply = createTextMessage(
@@ -466,7 +501,7 @@ async function processLineTextMessage({
     return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
   }
 
-  if (rawText === '切換學生模式' || rawText === '學生模式') {
+  if (cleanText === '切換學生模式' || cleanText === '學生模式') {
     session.mode = 'student';
     session.currentQuiz = null;
     const reply = createTextMessage(
@@ -478,7 +513,7 @@ async function processLineTextMessage({
 
   // 2. 學生模式：出卷指令
   if (session.mode === 'student') {
-    if (rawText === '出數學卷' || rawText.includes('數學測驗') || rawText === '我要測驗數學') {
+    if (cleanText === '出數學卷' || cleanText.includes('數學測驗') || cleanText === '我要測驗數學') {
       const quizText = await generateQuizForStudent('math', session);
       const reply = createTextMessage(quizText, [
         { label: '✏️ 放棄重出', text: '出數學卷' },
@@ -487,7 +522,7 @@ async function processLineTextMessage({
       return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
     }
 
-    if (rawText === '出自然卷' || rawText.includes('自然測驗') || rawText === '我要測驗自然') {
+    if (cleanText === '出自然卷' || cleanText.includes('自然測驗') || cleanText === '我要測驗自然') {
       const quizText = await generateQuizForStudent('nature', session);
       const reply = createTextMessage(quizText, [
         { label: '✏️ 放棄重出', text: '出自然卷' },
@@ -496,7 +531,7 @@ async function processLineTextMessage({
       return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
     }
 
-    if (rawText === '出成語卷' || rawText.includes('成語測驗') || rawText === '出國語卷') {
+    if (cleanText === '出成語卷' || cleanText.includes('成語測驗') || cleanText === '出國語卷') {
       const quizText = await generateQuizForStudent('chinese', session);
       const reply = createTextMessage(quizText, [
         { label: '✏️ 放棄重出', text: '出成語卷' },
@@ -505,24 +540,24 @@ async function processLineTextMessage({
       return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
     }
 
-    // 3. 學生模式：若目前正在測驗中，且學生輸入了答案，觸發閱卷
+    // 3. 學生模式：若目前正在測驗中，且輸入了答案，觸發閱卷
     if (session.currentQuiz) {
-      const isAnswering = /^[1-3一二三]\s*[\.、:]|^\s*[a-d1-9]/i.test(rawText) || rawText.length < 50;
+      const isAnswering = /^[1-3一二三]\s*[\.、:]|^\s*[a-d1-9]/i.test(cleanText) || cleanText.length < 50;
       if (isAnswering) {
-        const gradeText = await gradeStudentQuiz(session, rawText);
+        const gradeText = await gradeStudentQuiz(session, cleanText);
         const reply = createTextMessage(gradeText, getDefaultQuickReplies('student'));
         return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
       }
     }
 
     // 4. 學生模式：一般提問或伴讀
-    const companionText = await handleStudentCompanion({ session, userText: rawText });
+    const companionText = await handleStudentCompanion({ session, userText: cleanText });
     const reply = createTextMessage(companionText, getDefaultQuickReplies('student'));
     return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
   }
 
   // 5. 家長模式：客服諮詢
-  const guardianText = await handleGuardianInquiry({ session, userText: rawText });
+  const guardianText = await handleGuardianInquiry({ session, userText: cleanText });
   const reply = createTextMessage(guardianText, getDefaultQuickReplies('guardian'));
   return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
 }
