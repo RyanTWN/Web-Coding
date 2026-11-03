@@ -31,7 +31,12 @@ app.use(cors({
     callback(new Error('不允許的網站來源'));
   }
 }));
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({
+  limit: '2mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 const pool = createPool();
 const auth = createAuthHelpers(AUTH_SECRET);
@@ -91,6 +96,8 @@ app.use('/api', require('./routes/games')({ pool, requireAuth, requireOwnSeat })
 app.use('/api', require('./routes/misc')({ pool, requireAuth, requireOwnSeat }));
 
 app.use('/api', require('./routes/aiTutor')({ pool }));
+
+app.use('/api', require('./routes/lineBot')({ pool }));
 
 initializeDatabaseSchema(pool, AUTH_SECRET)
   .then(() => app.listen(4060, () => console.log('酷學習 API 服務已在 Port 4060 啟動')))

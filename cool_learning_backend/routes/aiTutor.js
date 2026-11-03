@@ -4,6 +4,7 @@
  * 支援 Gemini 2.5/2.0/1.5 Flash 智慧推理，並具備動態題幹教材解構的本機保底引擎。
  */
 const express = require('express');
+const { callLLMWithFallback } = require('../lib/llmService');
 
 module.exports = function createAiTutorRouter({ pool }) {
   const router = express.Router();
@@ -169,14 +170,7 @@ module.exports = function createAiTutorRouter({ pool }) {
       return res.status(400).json({ success: false, error: '缺少題目內容' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    // 若有設定 GEMINI_API_KEY，呼叫 Google Gemini API 進行真正的 LLM 智慧推理
-    if (apiKey) {
-      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-      for (const modelName of modelsToTry) {
-        try {
-          const systemPrompt = `你是一位專為台灣國小六年級學童（約11~12歲）設計的「酷學習 AI 貓頭鷹小助教🦉」。
+    const systemPrompt = `你是一位專為台灣國小六年級學童（約11~12歲）設計的「酷學習 AI 貓頭鷹小助教🦉」。
 你的教育哲學是頂尖的「蘇格拉底啟發式教學法」：
 1. 【嚴格最高禁令】：絕對不能直接給出答案、最終數字計算結果或選項字母！
 2. 【深度個別診斷】：請務必結合這題特定的數字、題目條件與學生填寫的錯誤答案「${studentAnswer || '尚未輸入'}」，分析學生可能在哪一步卡關或看漏了條件（例如：忘記單位換算、看錯半徑直徑、分子分母顛倒、短除法少乘因數等）。
@@ -184,7 +178,7 @@ module.exports = function createAiTutorRouter({ pool }) {
 4. 【語氣風格】：溫暖親切、幽默有趣、以繁體中文（台灣國小習慣用語）表達，絕不說教，鼓勵學童嘗試。
 5. 【長度控制】：約 90~150 字，簡練有重點，包含問句與行動建議。`;
 
-          const userPrompt = `【學科領域】：${subject}（單元主題：${unit || '六年級核心課程'}）
+    const userPrompt = `【學科領域】：${subject}（單元主題：${unit || '六年級核心課程'}）
 【當前題目】：${question}
 ${options && options.length > 0 ? `【選項清單】：${JSON.stringify(options)}` : ''}
 【學生剛才嘗試的錯誤答案】：${studentAnswer || '（初次卡關）'}
@@ -195,43 +189,22 @@ ${userQuery ? `【學生現在的進一步困惑】：${userQuery}` : ''}
 
 請扮演貓頭鷹小助教，給予針對本題特定情境的啟發式引導：`;
 
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-                }
-              ],
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 350
-              }
-            })
-          });
+    // 依序嘗試 Gemini (主通道) -> Groq (備援通道)
+    const llmResult = await callLLMWithFallback({
+      systemPrompt,
+      userPrompt,
+      temperature: 0.7,
+      maxTokens: 350
+    });
 
-          if (response.ok) {
-            const geminiData = await response.json();
-            const candidateText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (candidateText && candidateText.trim()) {
-              return res.json({
-                success: true,
-                source: `gemini-${modelName}`,
-                title: '🦉 貓頭鷹 AI 助教',
-                guide: candidateText.trim(),
-                hintStep: '跟著小助教的引導在草稿紙上算算看，再試一次！'
-              });
-            }
-          } else {
-            const errBody = await response.text();
-            console.warn(`Gemini 模型 ${modelName} 呼叫回應非 200:`, response.status, errBody);
-          }
-        } catch (geminiErr) {
-          console.warn(`Gemini 模型 ${modelName} 呼叫異常:`, geminiErr.message);
-        }
-      }
+    if (llmResult.success && llmResult.text) {
+      return res.json({
+        success: true,
+        source: `${llmResult.provider}-${llmResult.model}`,
+        title: '🦉 貓頭鷹 AI 助教',
+        guide: llmResult.text,
+        hintStep: '跟著小助教的引導在草稿紙上算算看，再試一次！'
+      });
     }
 
     // 降級為動態題幹教材解構的本機保底引擎（即使無 API key 也能針對本題詳解與 hint 產出客製引導）
