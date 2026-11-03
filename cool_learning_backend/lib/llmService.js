@@ -18,8 +18,8 @@ function sanitizeKey(k) {
   return String(k).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim();
 }
 
-const DEFAULT_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
-const DEFAULT_GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+const DEFAULT_GEMINI_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+const DEFAULT_GROQ_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b'];
 
 /**
  * 呼叫 Google Gemini API
