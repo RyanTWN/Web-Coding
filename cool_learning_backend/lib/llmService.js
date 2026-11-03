@@ -112,6 +112,99 @@ async function callGemini({
 }
 
 /**
+ * 呼叫 Google Gemini Vision (多模態圖像理解與閱卷)
+ */
+async function callGeminiVision({
+  apiKey = process.env.GEMINI_API_KEY,
+  systemPrompt = '',
+  userPrompt = '',
+  imageBase64 = '',
+  mimeType = 'image/jpeg',
+  temperature = 0.3,
+  maxTokens = 1000,
+  timeoutMs = 15000,
+  models = DEFAULT_GEMINI_MODELS,
+  fetchFn = fetch
+} = {}) {
+  const cleanApiKey = sanitizeKey(apiKey);
+  if (!cleanApiKey) {
+    throw new Error('未設定 GEMINI_API_KEY');
+  }
+  if (!imageBase64) {
+    throw new Error('缺少 imageBase64 圖片數據');
+  }
+
+  const promptText = systemPrompt
+    ? `${systemPrompt}\n\n${userPrompt || '請仔細檢視這張圖片並完成教學任務。'}`
+    : (userPrompt || '請仔細檢視這張圖片並完成教學任務。');
+
+  let lastError = null;
+
+  for (const model of models) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanApiKey}`;
+      const res = await fetchFn(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: imageBase64
+                  }
+                },
+                {
+                  text: promptText
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature,
+            maxOutputTokens: maxTokens
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.warn(`[LLM/GeminiVision] 模型 ${model} 回應 HTTP ${res.status}: ${errText.slice(0, 150)}`);
+        lastError = new Error(`GeminiVision ${model} HTTP ${res.status}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && text.trim()) {
+        return {
+          success: true,
+          provider: 'gemini',
+          model,
+          text: text.trim()
+        };
+      }
+      lastError = new Error(`GeminiVision ${model} 回傳空內容`);
+    } catch (err) {
+      const isAbort = err.name === 'AbortError';
+      console.warn(`[LLM/GeminiVision] 模型 ${model} 呼叫失敗 (${isAbort ? '逾時' : err.message})`);
+      lastError = err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  throw lastError || new Error('所有 Gemini Vision 模型呼叫皆失敗');
+}
+
+/**
  * 呼叫 Groq API (OpenAI 相容協議)
  */
 async function callGroq({
@@ -275,6 +368,7 @@ async function callLLMWithFallback({
 
 module.exports = {
   callGemini,
+  callGeminiVision,
   callGroq,
   callLLMWithFallback,
   DEFAULT_GEMINI_MODELS,

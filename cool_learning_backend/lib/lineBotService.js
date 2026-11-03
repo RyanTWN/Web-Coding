@@ -16,7 +16,7 @@
  */
 
 const crypto = require('crypto');
-const { callLLMWithFallback } = require('./llmService');
+const { callLLMWithFallback, callGeminiVision } = require('./llmService');
 
 // 記憶體對話狀態管理 (以 userId 為鍵，具備自動過期機制)
 const userSessions = new Map();
@@ -562,6 +562,161 @@ async function processLineTextMessage({
   return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
 }
 
+/**
+ * 從 LINE 伺服器下載二進位多媒體內容 (圖片)
+ */
+async function fetchLineMessageContent({
+  messageId,
+  accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  fetchFn = fetch
+}) {
+  if (!messageId) throw new Error('缺少 messageId');
+  if (!accessToken) throw new Error('未配置 LINE_CHANNEL_ACCESS_TOKEN');
+
+  const url = `https://api-data.line.me/v2/bot/message/${messageId}/content`;
+  const res = await fetchFn(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`下載 LINE 訊息內容失敗 HTTP ${res.status}: ${errText.slice(0, 100)}`);
+  }
+
+  const arrayBuffer = await res.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const mimeType = res.headers.get('content-type') || 'image/jpeg';
+
+  return {
+    buffer,
+    base64: buffer.toString('base64'),
+    mimeType
+  };
+}
+
+/**
+ * 考卷與作業照片之多模態視覺閱卷核心
+ */
+async function gradeExamImage({
+  apiKey = process.env.GEMINI_API_KEY,
+  imageBase64,
+  mimeType = 'image/jpeg',
+  isGroupChat = false,
+  fetchFn = fetch
+}) {
+  const systemPrompt = `你是一位專業、充滿愛心且兼具教學熱忱的台灣國小專科教師，同時是「酷學習 AI 貓頭鷹小助教🦉 - 小酷」。
+學生或家長剛在 LINE 傳送了一張照片。
+
+【照片類型審查】：
+1. 檢視這張相片是否屬於學習相關材料（例如：考卷、作業簿、隨堂練習、黑板試題、手寫算式、學習筆記等）。
+${isGroupChat ? '2. 【群組重要規則】：若照片明顯為「風景、自拍、聚餐美食、寵物、生活梗圖等非學習日常照片」，請只回傳四個英文字母：[IGNORE] ，不要輸出任何其他贅字（防止在群組中洗版）。' : '2. 若照片並非試題或文字嚴重模糊無法辨識，請親切提醒使用者「請拍張光線充足、文字清晰平整的考卷或作業照片喔！」。'}
+
+【閱卷與引導任務（當照片為考卷或題目時）】：
+1. 【辨識科目與單元】：判斷為國小哪個學科（數學/自然/國語/英語/社會）及核心概念。
+2. 【逐題批改與核算】：
+   - 辨識題目文字、題號，以及學生的「手寫答案、算式或選項」。
+   - 標示判定：✅ 正確 或 ❌ 需訂正。
+   - 【計算與錯題診斷】：針對答錯或步驟疏漏的題目，明確點出「學生可能卡關的地方」（例如：未約分、乘法進位算錯、公式套錯、概念混淆）。
+3. 【蘇格拉底啟發提示】：
+   - 針對答錯的題目，給予 1~2 點引導思考提示（例如：「第一步請先算出半徑喔！」），鼓勵孩子拿草稿紙動手推導，建立思考習慣。
+4. 【溫馨講評與分數預估】：
+   - 給予預估得分或表現講評，並以溫暖幽默的話語鼓舞孩子！
+
+【排版規範】：
+- 繁體中文（台灣國小習慣用語）。
+- 結構清晰、條理分明，善用 Emoji（📝、✅、❌、💡、🦉），方便在手機 LINE 螢幕上快速閱讀。`;
+
+  const userPrompt = '請仔細檢視這張考卷/作業照片，辨識題目與學生作答，並進行詳細的批改、錯題診斷與啟發引導：';
+
+  return callGeminiVision({
+    apiKey,
+    systemPrompt,
+    userPrompt,
+    imageBase64,
+    mimeType,
+    temperature: 0.3,
+    maxTokens: 1000,
+    timeoutMs: 15000,
+    fetchFn
+  });
+}
+
+/**
+ * 處理來自 LINE Webhook 的圖片訊息事件 (考卷/作業批改)
+ */
+async function processLineImageMessage({
+  event,
+  pool,
+  fetchFn = fetch,
+  accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  geminiKey = process.env.GEMINI_API_KEY
+}) {
+  const isGroupChat = event.source?.type === 'group' || event.source?.type === 'room';
+  const sessionId = isGroupChat
+    ? (event.source?.groupId || event.source?.roomId || 'anonymous-group')
+    : (event.source?.userId || 'anonymous-user');
+  const replyToken = event.replyToken;
+  const messageId = event.message?.id;
+
+  if (!messageId || !replyToken) return;
+
+  const session = getOrCreateSession(sessionId);
+
+  try {
+    // 1. 從 LINE Content API 下載圖片內容
+    const { base64, mimeType } = await fetchLineMessageContent({
+      messageId,
+      accessToken,
+      fetchFn
+    });
+
+    // 2. 呼叫 Gemini Vision 進行考卷影像批改
+    const visionRes = await gradeExamImage({
+      apiKey: geminiKey,
+      imageBase64: base64,
+      mimeType,
+      isGroupChat,
+      fetchFn
+    });
+
+    if (!visionRes || !visionRes.text) {
+      if (!isGroupChat) {
+        const reply = createTextMessage(
+          '🦉 小助教收到圖片囉！但影像辨識服務稍忙中，請稍後再試，或確保拍攝清晰、光線充足喔！',
+          getDefaultQuickReplies(session.mode)
+        );
+        return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
+      }
+      return;
+    }
+
+    const replyText = visionRes.text.trim();
+
+    // 群組中若識別為非學習生活照片，保持安靜不洗版
+    if (isGroupChat && replyText.includes('[IGNORE]')) {
+      return;
+    }
+
+    const reply = createTextMessage(
+      `🦉 【小酷考卷/作業閱卷報告】\n\n${replyText}`,
+      getDefaultQuickReplies(session.mode)
+    );
+    return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
+  } catch (err) {
+    console.error('[LINE/Image] 處理考卷照片例外:', err.message);
+    if (!isGroupChat) {
+      const reply = createTextMessage(
+        '🦉 小助教在讀取考卷照片時遇到了一點小問題，請確認照片光線明亮且文字清晰，再傳一次試試看喔！',
+        getDefaultQuickReplies(session.mode)
+      );
+      return replyLineMessage({ replyToken, messages: reply, accessToken, fetchFn });
+    }
+  }
+}
+
 module.exports = {
   getOrCreateSession,
   verifyLineSignature,
@@ -572,5 +727,8 @@ module.exports = {
   generateQuizForStudent,
   gradeStudentQuiz,
   handleStudentCompanion,
-  processLineTextMessage
+  fetchLineMessageContent,
+  gradeExamImage,
+  processLineTextMessage,
+  processLineImageMessage
 };

@@ -9,7 +9,8 @@
 const express = require('express');
 const {
   verifyLineSignature,
-  processLineTextMessage
+  processLineTextMessage,
+  processLineImageMessage
 } = require('../lib/lineBotService');
 
 module.exports = function createLineBotRouter({ pool }) {
@@ -24,6 +25,7 @@ module.exports = function createLineBotRouter({ pool }) {
       channelAccessTokenConfigured: !!process.env.LINE_CHANNEL_ACCESS_TOKEN,
       geminiKeyConfigured: !!process.env.GEMINI_API_KEY,
       groqKeyConfigured: !!process.env.GROQ_API_KEY,
+      visionSupported: !!process.env.GEMINI_API_KEY,
       timestamp: new Date().toISOString()
     });
   });
@@ -105,13 +107,21 @@ module.exports = function createLineBotRouter({ pool }) {
     // 立即回應 HTTP 200 避免 LINE 重試或逾時，並在背景處理對話
     res.status(200).json({ success: true, processedCount: events.length });
 
-    // 依序處理文字事件
+    // 依序處理文字與圖片訊息事件
     for (const event of events) {
-      if (event.type === 'message' && event.message?.type === 'text') {
-        try {
-          await processLineTextMessage({ event, pool });
-        } catch (eventErr) {
-          console.error('[LINE/Webhook] 事件處理異常:', eventErr);
+      if (event.type === 'message') {
+        if (event.message?.type === 'text') {
+          try {
+            await processLineTextMessage({ event, pool });
+          } catch (eventErr) {
+            console.error('[LINE/Webhook] 文字事件處理異常:', eventErr);
+          }
+        } else if (event.message?.type === 'image') {
+          try {
+            await processLineImageMessage({ event, pool });
+          } catch (imageErr) {
+            console.error('[LINE/Webhook] 圖片考卷處理異常:', imageErr);
+          }
         }
       }
     }
