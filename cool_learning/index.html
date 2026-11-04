@@ -109,8 +109,8 @@
         <p class="text-xs sm:text-sm text-slate-500 mt-2 font-medium tracking-wide">探索知識的無限可能</p>
       </div>
 
-      <!-- 本機快速免密碼進入橫幅 (超醒目展示專用入口) -->
-      <div id="dev-quick-banner" class="mb-5 p-3 rounded-2xl bg-gradient-to-r from-amber-50 via-emerald-50 to-sky-50 border-2 border-dashed border-amber-300 shadow-sm flex items-center justify-between gap-2">
+      <!-- 本機快速免密碼進入橫幅 (超醒目展示專用入口) - 暫時隱蔽，待下次要用到時再開啟 -->
+      <div id="dev-quick-banner" style="display: none !important;" class="hidden mb-5 p-3 rounded-2xl bg-gradient-to-r from-amber-50 via-emerald-50 to-sky-50 border-2 border-dashed border-amber-300 shadow-sm flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <div>
@@ -181,8 +181,8 @@
           <button type="button" onclick="showForgotPasswordInfoModal()" class="hover:text-[#173852] transition-colors underline-offset-4 hover:underline">忘記密碼？</button>
         </div>
 
-        <!-- 本機測試免登入快捷入口 (僅在 localhost / 127.0.0.1 顯示) -->
-        <div id="dev-quick-box" class="pt-3 border-t border-slate-200/80 text-center">
+        <!-- 本機測試免登入快捷入口 - 暫時隱蔽，待下次要用到時再開啟 -->
+        <div id="dev-quick-box" style="display: none !important;" class="hidden pt-3 border-t border-slate-200/80 text-center">
           <button type="button" id="btn-dev-quick-login" class="w-full py-2.5 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
             <i class="fa-solid fa-flask text-amber-600"></i> 本機開發快速進入（免密碼登入）
           </button>

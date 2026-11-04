@@ -859,14 +859,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
   });
 
-  // 本機開發快速進入（免驗證直接進大廳）
+  // 本機開發快速進入（免驗證直接進大廳 - 暫時隱蔽，保留邏輯待下次要用時開啟）
+  const ENABLE_DEV_QUICK_LOGIN = false; // 預設關閉隱蔽；若下次要開啟直接設為 true 或於網址帶 ?dev=1
+  const isDevParam = (new URLSearchParams(window.location.search)).get('dev') === '1';
+  const showDevQuick = ENABLE_DEV_QUICK_LOGIN || isDevParam;
+
   const devQuickBox = document.getElementById('dev-quick-box');
   if (devQuickBox) {
-    devQuickBox.style.display = 'block';
+    devQuickBox.style.display = showDevQuick ? 'block' : 'none';
   }
   const devQuickBanner = document.getElementById('dev-quick-banner');
   if (devQuickBanner) {
-    devQuickBanner.style.display = 'flex';
+    devQuickBanner.style.display = showDevQuick ? 'flex' : 'none';
   }
   document.getElementById('btn-dev-quick-login')?.addEventListener('click', () => {
     sessionStorage.removeItem('manual_logout');
