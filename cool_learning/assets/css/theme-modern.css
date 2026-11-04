@@ -342,6 +342,22 @@
   box-shadow: 0 6px 16px rgba(217, 119, 6, 0.45);
 }
 
+/* 每日寶箱已領取狀態：變淡、不可重複領取但保留點擊事件以彈出提示 */
+.island-btn-claim.is-claimed {
+  opacity: 0.5;
+  filter: grayscale(0.35);
+  cursor: not-allowed;
+  box-shadow: none !important;
+  pointer-events: auto !important;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.island-btn-claim.is-claimed:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 0.45;
+}
+
 /* 2. 非對稱 Bento Grid 容器 */
 .bento-grid {
   display: grid;

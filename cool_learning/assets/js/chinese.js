@@ -1280,6 +1280,11 @@ function finishIdiomQuiz() {
   } catch (err) {
     console.warn('成語測驗歷程存檔異常:', err);
   }
+
+  // 結算國語成語測驗鑽石獎勵
+  if (typeof window.awardQuizDiamonds === 'function') {
+    window.awardQuizDiamonds('chinese', finalScore);
+  }
 }
 
 function exitIdiomQuiz(confirmExit = false) {
@@ -1477,6 +1482,11 @@ async function finishQuiz() {
 
   renderResult();
   renderCalendar();
+
+  // 結算國語每日測驗鑽石獎勵
+  if (typeof window.awardQuizDiamonds === 'function') {
+    window.awardQuizDiamonds('chinese', dailyState.score);
+  }
 }
 
 function renderResult() {

@@ -836,6 +836,11 @@ async function finishQuiz() {
   if (wrongCountEl) wrongCountEl.textContent = wrongBank.length;
   renderResult();
   renderCalendar();
+
+  // 結算社會科每日測驗鑽石獎勵
+  if (typeof window.awardQuizDiamonds === 'function') {
+    window.awardQuizDiamonds('social', dailyState.score);
+  }
 }
 
 function renderResult() {

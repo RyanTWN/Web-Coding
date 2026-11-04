@@ -241,6 +241,11 @@ function nextQuizQuestion() {
       localStorage.setItem(historyKey, JSON.stringify(history));
       saveQuizResultToCloud(currentQuizMode, finalScore);
     }
+
+    // 結算英語每日測驗鑽石獎勵
+    if (typeof window.awardQuizDiamonds === 'function') {
+      window.awardQuizDiamonds('english', finalScore);
+    }
   }
 }
 

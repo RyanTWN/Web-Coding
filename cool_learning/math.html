@@ -871,6 +871,11 @@
 
       showView('view-result');
       saveProgress(true, finalScore);
+
+      // 結算數學每日測驗鑽石獎勵
+      if (typeof window.awardQuizDiamonds === 'function') {
+        window.awardQuizDiamonds('math', finalScore);
+      }
     }
 
     // 同步到後端 API

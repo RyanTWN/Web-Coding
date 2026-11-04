@@ -815,6 +815,11 @@ async function finishQuiz() {
   if (wrongCountEl) wrongCountEl.textContent = wrongBank.length;
   renderResult();
   renderCalendar();
+
+  // 結算自然科學每日測驗鑽石獎勵
+  if (typeof window.awardQuizDiamonds === 'function') {
+    window.awardQuizDiamonds('nature', dailyState.score);
+  }
 }
 
 function renderResult() {

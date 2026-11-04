@@ -399,7 +399,7 @@
           <!-- 鑽石資產 -->
           <div class="island-chip" title="已獲取的學習鑽石">
             <i class="fa-solid fa-gem text-sky-500"></i>
-            <span>380 鑽</span>
+            <span id="user-diamond-count" class="user-diamond-display">380 鑽</span>
           </div>
 
           <!-- 家長即時連動 -->
@@ -409,9 +409,9 @@
           </div>
 
           <!-- 每日寶箱獎勵按鈕 -->
-          <button type="button" class="island-btn-claim" onclick="claimDailyReward()">
+          <button type="button" id="btn-daily-chest" class="island-btn-claim" onclick="claimDailyReward()" title="點擊開啟每日寶箱獲取 50 鑽">
             <i class="fa-solid fa-gift"></i>
-            <span>領取每日寶箱 (50 鑽)</span>
+            <span id="btn-daily-chest-text">領取每日寶箱 (50 鑽)</span>
           </button>
         </div>
       </div>

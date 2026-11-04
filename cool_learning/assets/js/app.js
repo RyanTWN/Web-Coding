@@ -409,9 +409,11 @@ function showView(viewId) {
         const classicSubName = document.getElementById('subject-user-name-classic');
         if (classicSubName) classicSubName.textContent = currentUser.name;
         document.querySelectorAll('.user-name-display').forEach(el => el.textContent = currentUser.name);
+        if (typeof window.initDailyChestUI === 'function') window.initDailyChestUI();
       } else {
         badge.classList.add('hidden');
         badge.classList.remove('flex');
+        if (typeof window.initDailyChestUI === 'function') window.initDailyChestUI();
       }
   }
 }
