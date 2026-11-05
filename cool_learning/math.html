@@ -29,6 +29,57 @@
       25% { transform: translateX(-8px); }
       75% { transform: translateX(8px); }
     }
+  
+    /* 3D 翻轉卡片系統 (速算圖卡) */
+    .speed-card-perspective {
+      perspective: 1200px;
+    }
+    .speed-card-inner {
+      position: relative;
+      width: 100%;
+      min-height: 540px;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+      border-radius: 1.5rem;
+    }
+    .speed-card-inner.is-flipped {
+      transform: rotateY(180deg);
+    }
+    .speed-card-face {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 1.5rem;
+      overflow: hidden;
+    }
+    .speed-card-back {
+      transform: rotateY(180deg);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .modal-backdrop {
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal-content {
+      animation: zoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes zoomIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
   </style>
 </head>
 <body class="text-slate-800 min-h-screen p-3 sm:p-6 flex flex-col justify-between">
@@ -81,7 +132,24 @@
     </div>
   </header>
 
+  <!-- 頂部模組快速切換分頁籤 (課本練習 vs 速算學院) -->
+  <nav class="w-full max-w-5xl mx-auto mb-5 flex gap-2 p-1.5 bg-sky-100/70 rounded-2xl border border-sky-200/60 shadow-inner">
+    <button type="button" id="tab-curriculum" onclick="switchMainTab('curriculum')" class="flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-sky-700 shadow-md cursor-pointer">
+      <i class="fa-solid fa-graduation-cap"></i> 課本課綱練習 (10題)
+    </button>
+    <button type="button" id="tab-speed-calc" onclick="switchMainTab('speed-calc')" class="flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-sky-900 hover:text-sky-700 hover:bg-white/50 cursor-pointer group">
+      <i class="fa-solid fa-bolt text-amber-500 group-hover:scale-110 transition-transform"></i> 
+      <span>速算學院 (52招技巧與闖關)</span>
+      <span class="px-1.5 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[10px] font-black uppercase">NEW</span>
+    </button>
+  </nav>
+
+
   <main class="w-full max-w-5xl mx-auto flex-1">
+    <!-- ============================================== -->
+    <!-- 模組 A: 課本課綱練習 (每日 10 題)                -->
+    <!-- ============================================== -->
+    <div id="section-curriculum">
     <!-- 視圖 1: 設定與首頁大廳 (含月曆與錯題入口) -->
     <section id="view-setup" class="grid lg:grid-cols-[1.35fr_.65fr] gap-5">
       <div class="bg-white/95 rounded-lg p-5 sm:p-7 shadow-xl border border-white">
@@ -176,6 +244,32 @@
           <p id="calendar-detail" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-center text-[11px] font-bold text-slate-500">點選藍色日期查看戰績</p>
           <p id="today-status" class="mt-3 py-2.5 rounded-lg bg-sky-50 text-sky-800 text-center text-xs font-bold">完成今日 10 題即可點亮</p>
         </div>
+
+        <!-- 錯題複習專區入口 -->
+        
+        <!-- 速算學院直達橫幅卡片 -->
+        <div id="banner-speed-calc-go" onclick="switchMainTab('speed-calc')" class="bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 rounded-2xl p-5 shadow-xl text-white cursor-pointer hover:shadow-2xl hover:scale-[1.01] transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-black tracking-wider uppercase flex items-center gap-1">
+              <i class="fa-solid fa-bolt text-amber-300"></i>神算心法秘笈
+            </span>
+            <span class="text-xs font-bold text-sky-100">共 52 招大滿貫</span>
+          </div>
+          <h3 class="text-xl font-black mt-2.5 flex items-center gap-2">
+            速算學院
+            <span class="text-[10px] px-2 py-0.5 bg-amber-400 text-amber-950 rounded-full font-black uppercase tracking-wider">Speed Math</span>
+          </h3>
+          <p class="text-xs text-white/90 mt-1.5 leading-relaxed">
+            3D 擬真圖卡、獨家朗讀口訣、動態步驟推導動畫與隨堂闖關挑戰！
+          </p>
+          <div class="mt-3.5 pt-3 border-t border-white/20 flex items-center justify-between text-xs font-black text-amber-200">
+            <span class="group-hover:translate-x-1 transition-transform flex items-center gap-1">
+              立即進入學院修煉 <i class="fa-solid fa-arrow-right ml-1"></i>
+            </span>
+            <span class="text-[10px] opacity-75">國小六年級必備</span>
+          </div>
+        </div>
+
 
         <!-- 錯題複習專區入口 -->
         <button id="btn-review-entry" class="w-full bg-white/95 hover:bg-rose-50/50 rounded-lg p-5 shadow-lg border border-white flex items-center justify-between text-left transition-all group">
@@ -400,6 +494,370 @@
         </div>
       </div>
     </section>
+
+    </div> <!-- /section-curriculum -->
+
+    <!-- ============================================== -->
+    <!-- 模組 B: 速算學院 (3D翻卡 + 動態步驟 + 專項現練)   -->
+    <!-- ============================================== -->
+    <div id="section-speed-academy" class="hidden space-y-5">
+      <!-- 學院頂部工具列 -->
+      <div class="bg-white/95 backdrop-blur rounded-2xl p-4 sm:p-5 shadow-lg border border-white space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <!-- 搜尋框 -->
+          <div class="relative flex-1 min-w-[240px] max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="trick-search" oninput="filterSpeedTricks()" placeholder="搜尋速算招式名稱、口訣或計算數字..." class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold focus:outline-none focus:border-sky-500">
+          </div>
+
+          <!-- 右側操作按鈕 -->
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="startSpeedQuiz()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs shadow-md hover:brightness-105 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-stopwatch"></i> ⚡ 隨堂速算闖關 (10題)
+            </button>
+            <button type="button" onclick="switchMainTab('curriculum')" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition cursor-pointer">
+              <i class="fa-solid fa-arrow-left mr-1"></i> 返回課本
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 大分類按鈕分頁籤 ＋ 【點擊打開全部52招浮動視窗】 -->
+        <div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar border-t border-slate-100 pt-2.5">
+          <!-- 全部 52 招按鈕（點擊以浮動視窗按分類展示） -->
+          <button type="button" id="btn-open-all-modal" onclick="openAllTricksModal()" class="px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md hover:brightness-105 active:scale-95 flex items-center gap-1.5 cursor-pointer ring-2 ring-sky-300/60 animate-pulse">
+            <i class="fa-solid fa-layer-group text-amber-300"></i>
+            <span>全部 52 招全目錄</span>
+            <span class="px-1.5 py-0.2 bg-white/25 rounded-md text-[10px]">點我彈出</span>
+          </button>
+
+          <span class="h-4 w-px bg-slate-200 shrink-0"></span>
+
+          <!-- 5 大分類即時快速切換 -->
+          <button type="button" class="speed-category-btn px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer" data-cat="add_sub" onclick="setSpeedCategoryFilter('add_sub')">
+            <i class="fa-solid fa-plus-minus text-sky-500 mr-1"></i> 1. 加減巧算 (8招)
+          </button>
+          <button type="button" class="speed-category-btn px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap bg-sky-100 text-sky-800 cursor-pointer" data-cat="multiply" onclick="setSpeedCategoryFilter('multiply')">
+            <i class="fa-solid fa-xmark text-amber-500 mr-1"></i> 2. 乘法神技 (18招)
+          </button>
+          <button type="button" class="speed-category-btn px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer" data-cat="divide" onclick="setSpeedCategoryFilter('divide')">
+            <i class="fa-solid fa-divide text-emerald-500 mr-1"></i> 3. 除法整除 (8招)
+          </button>
+          <button type="button" class="speed-category-btn px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer" data-cat="fraction_decimal" onclick="setSpeedCategoryFilter('fraction_decimal')">
+            <i class="fa-solid fa-percent text-purple-500 mr-1"></i> 4. 分數小數 (10招)
+          </button>
+          <button type="button" class="speed-category-btn px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer" data-cat="geometry_word" onclick="setSpeedCategoryFilter('geometry_word')">
+            <i class="fa-solid fa-compass text-rose-500 mr-1"></i> 5. 幾何素養 (8招)
+          </button>
+          <button type="button" class="speed-category-btn px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100 ml-auto cursor-pointer" data-cat="starred" onclick="setSpeedCategoryFilter('starred')">
+            <i class="fa-solid fa-star text-amber-400 mr-1"></i> 我的收藏 (<span id="speed-star-count">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- 核心工作台：左側 3D 擬真圖卡與動態步驟解構 ＋ 右側精簡儀表與即時速算現測 -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        <!-- 左欄 (8 col): 3D 擬真翻轉速算圖卡 -->
+        <div class="lg:col-span-8 space-y-4">
+          <div class="speed-card-perspective">
+            <div id="speed-card-box" class="speed-card-inner shadow-2xl cursor-pointer" onclick="toggleSpeedCardFlip(event)">
+              
+              <!-- 卡片正面 (Front) -->
+              <div class="speed-card-face bg-gradient-to-br from-white via-sky-50/50 to-blue-50/40 border-2 border-white p-6 sm:p-8 flex flex-col justify-between shadow-xl">
+                <!-- 正面頂部列 -->
+                <div class="flex items-center justify-between pb-3 border-b border-sky-100">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span id="card-seq-badge" class="px-3 py-1 rounded-full bg-sky-100 text-sky-800 font-black text-xs tracking-wider">
+                      #014 / 52 招
+                    </span>
+                    <span id="card-cat-badge" class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px]">
+                      乘法核心神技
+                    </span>
+                    <span id="card-stars-badge" class="text-amber-400 text-xs tracking-tight">
+                      ★★★☆☆
+                    </span>
+                  </div>
+
+                  <!-- 右上角收藏星號與朗讀語音按鈕 -->
+                  <div class="flex items-center gap-2" onclick="event.stopPropagation();">
+                    <button type="button" id="btn-speed-star" onclick="toggleSpeedFavorite()" title="加入重點收藏" class="w-10 h-10 rounded-xl bg-white hover:bg-amber-50 text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200 transition">
+                      <i class="fa-solid fa-star"></i>
+                    </button>
+                    <button type="button" id="btn-speed-speech" onclick="speakSpeedMnemonic()" title="播放口訣朗讀" class="w-10 h-10 rounded-xl bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center text-sm shadow-md transition active:scale-95">
+                      <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 招式名稱與適用情境 -->
+                <div class="my-3 text-center">
+                  <span id="card-condition" class="inline-block px-3 py-1 rounded-full bg-blue-100/80 text-blue-900 text-xs font-bold mb-2">
+                    適用情境：十位數字相同，個位數字相加等於 10
+                  </span>
+                  <h2 id="card-title" class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight">
+                    頭同尾合十
+                  </h2>
+                </div>
+
+                <!-- 核心黃金口訣看板 -->
+                <div class="bg-gradient-to-r from-amber-50 via-amber-100/70 to-orange-50 border-2 border-amber-300/80 rounded-2xl p-3.5 sm:p-4 text-center shadow-inner my-2">
+                  <div class="text-[11px] font-black text-amber-800 uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-amber-500"></i> 核心神算口訣
+                  </div>
+                  <div id="card-formula" class="text-lg sm:text-2xl font-black text-amber-950 tracking-wide">
+                    「頭乘(頭加一)，尾乘尾放後底」
+                  </div>
+                </div>
+
+                <!-- 動態步驟解構播放器 (Step Animator) -->
+                <div class="bg-white/95 rounded-2xl p-4 sm:p-5 border border-sky-100 shadow-sm space-y-3" onclick="event.stopPropagation();">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-black text-slate-700 flex items-center gap-1">
+                        <i class="fa-solid fa-clapperboard text-sky-500"></i> 範例動態步驟拆解
+                      </span>
+                      <strong id="anim-example-text" class="text-sm font-black text-sky-700">43 × 47 = ?</strong>
+                    </div>
+
+                    <!-- 步驟切換微導覽 -->
+                    <div class="flex items-center gap-1">
+                      <button type="button" onclick="changeSpeedStep(0)" class="speed-step-btn px-2.5 py-1 rounded-lg text-xs font-black bg-sky-500 text-white" id="speed-step-btn-0">步驟 1</button>
+                      <button type="button" onclick="changeSpeedStep(1)" class="speed-step-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200" id="speed-step-btn-1">步驟 2</button>
+                      <button type="button" onclick="changeSpeedStep(2)" class="speed-step-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200" id="speed-step-btn-2">步驟 3</button>
+                      <button type="button" onclick="autoPlaySpeedSteps()" id="btn-speed-auto-play" title="自動連續播放動畫" class="ml-1 w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-amber-600">
+                        <i class="fa-solid fa-play"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 視覺化動畫推導展示視窗 -->
+                  <div class="p-3.5 rounded-xl bg-slate-900 text-white relative overflow-hidden min-h-[110px] flex flex-col justify-center">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1 border-b border-slate-800 pb-1">
+                      <span id="anim-step-title" class="font-bold text-amber-400">步驟 1: 前段頭數相乘</span>
+                      <span id="anim-timer-compare" class="text-slate-400">心算耗時: 2 秒 (傳統筆算: 18 秒)</span>
+                    </div>
+                    <div id="anim-stage" class="text-center py-2">
+                      <div class="text-xl sm:text-2xl font-black tracking-wider font-mono animate-in fade-in zoom-in-95 duration-300">
+                        <span class="text-sky-400">4</span> × (<span class="text-sky-400">4</span> + 1) = <span class="text-amber-400 text-2xl">20</span>
+                        <span class="text-xs text-slate-400 ml-2">(前兩位數字)</span>
+                      </div>
+                    </div>
+                    <p id="anim-step-desc" class="text-xs text-slate-300 text-center mt-1">
+                      十位數都是 4，用 4 × (4 + 1) = 20 作為前半段！
+                    </p>
+                  </div>
+                </div>
+
+                <!-- 底部翻面提示 -->
+                <div class="pt-3 flex items-center justify-center border-t border-sky-100 text-xs font-bold text-slate-400 gap-1.5">
+                  <i class="fa-solid fa-arrows-rotate animate-spin" style="animation-duration: 6s;"></i> 
+                  <span>點擊卡片任意空白處翻面，查看「心法原理大解密」與「防陷阱提點」</span>
+                </div>
+              </div>
+
+              <!-- 卡片背面 (Back) -->
+              <div class="speed-card-face speed-card-back bg-white border-2 border-white p-6 sm:p-8 flex flex-col justify-between shadow-xl overflow-y-auto">
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-black">
+                        <i class="fa-solid fa-lightbulb"></i>
+                      </span>
+                      <h3 class="font-black text-slate-800 text-base">心法原理大解密 (知其所以然)</h3>
+                    </div>
+                    <span class="text-xs font-bold text-slate-400">點擊卡片返回正面</span>
+                  </div>
+
+                  <!-- 代數幾何原理簡析 -->
+                  <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 text-xs sm:text-sm text-indigo-950 space-y-2 leading-relaxed">
+                    <strong class="block font-black text-indigo-900">為什麼口訣能成立？</strong>
+                    <p id="back-principle">
+                      令十位數為 a，兩數分別為 (10a + b) 與 (10a + c)。<br>
+                      展開相乘：(10a + b)(10a + c) = 100a² + 10a(b + c) + bc。<br>
+                      因為尾數合十：b + c = 10，中間項變成 10a × 10 = 100a！<br>
+                      原式 = 100a² + 100a + bc = <strong>100a(a + 1) + bc</strong>。<br>
+                      這就是為什麼前段剛好是 a × (a + 1)，後段剛好是 b × c 的數學真相！
+                    </p>
+                  </div>
+
+                  <!-- 易錯陷阱提醒 -->
+                  <div class="bg-rose-50 border border-rose-100 rounded-xl p-4 text-xs sm:text-sm text-rose-950 space-y-1.5 leading-relaxed">
+                    <strong class="block font-black text-rose-800 flex items-center gap-1.5">
+                      <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> 防陷阱提點！
+                    </strong>
+                    <p id="back-trap">
+                      尾乘尾若小於 10（例如 1 × 9 = 9），後兩位一定要補零寫成 09（例如 41 × 49 = 2009，千萬別寫成 209）！
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-bold">
+                  <span>國小六年級速算必考心法</span>
+                  <span class="text-sky-600 font-black"><i class="fa-solid fa-rotate-left mr-1"></i>翻回正面演示</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 卡片下方導覽跳轉列 -->
+          <div class="bg-white/95 rounded-2xl p-3 shadow-md border border-white flex items-center justify-between gap-2">
+            <button type="button" onclick="prevSpeedTrick()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition flex items-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-chevron-left"></i> 上一招
+            </button>
+
+            <!-- 52 招下拉快速跳轉選單 -->
+            <div class="flex-1 max-w-xs">
+              <select id="speed-trick-select" onchange="jumpToSpeedTrick(this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 focus:outline-none focus:border-sky-500">
+                <!-- 動態載入 52 招選項 -->
+              </select>
+            </div>
+
+            <button type="button" onclick="nextSpeedTrick()" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs transition flex items-center gap-1 shadow-md cursor-pointer">
+              下一招 <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 右欄 (4 col): 精簡專注版（已移除52招方塊矩陣，畫面更加清爽俐落） -->
+        <div class="lg:col-span-4 space-y-4">
+          
+          <!-- 段位與成就進度卡片 -->
+          <div class="bg-white/95 rounded-2xl p-5 shadow-lg border border-white space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-slate-400 uppercase tracking-wider">速算修煉段位</span>
+              <span id="speed-rank-badge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-black text-[11px]">
+                Lv.4 榜眼神算
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center text-xl shadow-md">
+                <i class="fa-solid fa-medal"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-xs font-black mb-1">
+                  <span>52 招心法掌握度</span>
+                  <span id="speed-mastery-text" class="text-sky-600">14 / 52 招 (27%)</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div id="speed-mastery-bar" class="h-full bg-gradient-to-r from-sky-400 to-blue-600 rounded-full" style="width: 27%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 查看全目錄快速引導按鈕 -->
+            <button type="button" onclick="openAllTricksModal()" class="w-full mt-2 py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-layer-group text-sky-500"></i> 開啟 52 招全目錄浮動視窗
+            </button>
+          </div>
+
+          <!-- 本招即時現測練習專區 (隨卡現練) -->
+          <div class="bg-gradient-to-br from-white to-sky-50/60 rounded-2xl p-5 shadow-lg border border-sky-100 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt text-amber-500"></i> 本招隨堂現練
+              </h3>
+              <span id="speed-practice-idx-badge" class="text-[11px] font-bold text-slate-400">第 1 / 3 題</span>
+            </div>
+
+            <!-- 題目題目看板 -->
+            <div class="bg-white rounded-xl p-4 border border-sky-200/80 text-center shadow-xs">
+              <div class="text-[11px] text-slate-400 font-bold mb-1">請利用剛學會的口訣心算出答案：</div>
+              <div id="speed-practice-question" class="text-2xl font-black text-slate-800 font-mono tracking-wider">
+                34 × 36 = ?
+              </div>
+            </div>
+
+            <!-- 輸入與提交 -->
+            <div class="flex gap-2">
+              <input type="number" id="speed-practice-input" placeholder="輸入心算答案..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-black text-base text-center focus:outline-none focus:border-sky-500">
+              <button type="button" onclick="submitSpeedPracticeAnswer()" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-md active:scale-95 transition cursor-pointer">
+                送出
+              </button>
+            </div>
+
+            <!-- 提示與反饋區 -->
+            <div id="speed-practice-feedback" class="hidden p-3 rounded-xl text-xs font-bold leading-relaxed"></div>
+            
+            <button type="button" onclick="showSpeedPracticeHint()" class="w-full py-1.5 text-center text-[11px] font-bold text-sky-600 hover:text-sky-800 transition cursor-pointer">
+              <i class="fa-regular fa-lightbulb mr-1"></i> 想不出？點我看口訣提示
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div> <!-- /section-speed-academy -->
+
+    <!-- ============================================== -->
+    <!-- 模組 C: 隨堂速算闖關挑戰視圖                     -->
+    <!-- ============================================== -->
+    <section id="section-speed-quiz" class="hidden max-w-2xl mx-auto space-y-5">
+      <div class="bg-white/95 backdrop-blur rounded-2xl p-6 sm:p-8 shadow-2xl border border-white space-y-5">
+        
+        <!-- 頂端關卡資訊與進度 -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-black">
+              ⚡ 實戰速算闖關模式
+            </span>
+            <h2 class="text-xl font-black text-slate-800 mt-1">國小六星速算 10 題連擊挑戰</h2>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] text-slate-400 block font-bold">目前進度</span>
+            <strong id="speed-quiz-progress-text" class="text-sm font-black text-sky-600">第 1 / 10 題</strong>
+          </div>
+        </div>
+
+        <!-- 倒數計時進度條 -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs font-black">
+            <span class="text-slate-500"><i class="fa-solid fa-stopwatch text-amber-500 mr-1"></i>每題思考倒數</span>
+            <span id="speed-quiz-timer-text" class="text-amber-600 font-mono">15 秒</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div id="speed-quiz-timer-bar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all duration-1000" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- 連擊與分數 -->
+        <div class="flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="flex items-center gap-1.5 font-black text-xs text-orange-600">
+            <i class="fa-solid fa-fire text-base"></i> 連對 COMBO: <span id="speed-quiz-combo-text" class="text-base text-orange-600">0</span> 連擊！
+          </div>
+          <div class="font-black text-xs text-slate-700">
+            目前累計得分: <span id="speed-quiz-score-text" class="text-sky-600 text-base">0</span> 分
+          </div>
+        </div>
+
+        <!-- 題目大字展示 -->
+        <div class="py-8 px-4 rounded-2xl bg-gradient-to-br from-sky-50 via-white to-blue-50/50 border-2 border-sky-100 text-center">
+          <div class="text-xs font-bold text-sky-600 mb-2" id="speed-quiz-trick-tag">
+            技巧考驗：【頭同尾合十】
+          </div>
+          <div id="speed-quiz-question-display" class="text-4xl sm:text-5xl font-black text-slate-800 font-mono tracking-wider">
+            63 × 67 = ?
+          </div>
+        </div>
+
+        <!-- 四選一按鈕群 -->
+        <div class="grid grid-cols-2 gap-3" id="speed-quiz-options-container">
+        </div>
+
+        <!-- 口訣求救錦囊 -->
+        <div class="flex items-center justify-between pt-2">
+          <button type="button" onclick="useSpeedQuizHint()" class="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center gap-1 cursor-pointer">
+            <i class="fa-regular fa-lightbulb"></i> 使用口訣求救錦囊
+          </button>
+          <button type="button" onclick="switchMainTab('speed-calc')" class="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer">
+            結束闖關回學院
+          </button>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <footer class="w-full max-w-5xl mx-auto text-center py-4 text-xs text-slate-400 font-medium mt-6">
@@ -410,6 +868,7 @@
   <script src="assets/js/config.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/math.js"></script>
+  <script src="assets/js/data/speedMath52.js?v=20261105-speed-math-52"></script>
   <script src="assets/js/ai-tutor.js"></script>
   <script>
     // ==========================================
@@ -1175,5 +1634,72 @@
       document.getElementById('btn-call-ai-tutor-exp')?.addEventListener('click', () => triggerAiTutor(2));
     });
   </script>
+
+  <!-- ============================================== -->
+  <!-- 模組 D: 全部 52 招按分類浮動視窗 (Modal)        -->
+  <!-- ============================================== -->
+  <div id="modal-all-tricks" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-md hidden modal-backdrop" onclick="handleSpeedModalBackdropClick(event)">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-white overflow-hidden modal-content" onclick="event.stopPropagation();">
+      
+      <!-- 視窗頂部標題與工具 -->
+      <div class="px-5 sm:px-7 py-4.5 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-lg text-amber-300">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div>
+            <h2 class="text-base sm:text-lg font-black tracking-wide flex items-center gap-2">
+              52 招速算心法全秘笈目錄
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 font-black">國小六年級</span>
+            </h2>
+            <p class="text-xs text-sky-100 font-medium">按五大領域循序漸進分類・點選任意招式立即切換至主卡學習</p>
+          </div>
+        </div>
+
+        <!-- 關閉按鈕 -->
+        <button type="button" onclick="closeAllTricksModal()" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition active:scale-95 cursor-pointer" title="關閉">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- 快速分類錨點切換列 -->
+      <div class="px-5 sm:px-7 py-3 bg-slate-100/90 border-b border-slate-200/80 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+        <span class="text-xs font-black text-slate-500 shrink-0 mr-1"><i class="fa-solid fa-filter text-sky-500"></i> 分類跳轉:</span>
+        <button type="button" onclick="scrollToSpeedCategory('cat-group-add_sub')" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 hover:text-sky-600 hover:border-sky-300 border border-slate-200 shrink-0 transition cursor-pointer">
+          加減巧算 (8)
+        </button>
+        <button type="button" onclick="scrollToSpeedCategory('cat-group-multiply')" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 hover:text-sky-600 hover:border-sky-300 border border-slate-200 shrink-0 transition cursor-pointer">
+          乘法神技 (18)
+        </button>
+        <button type="button" onclick="scrollToSpeedCategory('cat-group-divide')" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 hover:text-sky-600 hover:border-sky-300 border border-slate-200 shrink-0 transition cursor-pointer">
+          除法整除 (8)
+        </button>
+        <button type="button" onclick="scrollToSpeedCategory('cat-group-fraction_decimal')" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 hover:text-sky-600 hover:border-sky-300 border border-slate-200 shrink-0 transition cursor-pointer">
+          分數小數 (10)
+        </button>
+        <button type="button" onclick="scrollToSpeedCategory('cat-group-geometry_word')" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 hover:text-sky-600 hover:border-sky-300 border border-slate-200 shrink-0 transition cursor-pointer">
+          幾何素養 (8)
+        </button>
+      </div>
+
+      <!-- 浮動視窗內容滾動區（分類展示 52 招圖卡清單） -->
+      <div id="modal-tricks-container" class="p-5 sm:p-7 overflow-y-auto space-y-6 flex-1 bg-slate-50/60">
+      </div>
+
+      <!-- 視窗底部統計與按鈕 -->
+      <div class="px-5 sm:px-7 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+          <span>共 <strong class="text-sky-600 font-black">52</strong> 招心法</span>
+          <span>・</span>
+          <span>已收藏: <strong id="modal-star-count" class="text-amber-500 font-black">0</strong> 招</span>
+        </div>
+        <button type="button" onclick="closeAllTricksModal()" class="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition cursor-pointer">
+          關閉目錄
+        </button>
+      </div>
+
+    </div>
+  </div>
+
 </body>
 </html>
