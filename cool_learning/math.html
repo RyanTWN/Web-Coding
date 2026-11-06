@@ -1619,6 +1619,12 @@
     }
 
     // 填充下拉選單 52 招選項
+    // 產生五星難度字串
+    function formatSpeedStars(stars) {
+      const num = typeof stars === 'number' ? stars : (parseInt(stars, 10) || 3);
+      return '★'.repeat(Math.max(1, Math.min(5, num))) + '☆'.repeat(Math.max(0, 5 - num));
+    }
+
     function populateSpeedTrickSelect() {
       const select = document.getElementById('speed-trick-select');
       if (!select) return;
@@ -1639,27 +1645,41 @@
       const t = speedTricksData[currentSpeedTrickIndex];
       if (!t) return;
 
+      // 切換招式時重設自動播放狀態
+      if (speedAutoPlayInterval) {
+        clearInterval(speedAutoPlayInterval);
+        speedAutoPlayInterval = null;
+        const playBtn = document.getElementById('btn-speed-auto-play');
+        if (playBtn) {
+          playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-amber-600 cursor-pointer";
+        }
+      }
+
       const seq = String(t.id).padStart(3, '0');
       const cardSeqBadge = document.getElementById('card-seq-badge');
       if (cardSeqBadge) cardSeqBadge.textContent = `#${seq} / 52 招`;
 
       const cardCatBadge = document.getElementById('card-cat-badge');
-      if (cardCatBadge) cardCatBadge.textContent = t.categoryName;
+      if (cardCatBadge) cardCatBadge.textContent = t.categoryName || '速算心法';
 
       const cardStarsBadge = document.getElementById('card-stars-badge');
-      if (cardStarsBadge) cardStarsBadge.textContent = t.stars || '★★★☆☆';
+      if (cardStarsBadge) cardStarsBadge.textContent = formatSpeedStars(t.stars);
 
       const cardCondition = document.getElementById('card-condition');
-      if (cardCondition) cardCondition.textContent = `適用情境：${t.condition}`;
+      if (cardCondition) cardCondition.textContent = `適用情境：${t.condition || ''}`;
 
       const cardTitle = document.getElementById('card-title');
-      if (cardTitle) cardTitle.textContent = t.name;
+      if (cardTitle) cardTitle.textContent = t.name || '';
 
       const cardFormula = document.getElementById('card-formula');
-      if (cardFormula) cardFormula.textContent = `「${t.formula}」`;
+      if (cardFormula) cardFormula.textContent = `「${t.formula || ''}」`;
 
       const animExample = document.getElementById('anim-example-text');
-      if (animExample) animExample.textContent = `${t.example} = ?`;
+      if (animExample) {
+        const ex = (t.example || '').trim();
+        animExample.textContent = (ex.endsWith('?') || ex.endsWith('？')) ? ex : `${ex} = ?`;
+      }
 
       const backPrinciple = document.getElementById('back-principle');
       if (backPrinciple) backPrinciple.innerHTML = t.principle || '暫無解析';
@@ -1709,41 +1729,48 @@
       });
 
       const animStepTitle = document.getElementById('anim-step-title');
-      if (animStepTitle) animStepTitle.textContent = `步驟 ${stepIdx + 1}: ${step.title}`;
+      if (animStepTitle) animStepTitle.textContent = `步驟 ${stepIdx + 1}: ${step.title || ''}`;
 
       const animTimerCompare = document.getElementById('anim-timer-compare');
-      if (animTimerCompare) animTimerCompare.textContent = `心算耗時: ${t.timeSec || 2} 秒 (傳統筆算: ${t.traditionalTimeSec || 18} 秒)`;
+      if (animTimerCompare) {
+        const speedTimeStr = t.speedTime || (t.timeSec ? `${t.timeSec} 秒` : '2 秒');
+        const tradTimeStr = t.traditionalTime || (t.traditionalTimeSec ? `${t.traditionalTimeSec} 秒` : '15 秒');
+        animTimerCompare.textContent = `心算耗時: ${speedTimeStr} (傳統筆算: ${tradTimeStr})`;
+      }
 
       const animStage = document.getElementById('anim-stage');
       if (animStage) {
+        const visualContent = (step.detail || step.visual || step.desc || '').replace(/->/g, ' → ');
         animStage.innerHTML = `
           <div class="text-xl sm:text-2xl font-black tracking-wider font-mono animate-in fade-in zoom-in-95 duration-200">
-            ${step.visual}
+            <span class="text-amber-300">${visualContent}</span>
           </div>
         `;
       }
 
       const animStepDesc = document.getElementById('anim-step-desc');
-      if (animStepDesc) animStepDesc.textContent = step.desc;
+      if (animStepDesc) animStepDesc.textContent = step.desc || '';
     }
 
     // 自動連續播放步驟動畫
     function autoPlaySpeedSteps() {
       const playBtn = document.getElementById('btn-speed-auto-play');
+      const t = speedTricksData[currentSpeedTrickIndex];
+      const maxSteps = (t && t.steps && t.steps.length) ? t.steps.length : 3;
       if (speedAutoPlayInterval) {
         clearInterval(speedAutoPlayInterval);
         speedAutoPlayInterval = null;
         if (playBtn) {
           playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-amber-600";
+          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-amber-600 cursor-pointer";
         }
       } else {
         if (playBtn) {
           playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-emerald-600 animate-pulse";
+          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-emerald-600 animate-pulse cursor-pointer";
         }
         speedAutoPlayInterval = setInterval(() => {
-          const nextStep = (currentSpeedStep + 1) % 3;
+          const nextStep = (currentSpeedStep + 1) % maxSteps;
           changeSpeedStep(nextStep);
         }, 2200);
       }
@@ -1895,7 +1922,10 @@
       const p = t.practice[currentSpeedPracticeQIdx % t.practice.length];
 
       const questionEl = document.getElementById('speed-practice-question');
-      if (questionEl) questionEl.textContent = `${p.q} = ?`;
+      if (questionEl) {
+        const qText = (p.q || '').trim();
+        questionEl.textContent = (qText.endsWith('?') || qText.endsWith('？')) ? qText : `${qText} = ?`;
+      }
 
       const idxBadge = document.getElementById('speed-practice-idx-badge');
       if (idxBadge) idxBadge.textContent = `第 ${currentSpeedPracticeQIdx + 1} / ${t.practice.length} 題`;
@@ -2029,7 +2059,7 @@
               <div class="flex items-center justify-between text-xs mb-1.5">
                 <span class="font-mono font-black text-slate-400 group-hover:text-sky-600 transition">#${seq}</span>
                 <div class="flex items-center gap-1.5">
-                  <span class="text-amber-400 text-[11px]">${t.stars || '★★★'}</span>
+                  <span class="text-amber-400 text-[11px]">${formatSpeedStars(t.stars)}</span>
                   ${isStarred ? '<i class="fa-solid fa-star text-amber-400 text-xs"></i>' : ''}
                 </div>
               </div>
@@ -2120,7 +2150,10 @@
       if (trickTag) trickTag.textContent = `技巧考驗：【${q.trickName}】`;
 
       const qDisplay = document.getElementById('speed-quiz-question-display');
-      if (qDisplay) qDisplay.textContent = `${q.q} = ?`;
+      if (qDisplay) {
+        const qText = (q.q || '').trim();
+        qDisplay.textContent = (qText.endsWith('?') || qText.endsWith('？')) ? qText : `${qText} = ?`;
+      }
 
       // 產生選項 (1 正確 + 3 誘答)
       const correctVal = q.a;
@@ -2279,6 +2312,9 @@
       document.getElementById('tab-speed-calc')?.addEventListener('click', () => switchMainTab('speed-calc'));
       document.getElementById('banner-speed-calc-go')?.addEventListener('click', () => switchMainTab('speed-calc'));
       document.getElementById('btn-open-all-modal')?.addEventListener('click', () => openAllTricksModal());
+      document.getElementById('speed-practice-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') submitSpeedPracticeAnswer();
+      });
 
       // 初始化速算學院狀態
       populateSpeedTrickSelect();

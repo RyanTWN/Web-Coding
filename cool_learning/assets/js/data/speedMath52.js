@@ -2555,6 +2555,17 @@ const SPEED_MATH_52 = [
   }
 ];
 
+// 為每個步驟自動補齊 visual 欄位（以 detail 為基礎），確保跨模組呈現不為 undefined
+SPEED_MATH_52.forEach(t => {
+  if (t.steps) {
+    t.steps.forEach(s => {
+      if (!s.visual) {
+        s.visual = s.detail || s.desc || '';
+      }
+    });
+  }
+});
+
 if (typeof window !== 'undefined') {
   window.SPEED_MATH_52 = SPEED_MATH_52;
 }
