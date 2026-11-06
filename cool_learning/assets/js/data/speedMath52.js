@@ -2555,6 +2555,10 @@ const SPEED_MATH_52 = [
   }
 ];
 
+if (typeof window !== 'undefined') {
+  window.SPEED_MATH_52 = SPEED_MATH_52;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { SPEED_MATH_52 };
 }

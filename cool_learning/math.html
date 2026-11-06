@@ -1553,8 +1553,751 @@
       }
     }
 
+
+    // ==========================================================================
+    // 速算學院 (Speed Math Academy) - 核心狀態機與控制器邏輯
+    // ==========================================================================
+    const speedTricksData = (typeof window !== 'undefined' && window.SPEED_MATH_52) ? window.SPEED_MATH_52 : (typeof SPEED_MATH_52 !== 'undefined' ? SPEED_MATH_52 : []);
+    let currentSpeedTrickIndex = 13; // 預設顯示第 14 招：頭同尾合十
+    let currentSpeedCategory = 'all';
+    let currentSpeedStep = 0;
+    let speedAutoPlayInterval = null;
+    let favoriteSpeedTrickIds = new Set();
+    try {
+      const savedFavs = localStorage.getItem('speed_math_favs');
+      if (savedFavs) {
+        favoriteSpeedTrickIds = new Set(JSON.parse(savedFavs));
+      } else {
+        favoriteSpeedTrickIds = new Set([1, 9, 12, 14, 16, 23, 35, 45, 50]);
+      }
+    } catch(e) {
+      favoriteSpeedTrickIds = new Set([1, 9, 12, 14, 16, 23, 35, 45, 50]);
+    }
+
+    let currentSpeedPracticeQIdx = 0;
+    let speedQuizQuestions = [];
+    let currentSpeedQuizIndex = 0;
+    let speedQuizScore = 0;
+    let speedQuizCombo = 0;
+    let speedQuizTimer = null;
+    let speedQuizTimeLeft = 15;
+
+    // 主標籤切換：課本課綱練習 (curriculum) vs 速算學院 (speed-calc) vs 闖關挑戰 (speed-quiz)
+    function switchMainTab(tab) {
+      const secCurriculum = document.getElementById('section-curriculum');
+      const secSpeedAcademy = document.getElementById('section-speed-academy');
+      const secSpeedQuiz = document.getElementById('section-speed-quiz');
+      const tabCurriculum = document.getElementById('tab-curriculum');
+      const tabSpeedCalc = document.getElementById('tab-speed-calc');
+
+      if (tab === 'curriculum') {
+        if (secCurriculum) secCurriculum.classList.remove('hidden');
+        if (secSpeedAcademy) secSpeedAcademy.classList.add('hidden');
+        if (secSpeedQuiz) secSpeedQuiz.classList.add('hidden');
+
+        if (tabCurriculum) tabCurriculum.className = "flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-sky-700 shadow-md cursor-pointer";
+        if (tabSpeedCalc) tabSpeedCalc.className = "flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-sky-900 hover:text-sky-700 hover:bg-white/50 cursor-pointer group";
+      } else if (tab === 'speed-calc') {
+        if (secCurriculum) secCurriculum.classList.add('hidden');
+        if (secSpeedAcademy) secSpeedAcademy.classList.remove('hidden');
+        if (secSpeedQuiz) secSpeedQuiz.classList.add('hidden');
+
+        if (tabSpeedCalc) tabSpeedCalc.className = "flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-sky-700 shadow-md cursor-pointer group";
+        if (tabCurriculum) tabCurriculum.className = "flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-sky-900 hover:text-sky-700 hover:bg-white/50 cursor-pointer";
+
+        // 確保卡片正面
+        document.getElementById('speed-card-box')?.classList.remove('is-flipped');
+        updateSpeedTrickDisplay();
+      } else if (tab === 'speed-quiz') {
+        if (secCurriculum) secCurriculum.classList.add('hidden');
+        if (secSpeedAcademy) secSpeedAcademy.classList.add('hidden');
+        if (secSpeedQuiz) secSpeedQuiz.classList.remove('hidden');
+
+        if (tabSpeedCalc) tabSpeedCalc.className = "flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-sky-700 shadow-md cursor-pointer group";
+        if (tabCurriculum) tabCurriculum.className = "flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-sky-900 hover:text-sky-700 hover:bg-white/50 cursor-pointer";
+      }
+    }
+
+    // 填充下拉選單 52 招選項
+    function populateSpeedTrickSelect() {
+      const select = document.getElementById('speed-trick-select');
+      if (!select) return;
+      select.innerHTML = '';
+      speedTricksData.forEach((t, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        const seq = String(t.id).padStart(3, '0');
+        opt.textContent = `#${seq} ${t.name} (${t.categoryName})`;
+        select.appendChild(opt);
+      });
+      select.value = currentSpeedTrickIndex;
+    }
+
+    // 依當前選中的招式更新 3D 卡片與界面
+    function updateSpeedTrickDisplay() {
+      if (!speedTricksData || speedTricksData.length === 0) return;
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t) return;
+
+      const seq = String(t.id).padStart(3, '0');
+      const cardSeqBadge = document.getElementById('card-seq-badge');
+      if (cardSeqBadge) cardSeqBadge.textContent = `#${seq} / 52 招`;
+
+      const cardCatBadge = document.getElementById('card-cat-badge');
+      if (cardCatBadge) cardCatBadge.textContent = t.categoryName;
+
+      const cardStarsBadge = document.getElementById('card-stars-badge');
+      if (cardStarsBadge) cardStarsBadge.textContent = t.stars || '★★★☆☆';
+
+      const cardCondition = document.getElementById('card-condition');
+      if (cardCondition) cardCondition.textContent = `適用情境：${t.condition}`;
+
+      const cardTitle = document.getElementById('card-title');
+      if (cardTitle) cardTitle.textContent = t.name;
+
+      const cardFormula = document.getElementById('card-formula');
+      if (cardFormula) cardFormula.textContent = `「${t.formula}」`;
+
+      const animExample = document.getElementById('anim-example-text');
+      if (animExample) animExample.textContent = `${t.example} = ?`;
+
+      const backPrinciple = document.getElementById('back-principle');
+      if (backPrinciple) backPrinciple.innerHTML = t.principle || '暫無解析';
+
+      const backTrap = document.getElementById('back-trap');
+      if (backTrap) backTrap.textContent = t.trap || '暫無防陷阱提示';
+
+      const select = document.getElementById('speed-trick-select');
+      if (select) select.value = currentSpeedTrickIndex;
+
+      // 收藏按鈕星號顏色
+      const starBtn = document.getElementById('btn-speed-star');
+      if (starBtn) {
+        if (favoriteSpeedTrickIds.has(t.id)) {
+          starBtn.className = "w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg shadow-sm border border-amber-300 transition active:scale-95";
+        } else {
+          starBtn.className = "w-10 h-10 rounded-xl bg-white hover:bg-amber-50 text-slate-300 hover:text-amber-400 flex items-center justify-center text-lg shadow-sm border border-slate-200 transition active:scale-95";
+        }
+      }
+
+      // 重設至步驟 0
+      changeSpeedStep(0);
+
+      // 更新現練題目
+      currentSpeedPracticeQIdx = 0;
+      updateSpeedPracticeWidget();
+
+      // 更新進度與成就
+      updateSpeedMasteryUI();
+    }
+
+    // 動態步驟解構切換
+    function changeSpeedStep(stepIdx) {
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t || !t.steps || !t.steps[stepIdx]) return;
+      currentSpeedStep = stepIdx;
+      const step = t.steps[stepIdx];
+
+      [0, 1, 2].forEach(i => {
+        const btn = document.getElementById(`speed-step-btn-${i}`);
+        if (!btn) return;
+        if (i === stepIdx) {
+          btn.className = "speed-step-btn px-2.5 py-1 rounded-lg text-xs font-black bg-sky-500 text-white shadow-xs cursor-pointer";
+        } else {
+          btn.className = "speed-step-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer";
+        }
+      });
+
+      const animStepTitle = document.getElementById('anim-step-title');
+      if (animStepTitle) animStepTitle.textContent = `步驟 ${stepIdx + 1}: ${step.title}`;
+
+      const animTimerCompare = document.getElementById('anim-timer-compare');
+      if (animTimerCompare) animTimerCompare.textContent = `心算耗時: ${t.timeSec || 2} 秒 (傳統筆算: ${t.traditionalTimeSec || 18} 秒)`;
+
+      const animStage = document.getElementById('anim-stage');
+      if (animStage) {
+        animStage.innerHTML = `
+          <div class="text-xl sm:text-2xl font-black tracking-wider font-mono animate-in fade-in zoom-in-95 duration-200">
+            ${step.visual}
+          </div>
+        `;
+      }
+
+      const animStepDesc = document.getElementById('anim-step-desc');
+      if (animStepDesc) animStepDesc.textContent = step.desc;
+    }
+
+    // 自動連續播放步驟動畫
+    function autoPlaySpeedSteps() {
+      const playBtn = document.getElementById('btn-speed-auto-play');
+      if (speedAutoPlayInterval) {
+        clearInterval(speedAutoPlayInterval);
+        speedAutoPlayInterval = null;
+        if (playBtn) {
+          playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-amber-600";
+        }
+      } else {
+        if (playBtn) {
+          playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+          playBtn.className = "ml-1 w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs shadow-xs hover:bg-emerald-600 animate-pulse";
+        }
+        speedAutoPlayInterval = setInterval(() => {
+          const nextStep = (currentSpeedStep + 1) % 3;
+          changeSpeedStep(nextStep);
+        }, 2200);
+      }
+    }
+
+    // 翻轉卡片
+    function toggleSpeedCardFlip(e) {
+      if (e && e.target && (e.target.closest('button') || e.target.closest('input') || e.target.closest('select') || e.target.closest('.no-flip'))) {
+        return;
+      }
+      const cardBox = document.getElementById('speed-card-box');
+      if (cardBox) {
+        cardBox.classList.toggle('is-flipped');
+      }
+    }
+
+    // 上一招
+    function prevSpeedTrick() {
+      currentSpeedTrickIndex = (currentSpeedTrickIndex - 1 + speedTricksData.length) % speedTricksData.length;
+      document.getElementById('speed-card-box')?.classList.remove('is-flipped');
+      updateSpeedTrickDisplay();
+    }
+
+    // 下一招
+    function nextSpeedTrick() {
+      currentSpeedTrickIndex = (currentSpeedTrickIndex + 1) % speedTricksData.length;
+      document.getElementById('speed-card-box')?.classList.remove('is-flipped');
+      updateSpeedTrickDisplay();
+    }
+
+    // 下拉選單跳轉
+    function jumpToSpeedTrick(val) {
+      currentSpeedTrickIndex = parseInt(val, 10);
+      document.getElementById('speed-card-box')?.classList.remove('is-flipped');
+      updateSpeedTrickDisplay();
+    }
+
+    // 分類篩選
+    function setSpeedCategoryFilter(cat) {
+      currentSpeedCategory = cat;
+      document.querySelectorAll('.speed-category-btn').forEach(btn => {
+        if (btn.dataset.cat === cat) {
+          btn.className = "speed-category-btn px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap bg-sky-100 text-sky-800 shadow-xs cursor-pointer";
+        } else {
+          btn.className = "speed-category-btn px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer";
+        }
+      });
+
+      if (cat === 'starred') {
+        const starIdx = speedTricksData.findIndex(t => favoriteSpeedTrickIds.has(t.id));
+        if (starIdx !== -1) {
+          currentSpeedTrickIndex = starIdx;
+        } else {
+          alert('您尚未收藏任何招式，請點擊卡片右上角星號收藏！');
+          return;
+        }
+      } else {
+        const idx = speedTricksData.findIndex(t => t.category === cat);
+        if (idx !== -1) currentSpeedTrickIndex = idx;
+      }
+      document.getElementById('speed-card-box')?.classList.remove('is-flipped');
+      updateSpeedTrickDisplay();
+    }
+
+    // 搜尋功能
+    function filterSpeedTricks() {
+      const q = document.getElementById('trick-search')?.value.trim().toLowerCase();
+      if (!q) return;
+      const foundIdx = speedTricksData.findIndex(t => 
+        t.name.toLowerCase().includes(q) || 
+        t.formula.toLowerCase().includes(q) || 
+        t.condition.toLowerCase().includes(q) ||
+        t.example.toLowerCase().includes(q)
+      );
+      if (foundIdx !== -1) {
+        currentSpeedTrickIndex = foundIdx;
+        document.getElementById('speed-card-box')?.classList.remove('is-flipped');
+        updateSpeedTrickDisplay();
+      }
+    }
+
+    // 收藏功能
+    function toggleSpeedFavorite() {
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t) return;
+      if (favoriteSpeedTrickIds.has(t.id)) {
+        favoriteSpeedTrickIds.delete(t.id);
+      } else {
+        favoriteSpeedTrickIds.add(t.id);
+      }
+      try {
+        localStorage.setItem('speed_math_favs', JSON.stringify([...favoriteSpeedTrickIds]));
+      } catch(e) {}
+      updateSpeedTrickDisplay();
+      updateSpeedStarCount();
+    }
+
+    function updateSpeedStarCount() {
+      const starCount = document.getElementById('speed-star-count');
+      if (starCount) starCount.textContent = favoriteSpeedTrickIds.size;
+    }
+
+    // 成就段位與掌握度 UI
+    function updateSpeedMasteryUI() {
+      const count = speedTricksData.length;
+      const mastered = Math.min(count, Math.max(14, favoriteSpeedTrickIds.size + 10));
+      const pct = Math.round((mastered / count) * 100);
+
+      const masteryText = document.getElementById('speed-mastery-text');
+      if (masteryText) masteryText.textContent = `${mastered} / ${count} 招 (${pct}%)`;
+
+      const masteryBar = document.getElementById('speed-mastery-bar');
+      if (masteryBar) masteryBar.style.width = `${pct}%`;
+
+      const rankBadge = document.getElementById('speed-rank-badge');
+      if (rankBadge) {
+        if (pct >= 80) {
+          rankBadge.textContent = 'Lv.5 算聖神童';
+          rankBadge.className = 'px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-black text-[11px]';
+        } else if (pct >= 50) {
+          rankBadge.textContent = 'Lv.4 榜眼神算';
+          rankBadge.className = 'px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-black text-[11px]';
+        } else {
+          rankBadge.textContent = 'Lv.3 心算法師';
+          rankBadge.className = 'px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-black text-[11px]';
+        }
+      }
+    }
+
+    // TTS 語音朗讀口訣
+    function speakSpeedMnemonic() {
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t) return;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(`${t.name}！口訣：${t.formula}`);
+        utter.lang = 'zh-TW';
+        utter.rate = 0.95;
+        window.speechSynthesis.speak(utter);
+      } else {
+        alert(`【${t.name}】\n口訣：${t.formula}`);
+      }
+    }
+
+    // 右側隨堂現練題目
+    function updateSpeedPracticeWidget() {
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t || !t.practice || t.practice.length === 0) return;
+      const p = t.practice[currentSpeedPracticeQIdx % t.practice.length];
+
+      const questionEl = document.getElementById('speed-practice-question');
+      if (questionEl) questionEl.textContent = `${p.q} = ?`;
+
+      const idxBadge = document.getElementById('speed-practice-idx-badge');
+      if (idxBadge) idxBadge.textContent = `第 ${currentSpeedPracticeQIdx + 1} / ${t.practice.length} 題`;
+
+      const input = document.getElementById('speed-practice-input');
+      if (input) input.value = '';
+
+      const fb = document.getElementById('speed-practice-feedback');
+      if (fb) {
+        fb.className = 'hidden';
+        fb.innerHTML = '';
+      }
+    }
+
+    function submitSpeedPracticeAnswer() {
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t || !t.practice) return;
+      const p = t.practice[currentSpeedPracticeQIdx % t.practice.length];
+      const input = document.getElementById('speed-practice-input');
+      const userAns = parseFloat(input?.value);
+      const fb = document.getElementById('speed-practice-feedback');
+      if (!fb) return;
+      fb.classList.remove('hidden');
+
+      if (!isNaN(userAns) && Math.abs(userAns - p.a) < 0.001) {
+        fb.className = 'p-3 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 animate-in fade-in duration-200';
+        fb.innerHTML = `🎉 太棒了！答對了！<br><span class="text-[11px] font-normal">心法解析：${p.hint}</span>`;
+        setTimeout(() => {
+          currentSpeedPracticeQIdx = (currentSpeedPracticeQIdx + 1) % t.practice.length;
+          updateSpeedPracticeWidget();
+        }, 1800);
+      } else {
+        fb.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-in fade-in duration-200';
+        fb.innerHTML = `❌ 答案不太對喔！再心算一次試試。<br><span class="text-[11px] font-normal">提示：${p.hint}</span>`;
+      }
+    }
+
+    function showSpeedPracticeHint() {
+      const t = speedTricksData[currentSpeedTrickIndex];
+      if (!t || !t.practice) return;
+      const p = t.practice[currentSpeedPracticeQIdx % t.practice.length];
+      const fb = document.getElementById('speed-practice-feedback');
+      if (!fb) return;
+      fb.classList.remove('hidden');
+      fb.className = 'p-3 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300';
+      fb.innerHTML = `💡 口訣指引：${t.formula}<br><span class="text-[11px] text-slate-600">${p.hint}</span>`;
+    }
+
+    // ==============================================
+    // 浮動視窗：全部 52 招全目錄按分類展示
+    // ==============================================
+    function openAllTricksModal() {
+      renderAllTricksModalContent();
+      const modal = document.getElementById('modal-all-tricks');
+      if (modal) modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeAllTricksModal() {
+      const modal = document.getElementById('modal-all-tricks');
+      if (modal) modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function handleSpeedModalBackdropClick(e) {
+      if (e.target && e.target.id === 'modal-all-tricks') {
+        closeAllTricksModal();
+      }
+    }
+
+    function scrollToSpeedCategory(groupId) {
+      const el = document.getElementById(groupId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function renderAllTricksModalContent() {
+      const container = document.getElementById('modal-tricks-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const categories = [
+        { key: 'add_sub', title: '一、加減巧算心法', count: '8 招', icon: 'fa-plus-minus', color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-200' },
+        { key: 'multiply', title: '二、乘法核心神技', count: '18 招', icon: 'fa-xmark', color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' },
+        { key: 'divide', title: '三、除法整除特徵', count: '8 招', icon: 'fa-divide', color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+        { key: 'fraction_decimal', title: '四、分數小數巧算', count: '10 招', icon: 'fa-percent', color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-200' },
+        { key: 'geometry_word', title: '五、幾何工程素養', count: '8 招', icon: 'fa-compass', color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200' }
+      ];
+
+      categories.forEach(cat => {
+        const catTricks = speedTricksData.filter(t => t.category === cat.key);
+        if (catTricks.length === 0) return;
+
+        const groupDiv = document.createElement('div');
+        groupDiv.id = `cat-group-${cat.key}`;
+        groupDiv.className = 'space-y-3 pt-2';
+
+        const headerHtml = `
+          <div class="flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur py-2 border-b border-slate-100 z-10">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg ${cat.bg} ${cat.color} flex items-center justify-center text-sm font-bold border ${cat.border}">
+                <i class="fa-solid ${cat.icon}"></i>
+              </span>
+              <h3 class="font-black text-slate-800 text-sm sm:text-base">${cat.title}</h3>
+            </div>
+            <span class="text-xs font-black px-2.5 py-0.5 rounded-full ${cat.bg} ${cat.color} border ${cat.border}">
+              ${catTricks.length} 招收錄
+            </span>
+          </div>
+        `;
+
+        const cardsGrid = document.createElement('div');
+        cardsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3';
+
+        catTricks.forEach(t => {
+          const isCurrent = (t.id === speedTricksData[currentSpeedTrickIndex]?.id);
+          const isStarred = favoriteSpeedTrickIds.has(t.id);
+          const seq = String(t.id).padStart(3, '0');
+
+          const card = document.createElement('div');
+          card.onclick = () => selectSpeedTrickFromModal(t.id);
+          card.className = `p-3.5 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between ${
+            isCurrent
+              ? 'bg-sky-50 border-sky-400 shadow-md ring-2 ring-sky-300'
+              : 'bg-white border-slate-200/90 hover:border-sky-300 hover:shadow-md'
+          }`;
+
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <span class="font-mono font-black text-slate-400 group-hover:text-sky-600 transition">#${seq}</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-amber-400 text-[11px]">${t.stars || '★★★'}</span>
+                  ${isStarred ? '<i class="fa-solid fa-star text-amber-400 text-xs"></i>' : ''}
+                </div>
+              </div>
+              <h4 class="font-black text-slate-800 text-sm mb-1 group-hover:text-sky-600 transition flex items-center justify-between">
+                <span>${t.name}</span>
+                ${isCurrent ? '<span class="text-[10px] bg-sky-500 text-white px-1.5 py-0.5 rounded font-bold">學習中</span>' : ''}
+              </h4>
+              <p class="text-[11px] text-slate-500 line-clamp-1 mb-2">情境：${t.condition}</p>
+            </div>
+            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-[11px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                ${t.example}
+              </span>
+              <span class="text-[11px] text-sky-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                練此招 <i class="fa-solid fa-arrow-right text-[9px]"></i>
+              </span>
+            </div>
+          `;
+          cardsGrid.appendChild(card);
+        });
+
+        groupDiv.innerHTML = headerHtml;
+        groupDiv.appendChild(cardsGrid);
+        container.appendChild(groupDiv);
+      });
+    }
+
+    // 從 Modal 點擊直接跳轉指定招式
+    function selectSpeedTrickFromModal(trickId) {
+      const idx = speedTricksData.findIndex(t => t.id === trickId);
+      if (idx !== -1) {
+        currentSpeedTrickIndex = idx;
+        closeAllTricksModal();
+        switchMainTab('speed-calc');
+        updateSpeedTrickDisplay();
+      }
+    }
+
+    // ==============================================
+    // 實戰速算 10 題連擊挑戰模式 (Speed Quiz)
+    // ==============================================
+    function startSpeedQuiz() {
+      // 隨機抽選 10 題
+      const pool = [];
+      speedTricksData.forEach(t => {
+        if (t.practice && t.practice.length > 0) {
+          t.practice.forEach(p => {
+            pool.push({
+              trickId: t.id,
+              trickName: t.name,
+              formula: t.formula,
+              q: p.q,
+              a: p.a,
+              hint: p.hint
+            });
+          });
+        }
+      });
+
+      // 打亂抽選 10 題
+      const shuffled = pool.sort(() => 0.5 - Math.random());
+      speedQuizQuestions = shuffled.slice(0, 10);
+      currentSpeedQuizIndex = 0;
+      speedQuizScore = 0;
+      speedQuizCombo = 0;
+
+      switchMainTab('speed-quiz');
+      renderSpeedQuizQuestion();
+    }
+
+    function renderSpeedQuizQuestion() {
+      if (currentSpeedQuizIndex >= speedQuizQuestions.length) {
+        finishSpeedQuiz();
+        return;
+      }
+
+      const q = speedQuizQuestions[currentSpeedQuizIndex];
+      const prog = document.getElementById('speed-quiz-progress-text');
+      if (prog) prog.textContent = `第 ${currentSpeedQuizIndex + 1} / 10 題`;
+
+      const comboText = document.getElementById('speed-quiz-combo-text');
+      if (comboText) comboText.textContent = speedQuizCombo;
+
+      const scoreText = document.getElementById('speed-quiz-score-text');
+      if (scoreText) scoreText.textContent = speedQuizScore;
+
+      const trickTag = document.getElementById('speed-quiz-trick-tag');
+      if (trickTag) trickTag.textContent = `技巧考驗：【${q.trickName}】`;
+
+      const qDisplay = document.getElementById('speed-quiz-question-display');
+      if (qDisplay) qDisplay.textContent = `${q.q} = ?`;
+
+      // 產生選項 (1 正確 + 3 誘答)
+      const correctVal = q.a;
+      const opts = new Set([correctVal]);
+      const deltas = [10, -10, 20, -20, 100, -100, 2, -2, 1, -1];
+      let dIdx = 0;
+      while (opts.size < 4 && dIdx < deltas.length) {
+        const fake = correctVal + deltas[dIdx++];
+        if (fake > 0) opts.add(fake);
+      }
+      while (opts.size < 4) {
+        opts.add(correctVal + Math.floor(Math.random() * 20) - 10);
+      }
+      const shuffledOpts = [...opts].sort(() => 0.5 - Math.random());
+
+      const container = document.getElementById('speed-quiz-options-container');
+      if (container) {
+        container.innerHTML = '';
+        shuffledOpts.forEach(val => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = "py-4 px-4 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-500 hover:bg-sky-50 font-black text-xl text-slate-800 transition active:scale-95 shadow-sm font-mono cursor-pointer";
+          btn.textContent = val;
+          btn.onclick = () => handleSpeedQuizAnswer(val, btn);
+          container.appendChild(btn);
+        });
+      }
+
+      // 重設並啟動計時器 (15秒)
+      startSpeedQuizTimer();
+    }
+
+    function startSpeedQuizTimer() {
+      if (speedQuizTimer) clearInterval(speedQuizTimer);
+      speedQuizTimeLeft = 15;
+      updateSpeedQuizTimerBar();
+
+      speedQuizTimer = setInterval(() => {
+        speedQuizTimeLeft--;
+        updateSpeedQuizTimerBar();
+        if (speedQuizTimeLeft <= 0) {
+          clearInterval(speedQuizTimer);
+          // 超時視同答錯
+          handleSpeedQuizAnswer(null, null);
+        }
+      }, 1000);
+    }
+
+    function updateSpeedQuizTimerBar() {
+      const timerText = document.getElementById('speed-quiz-timer-text');
+      if (timerText) timerText.textContent = `${speedQuizTimeLeft} 秒`;
+
+      const timerBar = document.getElementById('speed-quiz-timer-bar');
+      if (timerBar) {
+        const pct = (speedQuizTimeLeft / 15) * 100;
+        timerBar.style.width = `${pct}%`;
+        if (speedQuizTimeLeft <= 5) {
+          timerBar.className = "h-full bg-gradient-to-r from-rose-500 to-red-600 rounded-full transition-all duration-1000";
+        } else {
+          timerBar.className = "h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all duration-1000";
+        }
+      }
+    }
+
+    function handleSpeedQuizAnswer(userAns, clickedBtn) {
+      if (speedQuizTimer) clearInterval(speedQuizTimer);
+
+      const q = speedQuizQuestions[currentSpeedQuizIndex];
+      const isCorrect = (userAns !== null && Math.abs(userAns - q.a) < 0.001);
+
+      // 鎖定所有選項按鈕
+      document.querySelectorAll('#speed-quiz-options-container button').forEach(b => {
+        b.disabled = true;
+        if (parseFloat(b.textContent) === q.a) {
+          b.className = "py-4 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-100 text-emerald-900 font-black text-xl font-mono";
+        }
+      });
+
+      if (isCorrect) {
+        speedQuizCombo++;
+        const bonus = speedQuizCombo * 2;
+        const pts = 10 + bonus;
+        speedQuizScore += pts;
+        if (clickedBtn) {
+          clickedBtn.className = "py-4 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-500 text-white font-black text-xl font-mono animate-bounce";
+        }
+      } else {
+        speedQuizCombo = 0;
+        if (clickedBtn) {
+          clickedBtn.className = "py-4 px-4 rounded-xl border-2 border-rose-500 bg-rose-500 text-white font-black text-xl font-mono animate-shake";
+        }
+      }
+
+      const comboText = document.getElementById('speed-quiz-combo-text');
+      if (comboText) comboText.textContent = speedQuizCombo;
+
+      const scoreText = document.getElementById('speed-quiz-score-text');
+      if (scoreText) scoreText.textContent = speedQuizScore;
+
+      // 1.2 秒後進入下一題
+      setTimeout(() => {
+        currentSpeedQuizIndex++;
+        renderSpeedQuizQuestion();
+      }, 1200);
+    }
+
+    function useSpeedQuizHint() {
+      const q = speedQuizQuestions[currentSpeedQuizIndex];
+      if (!q) return;
+      alert(`💡【${q.trickName}】口訣提示：\n${q.formula}\n\n心法：${q.hint}`);
+    }
+
+    function finishSpeedQuiz() {
+      if (speedQuizTimer) clearInterval(speedQuizTimer);
+      const totalScore = speedQuizScore;
+      const rank = totalScore >= 100 ? '神速運算大師 🏆' : (totalScore >= 70 ? '速算精英 🌟' : '努力精進見習生 📚');
+
+      alert(`🎉 恭喜完成 10 題速算連擊闖關！\n\n獲得總分：${totalScore} 分\n獲得稱號：${rank}\n\n按確定返回速算學院繼續修煉！`);
+      switchMainTab('speed-calc');
+    }
+
+    // 將所有方法掛載至 window，確保 HTML inline onclick 呼叫 100% 成功
+    if (typeof window !== 'undefined') {
+      window.switchMainTab = switchMainTab;
+      window.populateSpeedTrickSelect = populateSpeedTrickSelect;
+      window.updateSpeedTrickDisplay = updateSpeedTrickDisplay;
+      window.changeSpeedStep = changeSpeedStep;
+      window.autoPlaySpeedSteps = autoPlaySpeedSteps;
+      window.toggleSpeedCardFlip = toggleSpeedCardFlip;
+      window.prevSpeedTrick = prevSpeedTrick;
+      window.nextSpeedTrick = nextSpeedTrick;
+      window.jumpToSpeedTrick = jumpToSpeedTrick;
+      window.setSpeedCategoryFilter = setSpeedCategoryFilter;
+      window.filterSpeedTricks = filterSpeedTricks;
+      window.toggleSpeedFavorite = toggleSpeedFavorite;
+      window.updateSpeedStarCount = updateSpeedStarCount;
+      window.updateSpeedMasteryUI = updateSpeedMasteryUI;
+      window.speakSpeedMnemonic = speakSpeedMnemonic;
+      window.updateSpeedPracticeWidget = updateSpeedPracticeWidget;
+      window.submitSpeedPracticeAnswer = submitSpeedPracticeAnswer;
+      window.showSpeedPracticeHint = showSpeedPracticeHint;
+      window.openAllTricksModal = openAllTricksModal;
+      window.closeAllTricksModal = closeAllTricksModal;
+      window.handleSpeedModalBackdropClick = handleSpeedModalBackdropClick;
+      window.scrollToSpeedCategory = scrollToSpeedCategory;
+      window.renderAllTricksModalContent = renderAllTricksModalContent;
+      window.selectSpeedTrickFromModal = selectSpeedTrickFromModal;
+      window.startSpeedQuiz = startSpeedQuiz;
+      window.useSpeedQuizHint = useSpeedQuizHint;
+    }
+
     // 初始化事件綁定
     document.addEventListener('DOMContentLoaded', () => {
+      // 速算學院頂部分頁籤與直達按鈕綁定
+      document.getElementById('tab-curriculum')?.addEventListener('click', () => switchMainTab('curriculum'));
+      document.getElementById('tab-speed-calc')?.addEventListener('click', () => switchMainTab('speed-calc'));
+      document.getElementById('banner-speed-calc-go')?.addEventListener('click', () => switchMainTab('speed-calc'));
+      document.getElementById('btn-open-all-modal')?.addEventListener('click', () => openAllTricksModal());
+
+      // 初始化速算學院狀態
+      populateSpeedTrickSelect();
+      updateSpeedTrickDisplay();
+      updateSpeedStarCount();
+      renderAllTricksModalContent();
+
+      // 監聽 ESC 鍵關閉 Modal
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAllTricksModal();
+        }
+      });
+
+      // 若網址帶有 ?tab=speed 或 ?tab=speed-calc 則直接開啟速算學院
+      if (urlParams.get('tab') === 'speed' || urlParams.get('tab') === 'speed-calc') {
+        switchMainTab('speed-calc');
+      }
+
       if (!currentUser || !currentUser.token) {
         sessionStorage.removeItem('g6_portal_user');
         localStorage.removeItem('g6_portal_user');
